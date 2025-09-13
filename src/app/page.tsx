@@ -1,103 +1,241 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import Link from 'next/link'
+import Image from 'next/image'
+import { 
+  ArrowRight, 
+  Shield, 
+  Zap, 
+  BarChart3,
+  AlertTriangle,
+  Star
+} from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Footer } from '@/components/layout/Footer'
+import { Header } from '@/components/layout/Header'
+import { useEffect, useState } from 'react'
+
+export default function HomePage() {
+  const [isAnimating, setIsAnimating] = useState(true)
+
+  useEffect(() => {
+    // Random time between 30-45 seconds (30000-45000ms)
+    const timeout = Math.floor(Math.random() * 15000) + 30000
+    
+    const timer = setTimeout(() => {
+      setIsAnimating(false)
+    }, timeout)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="bg-white">
+      <Header currentPath="/" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Hero Section */}
+      <div className="relative bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+            <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+              <div className="sm:text-center lg:text-left">
+                <h1 className="text-4xl tracking-tight font-extrabold text-[#111827] sm:text-5xl md:text-6xl">
+                  Never let your site sink again.
+                </h1>
+                <p className="mt-3 text-base text-[#111827]/70 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                  PingBuoy monitors your uptime and scans for broken links so you can stay afloat with peace of mind.
+                </p>
+                <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                  <div className="rounded-md shadow">
+                    <Link href="/signup">
+                      <Button variant="cta" size="lg" className="w-full flex items-center justify-center px-8 py-3 text-base">
+                        Get Started for Free
+                        <ArrowRight className="ml-2 -mr-1 w-5 h-5" />
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="mt-3 sm:mt-0 sm:ml-3">
+                    <Link href="/pricing">
+                      <Button variant="outline" size="lg" className="w-full flex items-center justify-center px-8 py-3 text-base">
+                        View Pricing
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
+          <div className="h-56 w-full sm:h-72 md:h-96 lg:w-full lg:h-full flex items-center justify-center">
+            <Image
+              src="/buoy.png"
+              alt="PingBuoy"
+              width={300}
+              height={300}
+              className={`max-w-full max-h-full object-contain ${isAnimating ? 'buoy-bobbing' : ''}`}
+              priority
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="py-12 bg-[#F3F4F6]" id="features">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="lg:text-center">
+            <h2 className="text-base text-[#1E3A8A] font-semibold tracking-wide uppercase">Features</h2>
+            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-[#111827] sm:text-4xl">
+              Everything you need to monitor your websites
+            </p>
+            <p className="mt-4 max-w-2xl text-xl text-[#111827]/70 lg:mx-auto">
+              Comprehensive monitoring tools to ensure your websites are always running smoothly
+            </p>
+          </div>
+
+          <div className="mt-10">
+            <div className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Uptime Monitoring</p>
+                <p className="mt-2 ml-16 text-base text-[#111827]/70">
+                  Monitor your websites with 5-minute checks on the free plan or 1-minute checks on Pro.
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+                  <BarChart3 className="w-6 h-6" />
+                </div>
+                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Page Speed Monitoring</p>
+                <p className="mt-2 ml-16 text-base text-[#111827]/70">
+                  Track Core Web Vitals and page performance with daily checks (free) or hourly monitoring (Pro).
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+                  <Shield className="w-6 h-6" />
+                </div>
+                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">SSL & API Monitoring</p>
+                <p className="mt-2 ml-16 text-base text-[#111827]/70">
+                  SSL certificate expiry monitoring and API endpoint monitoring available on Pro plans.
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Smart Alerts & Reports</p>
+                <p className="mt-2 ml-16 text-base text-[#111827]/70">
+                  Email alerts for free users, plus Slack, webhooks, and PDF/CSV reports for Pro subscribers.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Value Proposition Section */}
+      <div className="bg-[#1E3A8A]">
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+              Why choose PingBuoy?
+            </h2>
+            <p className="mt-3 text-xl text-white/70 sm:mt-4">
+              Built for modern websites with the features you need to stay online
+            </p>
+          </div>
+          <dl className="mt-10 text-center sm:max-w-3xl sm:mx-auto sm:grid sm:grid-cols-3 sm:gap-8">
+            <div className="flex flex-col">
+              <dt className="order-2 mt-2 text-lg leading-6 font-medium text-white/70">
+                Setup Time
+              </dt>
+              <dd className="order-1 text-5xl font-extrabold text-white">2 min</dd>
+            </div>
+            <div className="flex flex-col mt-10 sm:mt-0">
+              <dt className="order-2 mt-2 text-lg leading-6 font-medium text-white/70">
+                Monitoring Accuracy
+              </dt>
+              <dd className="order-1 text-5xl font-extrabold text-white">99.9%</dd>
+            </div>
+            <div className="flex flex-col mt-10 sm:mt-0">
+              <dt className="order-2 mt-2 text-lg leading-6 font-medium text-white/70">
+                Free Plan Sites
+              </dt>
+              <dd className="order-1 text-5xl font-extrabold text-white">3</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      {/* Testimonial CTA Section */}
+      <div className="bg-white py-16 lg:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative py-24 px-8 bg-[#1E3A8A] rounded-xl shadow-2xl overflow-hidden lg:px-16 text-center">
+            <div className="absolute inset-0 opacity-50 filter saturate-0 mix-blend-multiply">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#1E3A8A] to-[#F97316]"></div>
+            </div>
+            <div className="relative">
+              <div className="flex justify-center space-x-1 mb-6">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-[#F97316] fill-current" />
+                ))}
+              </div>
+              <h3 className="text-2xl font-bold text-white sm:text-3xl mb-4">
+                Share Your PingBuoy Success Story
+              </h3>
+              <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                Has PingBuoy helped your business stay online? We&apos;d love to feature your positive experience and help other customers discover our service.
+              </p>
+              <div className="space-y-4">
+                <a 
+                  // eslint-disable-next-line no-secrets/no-secrets
+                  href="mailto:testimonials@pingbuoy.com?subject=My PingBuoy Success Story"
+                  className="inline-flex items-center px-6 py-3 text-lg font-medium text-[#1E3A8A] bg-white rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Contact testimonials@pingbuoy.com
+                </a>
+                <p className="text-sm text-white/70">
+                  Tell us how PingBuoy has made a difference for your website monitoring
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="bg-[#F3F4F6]">
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
+          <h2 className="text-3xl font-extrabold tracking-tight text-[#111827] sm:text-4xl">
+            <span className="block">Ready to monitor your websites?</span>
+            <span className="block text-[#F97316]">Get started with our free plan.</span>
+          </h2>
+          <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+            <div className="inline-flex rounded-md shadow">
+              <Link href="/signup">
+                <Button size="lg" className="px-8 py-3">
+                  Get Started Free
+                </Button>
+              </Link>
+            </div>
+            <div className="ml-3 inline-flex rounded-md shadow">
+              <Link href="/pricing">
+                <Button variant="outline" size="lg" className="px-8 py-3">
+                  View Pricing
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
     </div>
-  );
+  )
 }

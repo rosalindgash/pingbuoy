@@ -1,0 +1,189 @@
+import { notFound } from 'next/navigation'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getSiteUptimeStats } from '@/lib/uptime'
+import { formatDistanceToNow } from 'date-fns'
+import { Globe, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Database } from '@/lib/supabase'
+
+type Site = Database['public']['Tables']['sites']['Row']
+
+interface PageProps {
+  params: { username: string }
+}
+
+async function getUserByUsername(username: string) {
+  const supabase = await createServerSupabaseClient()
+  
+  // For simplicity, we'll use email as username for now
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('users')
+    .select(`
+      id,
+      email,
+      sites (
+        *
+      )
+    `)
+    .ilike('email', `${username}%`)
+    .single()
+    
+  if (error || !data) {
+    return null
+  }
+  
+  return data
+}
+
+export default async function PublicStatusPage({ params }: PageProps) {
+  const user = await getUserByUsername(params.username)
+  
+  if (!user || !user.sites || user.sites.length === 0) {
+    notFound()
+  }
+
+  const sitesWithStats = await Promise.all(
+    user.sites.map(async (site: Site) => {
+      const stats = await getSiteUptimeStats(site.id, 90) // 90 days
+      return { ...site, stats }
+    })
+  )
+
+  const overallUptime = sitesWithStats.reduce((acc, site) => acc + site.stats.uptime, 0) / sitesWithStats.length
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <Globe className="h-8 w-8 text-blue-600" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Status Page
+              </h1>
+              <p className="text-gray-600">{user.email}</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {sitesWithStats.length}
+              </div>
+              <div className="text-sm text-gray-500">Services Monitored</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className={`text-2xl font-bold ${
+                overallUptime >= 99 ? 'text-green-600' : 
+                overallUptime >= 95 ? 'text-yellow-600' : 
+                'text-red-600'
+              }`}>
+                {overallUptime.toFixed(2)}%
+              </div>
+              <div className="text-sm text-gray-500">Overall Uptime (90d)</div>
+            </div>
+            
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {sitesWithStats.filter(s => s.status === 'up').length}
+              </div>
+              <div className="text-sm text-gray-500">Services Online</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Services Status */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">Service Status</h2>
+            <p className="text-sm text-gray-600">
+              Current status of all monitored services
+            </p>
+          </div>
+          
+          <div className="divide-y divide-gray-200">
+            {sitesWithStats.map((site) => (
+              <div key={site.id} className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                      {site.status === 'up' ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : site.status === 'down' ? (
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-gray-400" />
+                      )}
+                      <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                        site.status === 'up' ? 'text-green-700 bg-green-100' : 
+                        site.status === 'down' ? 'text-red-700 bg-red-100' : 
+                        'text-gray-700 bg-gray-100'
+                      }`}>
+                        {site.status === 'up' ? 'Operational' : 
+                         site.status === 'down' ? 'Down' : 
+                         'Unknown'}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {site.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">{site.url}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {site.stats.uptime}%
+                    </div>
+                    <div className="text-sm text-gray-500">90-day uptime</div>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm text-gray-500 mb-1">
+                    <span>Last 90 days</span>
+                    <span>
+                      {site.last_checked 
+                        ? `Updated ${formatDistanceToNow(new Date(site.last_checked), { addSuffix: true })}`
+                        : 'Never checked'
+                      }
+                    </span>
+                  </div>
+                  
+                  {/* Simple uptime bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${
+                        site.stats.uptime >= 99 ? 'bg-green-500' : 
+                        site.stats.uptime >= 95 ? 'bg-yellow-500' : 
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${site.stats.uptime}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500 mb-2">
+            This status page is powered by
+          </p>
+          <div className="flex items-center justify-center space-x-2">
+            <Globe className="h-5 w-5 text-blue-600" />
+            <span className="text-sm font-medium text-gray-900">PingBuoy</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Last updated: {new Date().toLocaleString()}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}

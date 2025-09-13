@@ -1,0 +1,77 @@
+import { requireAuth, getUserProfile } from '@/lib/auth'
+import DashboardLayout from '@/components/dashboard/DashboardLayout'
+import StatusPageSettings from '@/components/dashboard/StatusPageSettings'
+import AccountInformation from '@/components/dashboard/AccountInformation'
+import BillingSection from '@/components/dashboard/BillingSection'
+import { Bell } from 'lucide-react'
+
+export default async function SettingsPage() {
+  const user = await requireAuth()
+  const profile = await getUserProfile(user.id)
+
+  if (!profile) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-8">
+          <p className="text-red-600">Error loading user profile</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600">Manage your account and preferences</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Account Information */}
+          <AccountInformation profile={profile} />
+
+          {/* Billing Information */}
+          <BillingSection profile={profile} />
+
+          {/* Notification Settings */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Bell className="w-5 h-5 text-gray-400" />
+              <h2 className="text-lg font-medium text-gray-900">Notifications</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Uptime Alerts</p>
+                  <p className="text-sm text-gray-500">Get notified when sites go down</p>
+                </div>
+                <input type="checkbox" defaultChecked className="rounded" />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Dead Link Reports</p>
+                  <p className="text-sm text-gray-500">Email summaries after scans</p>
+                </div>
+                <input type="checkbox" defaultChecked className="rounded" />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Recovery Notifications</p>
+                  <p className="text-sm text-gray-500">Get notified when sites come back online</p>
+                </div>
+                <input type="checkbox" defaultChecked className="rounded" />
+              </div>
+            </div>
+          </div>
+
+          {/* Status Page Settings */}
+          <StatusPageSettings userEmail={profile.email} />
+        </div>
+      </div>
+    </DashboardLayout>
+  )
+}

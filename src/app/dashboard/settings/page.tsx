@@ -1,0 +1,218 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import AccountInformation from '@/components/dashboard/AccountInformation'
+import BillingSection from '@/components/dashboard/BillingSection'
+import StatusPageSettings from '@/components/dashboard/StatusPageSettings'
+import { Bell, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+
+interface UserProfile {
+  user_id: string
+  email: string
+  plan: 'free' | 'pro' | 'founder'
+  created_at: string
+  stripe_customer_id?: string
+}
+
+export default function SettingsPage() {
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [notificationSettings, setNotificationSettings] = useState({
+    uptime_alerts: true,
+    dead_link_reports: true,
+    recovery_notifications: true
+  })
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        window.location.href = '/login'
+        return
+      }
+      setUser(user)
+      await fetchProfile(user.id)
+    }
+    
+    checkUser()
+  }, [])
+
+  const fetchProfile = async (userId: string) => {
+    setLoading(true)
+    try {
+      const { data: profileData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      setProfile(profileData)
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleNotificationChange = (setting: string, enabled: boolean) => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      [setting]: enabled
+    }))
+    // In a real app, you'd save this to the database
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center py-8">
+          <p className="text-red-600">Error loading user profile</p>
+          <button 
+            onClick={() => fetchProfile(user.id)}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link href="/dashboard">
+            <button className="flex items-center text-gray-600 hover:text-gray-900 mb-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </button>
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600">Manage your account and preferences</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Account Information */}
+          <AccountInformation profile={profile} />
+
+          {/* Billing Information */}
+          <BillingSection profile={profile} />
+
+          {/* Notification Settings */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Bell className="w-5 h-5 text-gray-400" />
+              <h2 className="text-lg font-medium text-gray-900">Notifications</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Uptime Alerts</p>
+                  <p className="text-sm text-gray-500">Get notified when sites go down</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={notificationSettings.uptime_alerts}
+                    onChange={(e) => handleNotificationChange('uptime_alerts', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Dead Link Reports</p>
+                  <p className="text-sm text-gray-500">Email summaries after scans</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={notificationSettings.dead_link_reports}
+                    onChange={(e) => handleNotificationChange('dead_link_reports', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Recovery Notifications</p>
+                  <p className="text-sm text-gray-500">Get notified when sites come back online</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={notificationSettings.recovery_notifications}
+                    onChange={(e) => handleNotificationChange('recovery_notifications', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div className="pt-4 border-t">
+                <button 
+                  onClick={() => {
+                    // Save notification settings
+                    alert('Notification settings saved!')
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Page Settings */}
+          <StatusPageSettings userEmail={profile.email} />
+        </div>
+
+        {/* Danger Zone */}
+        <div className="mt-8">
+          <div className="bg-white rounded-lg border border-red-200 p-6">
+            <h2 className="text-lg font-medium text-red-600 mb-4">Danger Zone</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Delete Account</p>
+                  <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                      alert('Account deletion would be implemented here')
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

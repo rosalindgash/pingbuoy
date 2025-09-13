@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/rrgas/**)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm run lint)",
+      "Bash(cp:*)",
+      "Bash(supabase link:*)",
+      "Bash(supabase db diff:*)",
+      "Bash(supabase db pull:*)",
+      "Bash(supabase db:*)",
+      "Bash(supabase stop:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

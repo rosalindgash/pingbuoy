@@ -1,0 +1,55 @@
+import { requireAuth } from '@/lib/auth'
+import { getDeadLinks, getScans } from '@/lib/deadlinks'
+import { getUserSites } from '@/lib/uptime'
+import { notFound } from 'next/navigation'
+import DashboardLayout from '@/components/dashboard/DashboardLayout'
+import DeadLinksTable from '@/components/deadlinks/DeadLinksTable'
+import ScanHistory from '@/components/deadlinks/ScanHistory'
+import ScanButton from '@/components/deadlinks/ScanButton'
+
+interface PageProps {
+  params: { siteId: string }
+}
+
+export default async function SiteDeadLinksPage({ params }: PageProps) {
+  const user = await requireAuth()
+  const sites = await getUserSites(user.id)
+  
+  const site = sites.find(s => s.id === params.siteId)
+  if (!site) {
+    notFound()
+  }
+
+  const [deadLinks, scans] = await Promise.all([
+    getDeadLinks(params.siteId),
+    getScans(params.siteId)
+  ])
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Dead Links: {site.name}
+            </h1>
+            <p className="text-gray-600">{site.url}</p>
+          </div>
+          <ScanButton siteId={params.siteId} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <DeadLinksTable 
+              deadLinks={deadLinks} 
+              siteId={params.siteId}
+            />
+          </div>
+          <div>
+            <ScanHistory scans={scans} />
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  )
+}

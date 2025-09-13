@@ -1,0 +1,31 @@
+import { requireAuth, getUserProfile } from '@/lib/auth'
+import DashboardLayout from '@/components/dashboard/DashboardLayout'
+import PrivacyDashboard from '@/components/dashboard/PrivacyDashboard'
+
+export default async function PrivacyPage() {
+  const user = await requireAuth()
+  const profile = await getUserProfile(user.id)
+
+  if (!profile) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-8">
+          <p className="text-red-600">Error loading user profile</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Privacy & Data Management</h1>
+          <p className="text-gray-600">Manage your personal data and privacy settings</p>
+        </div>
+
+        <PrivacyDashboard user={user} profile={profile} />
+      </div>
+    </DashboardLayout>
+  )
+}

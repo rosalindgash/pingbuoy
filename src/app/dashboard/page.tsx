@@ -1,0 +1,639 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Plus, Globe, TrendingUp, AlertTriangle, Settings, LogOut, User, Menu, X } from 'lucide-react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
+import { getSiteUptimeStats } from '@/lib/uptime-client'
+
+interface Site {
+  id: string
+  name: string
+  url: string
+  status: 'up' | 'down' | 'unknown'
+  user_id: string
+  is_active: boolean
+  created_at: string
+  last_checked: string | null
+}
+
+interface UserProfile {
+  id: string
+  email: string
+  full_name: string | null
+  plan: 'free' | 'pro' | 'founder'
+  created_at: string
+  stripe_customer_id: string | null
+}
+
+export default function DashboardPage() {
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [sites, setSites] = useState<Site[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uptimeStats, setUptimeStats] = useState<Record<string, {uptime: number, total: number, up: number}>>({})
+  const [uptimeLoading, setUptimeLoading] = useState<Record<string, boolean>>({})
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showAddSite, setShowAddSite] = useState(false)
+  const [showEditSite, setShowEditSite] = useState(false)
+  const [editingSite, setEditingSite] = useState<any>(null)
+  const [addSiteLoading, setAddSiteLoading] = useState(false)
+  const [editSiteLoading, setEditSiteLoading] = useState(false)
+  const [siteForm, setSiteForm] = useState({ name: '', url: '' })
+  const pathname = usePathname()
+
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: Globe },
+    { name: 'Uptime', href: '/dashboard/uptime', icon: TrendingUp },
+    { name: 'Dead Links', href: '/dashboard/dead-links', icon: AlertTriangle },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  ]
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error || !user) {
+        window.location.href = '/login'
+        return
+      }
+
+      setUser(user)
+      await Promise.all([fetchProfile(user.id), fetchSites(user.id)])
+    } catch (err) {
+      console.error('Error:', err)
+      window.location.href = '/login'
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchProfile = async (userId: string) => {
+    const { data: profileData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    setProfile(profileData)
+  }
+
+  const fetchSites = async (userId: string) => {
+    const { data: sitesData } = await supabase
+      .from('sites')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    setSites(sitesData || [])
+    
+    // Fetch uptime stats for each site
+    if (sitesData) {
+      for (const site of sitesData) {
+        fetchUptimeStats(site.id)
+      }
+    }
+  }
+
+  const fetchUptimeStats = async (siteId: string) => {
+    setUptimeLoading(prev => ({ ...prev, [siteId]: true }))
+    
+    try {
+      const stats = await getSiteUptimeStats(siteId, 30) // Last 30 days
+      setUptimeStats(prev => ({ ...prev, [siteId]: stats }))
+    } catch (error) {
+      console.error('Error fetching uptime stats:', error)
+    } finally {
+      setUptimeLoading(prev => ({ ...prev, [siteId]: false }))
+    }
+  }
+
+  const handleAddSite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !siteForm.name.trim() || !siteForm.url.trim()) return
+
+    setAddSiteLoading(true)
+    try {
+      // Validate URL format
+      let url = siteForm.url.trim()
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url
+      }
+
+      const { data, error } = await supabase
+        .from('sites')
+        .insert([{
+          user_id: user.id,
+          name: siteForm.name.trim(),
+          url: url,
+          status: 'unknown',
+          is_active: true
+        }])
+        .select()
+
+      if (error) throw error
+
+      if (data) {
+        setSites(prev => [data[0], ...prev])
+        setSiteForm({ name: '', url: '' })
+        setShowAddSite(false)
+        // Fetch uptime stats for the new site
+        fetchUptimeStats(data[0].id)
+      }
+    } catch (error) {
+      console.error('Error adding site:', error)
+    } finally {
+      setAddSiteLoading(false)
+    }
+  }
+
+  const handleDeleteSite = async (siteId: string) => {
+    if (!confirm('Are you sure you want to delete this site?')) return
+
+    try {
+      const { error } = await supabase
+        .from('sites')
+        .delete()
+        .eq('id', siteId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setSites(prev => prev.filter(site => site.id !== siteId))
+    } catch (error) {
+      console.error('Error deleting site:', error)
+    }
+  }
+
+  const handleEditSite = (site: any) => {
+    setEditingSite(site)
+    setSiteForm({ name: site.name, url: site.url })
+    setShowEditSite(true)
+  }
+
+  const handleUpdateSite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !editingSite) return
+    
+    setEditSiteLoading(true)
+
+    try {
+      let url = siteForm.url.trim()
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url
+      }
+
+      const { error } = await supabase
+        .from('sites')
+        .update({
+          name: siteForm.name.trim(),
+          url: url
+        })
+        .eq('id', editingSite.id)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setSites(prev => prev.map(site => 
+        site.id === editingSite.id 
+          ? { ...site, name: siteForm.name.trim(), url: url }
+          : site
+      ))
+      setSiteForm({ name: '', url: '' })
+      setShowEditSite(false)
+      setEditingSite(null)
+    } catch (error) {
+      console.error('Error updating site:', error)
+    } finally {
+      setEditSiteLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-lg">Loading dashboard...</div>
+      </div>
+    )
+  }
+
+  const displayName = profile?.full_name || profile?.email?.split('@')[0] || user?.email?.split('@')[0] || 'User'
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile sidebar */}
+      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
+          <div className="flex h-16 items-center justify-between px-4">
+            <Link href="/dashboard">
+              <Image src="/ping-buoy-header-logo.png" alt="PingBuoy" width={132} height={35} className="h-9 w-auto cursor-pointer" />
+            </Link>
+            <button onClick={() => setSidebarOpen(false)}>
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          <nav className="flex-1 space-y-1 px-2 py-4">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`${
+                  pathname === item.href
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+              >
+                <item.icon className="mr-3 h-5 w-5" />
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-white">
+        <div className="flex h-16 items-center px-4">
+          <Link href="/dashboard">
+            <Image src="/ping-buoy-header-logo.png" alt="PingBuoy" width={132} height={35} className="h-9 w-auto cursor-pointer" />
+          </Link>
+        </div>
+        <nav className="flex-1 space-y-1 px-2 py-4">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`${
+                pathname === item.href
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-600 hover:bg-gray-50'
+              } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+            >
+              <item.icon className="mr-3 h-5 w-5" />
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+        <div className="p-4">
+          <button
+            onClick={handleLogout}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <div className="flex h-16 items-center justify-between bg-white px-4 lg:px-6">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-500">Welcome back, {displayName}</span>
+            {profile && (
+              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                profile.plan === 'founder' ? 'bg-purple-100 text-purple-800' :
+                profile.plan === 'pro' ? 'bg-blue-100 text-blue-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Page content */}
+        <main className="p-6">
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-gray-600">Monitor your websites and track their performance</p>
+              </div>
+              <button
+                onClick={() => setShowAddSite(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Website
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Globe className="w-8 h-8 text-blue-500" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Sites</dt>
+                      <dd className="text-lg font-medium text-gray-900">{sites.length}</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {sites.filter(site => site.status === 'up').length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Online</dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {sites.filter(site => site.status === 'up').length}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {sites.filter(site => site.status === 'down').length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Offline</dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {sites.filter(site => site.status === 'down').length}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      profile?.plan === 'founder' ? 'bg-purple-500' : 
+                      profile?.plan === 'pro' ? 'bg-blue-500' : 'bg-gray-500'
+                    }`}>
+                      <span className="text-white text-sm font-semibold">
+                        {profile?.plan?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Plan</dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sites List */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Your Websites</h3>
+              
+              {sites.length === 0 ? (
+                <div className="text-center py-12">
+                  <Globe className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No websites</h3>
+                  <p className="mt-1 text-sm text-gray-500">Get started by adding your first website to monitor.</p>
+                  <div className="mt-6">
+                    <button
+                      onClick={() => setShowAddSite(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center mx-auto hover:bg-blue-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Website
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sites.map((site) => {
+                    const stats = uptimeStats[site.id]
+                    const statsLoading = uptimeLoading[site.id]
+                    
+                    return (
+                      <div key={site.id} className="border rounded-lg p-4 space-y-4">
+                        {/* Site Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={`w-3 h-3 rounded-full ${
+                              site.status === 'up' ? 'bg-green-500' :
+                              site.status === 'down' ? 'bg-red-500' : 'bg-gray-500'
+                            }`} />
+                            <div>
+                              <h4 className="font-medium text-gray-900">{site.name}</h4>
+                              <p className="text-sm text-gray-500">{site.url}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              site.status === 'up' ? 'bg-green-100 text-green-800' :
+                              site.status === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
+                            </span>
+                            <button
+                              onClick={() => handleEditSite(site)}
+                              className="text-blue-600 hover:text-blue-900 text-sm mr-2"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSite(site.id)}
+                              className="text-red-600 hover:text-red-900 text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Uptime Stats */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="text-lg font-semibold text-gray-900">
+                              {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">30-day uptime</div>
+                          </div>
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="text-lg font-semibold text-gray-900">
+                              {statsLoading ? '...' : stats ? stats.total : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">Total checks</div>
+                          </div>
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="text-lg font-semibold text-green-600">
+                              {statsLoading ? '...' : stats ? stats.up : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">Successful checks</div>
+                          </div>
+                        </div>
+
+                        {/* Uptime Chart */}
+                        <div>
+                          <div className="text-sm text-gray-700 mb-2">Uptime History</div>
+                          <UptimeChartClient siteId={site.id} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Add Site Modal */}
+      {showAddSite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Website</h3>
+            <form onSubmit={handleAddSite}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Website Name
+                </label>
+                <input
+                  type="text"
+                  value={siteForm.name}
+                  onChange={(e) => setSiteForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="My Website"
+                  required
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Website URL
+                </label>
+                <input
+                  type="url"
+                  value={siteForm.url}
+                  onChange={(e) => setSiteForm(prev => ({ ...prev, url: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSite(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addSiteLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {addSiteLoading ? 'Adding...' : 'Add Website'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Site Modal */}
+      {showEditSite && editingSite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Website</h3>
+            <form onSubmit={handleUpdateSite}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Website Name
+                </label>
+                <input
+                  type="text"
+                  value={siteForm.name}
+                  onChange={(e) => setSiteForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="My Website"
+                  required
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Website URL
+                </label>
+                <input
+                  type="url"
+                  value={siteForm.url}
+                  onChange={(e) => setSiteForm(prev => ({ ...prev, url: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditSite(false)
+                    setEditingSite(null)
+                    setSiteForm({ name: '', url: '' })
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSiteLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {editSiteLoading ? 'Updating...' : 'Update Website'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
