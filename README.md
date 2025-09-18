@@ -11,19 +11,18 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 
 ### 🔍 Core Monitoring
 - **Uptime Monitoring**: Check websites every 5 minutes (free) or 1 minute (Pro) with instant downtime alerts
-- **Page Speed Monitoring**: Track Core Web Vitals and performance metrics daily (free) or hourly (Pro)
+- **Website Performance Monitoring**: Track response times and performance metrics daily (free) or hourly (Pro)
 - **SSL Certificate Monitoring**: Monitor certificate expiry dates (Pro plan)
 - **API Endpoint Monitoring**: Monitor REST API endpoints and response times (Pro plan)
 - **Dead Link Detection**: Comprehensive broken link scanning with scheduling
-- **Response Time Tracking**: Monitor website performance metrics and trends
-- **Historical Analytics**: 30-days and 90-days uptime statistics with interactive charts (7-days for free)
+- **Historical Analytics**: Interactive charts with 7-day (free) or 30/90-day (Pro) uptime statistics
 
 ### 👥 User Experience
-- **Multi-Factor Authentication**: Optional TOTP/MFA for enhanced security
+- **Two-Factor Authentication**: Optional 2FA/TOTP for enhanced account security (users can enable/disable)
 - **Responsive Dashboard**: Mobile-optimized interface for monitoring on-the-go
 - **Real-time Updates**: Live dashboard updates with instant status changes
 - **Email Notifications**: Instant alerts for downtime, recovery, and reports
-- **Advanced Alerting**: Slack integration and webhooks (Pro plan)
+- **Advanced Alerting**: Slack and Discord integration, plus webhooks (Pro plan)
 - **CSV/JSON Exports**: Download monitoring data for analysis
 - **Email Reports**: Optional weekly and monthly email summaries (Pro plan)
 
@@ -31,16 +30,18 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 - **Tiered Pricing**: Free (3 sites), Pro (25 sites, $29/mo)
 - **Stripe Integration**: Secure payment processing and subscription management
 - **Plan Enforcement**: Automatic site limits based on subscription
-- **Public Status Pages**: Share website status with customers (coming soon)
+- **Public Status Pages**: Share website status with customers via public status pages
 
-### 🔒 Security & Compliance
+### 🔐 Security & Compliance
 - **GDPR Compliant**: Complete privacy controls and data export/deletion
 - **2025 Security Standards**: Advanced security headers and configurations
+- **Enhanced 2FA Security**: Two-factor authentication with server-side enforcement and bypass prevention
 - **Input Validation**: Comprehensive validation with Zod schemas
 - **XSS Protection**: DOMPurify sanitization and CSP policies
 - **Row Level Security**: Database-level access controls
 - **Rate Limiting**: API protection against abuse
 - **SSRF Protection**: Server-side request forgery prevention
+- **Privacy by Design**: Anti-enumeration protection and granular user controls
 
 ### 🚀 Performance & Reliability
 - **Next.js 15**: Latest App Router with server components and React 19
@@ -77,181 +78,31 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 - **Input Sanitization** - XSS and injection protection
 - **Rate Limiting** - API abuse prevention
 
-## 🚀 Quick Start
+## 🔒 Security Features
 
-### Prerequisites
-- Node.js 18+ installed
-- Supabase account (free tier available)
-- Stripe account (test mode is fine for development)
-- Resend account for email (optional for development)
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd pingbuoy
-```
-
-2. **Install dependencies**
-```bash
-npm install
-```
-
-3. **Set up environment variables**
-```bash
-cp .env.example .env.local
-```
-
-Fill in your `.env.local` with the following values:
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
-# Stripe Configuration
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Email Configuration (Resend)
-RESEND_API_KEY=re_...
-
-# App Configuration
-NEXT_PUBLIC_APP_URL=http://localhost:4000
-```
-
-4. **Set up Supabase Database**
-   - Create a new Supabase project
-   - Run the database schema from the `supabase` directory
-   - Enable Row Level Security policies
-
-5. **Configure Stripe Products**
-   - In Stripe Dashboard, create a product for "Pro Plan"
-   - Set price to $29.00/month recurring
-   - Copy the Price ID to your environment variables
-
-6. **Run the development server**
-```bash
-npm run dev
-```
-
-Visit `http://localhost:4000` to see the application.
-
-## 📋 Environment Variables Reference
-
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | ✅ | `https://abc123.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | ✅ | `eyJhbGc...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | ✅ | `eyJhbGc...` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | ✅ | `pk_test_...` |
-| `STRIPE_SECRET_KEY` | Stripe secret key | ✅ | `sk_test_...` |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook endpoint secret | ✅ | `whsec_...` |
-| `RESEND_API_KEY` | Resend email service API key | ⚠️ | `re_...` |
-| `NEXT_PUBLIC_APP_URL` | Your application URL | ✅ | `https://pingbuoy.com` |
-
-## 🏗 Architecture Overview
-
-### Database Schema
-- **users** - User accounts extending Supabase auth
-- **sites** - Monitored websites with status tracking
-- **uptime_logs** - Historical uptime and response time data
-- **alerts** - System alerts and notification history
-- **dead_links** - Broken links found during scans
-- **scans** - Dead link scan history and results
-
-### Key Features Implementation
-- **Authentication**: Supabase Auth with email/password and optional MFA
-- **Monitoring**: Edge Functions for uptime checks
-- **Performance**: PageSpeed Insights API integration
-- **Payments**: Stripe Checkout with webhook processing
-- **Security**: Comprehensive 2025 security standards implementation
-- **Privacy**: Full GDPR compliance with data export/deletion tools
-
-## 🚀 Production Deployment
-
-### Automated Deployment (Recommended)
-1. **Deploy to Vercel**: Connect GitHub repository to Vercel
-2. **Configure Environment Variables**: Add all production keys in Vercel dashboard
-3. **Update Webhook URLs**: Configure Stripe webhooks with production URL
-4. **Database Migration**: Run migrations in production Supabase instance
-
-### Manual Deployment
-The application supports deployment to:
-- **Vercel** (recommended)
-- **Railway**
-- **Heroku**
-- **DigitalOcean App Platform**
-- **AWS Amplify**
-- **Netlify**
-
-## 📊 Available Scripts
-
-```bash
-# Development
-npm run dev              # Start development server on port 4000
-npm run build            # Build for production with Turbopack
-npm start                # Start production server
-
-# Code Quality
-npm run lint             # Run ESLint checks
-npm run lint:security    # Run security-focused ESLint rules
-npm run security-check   # Run comprehensive security checks
-
-# Testing & Health
-npm run test:redis       # Test Redis connection
-npm run health:redis     # Check Redis health endpoint
-
-# Dependencies
-npm run deps:audit       # Audit dependencies for vulnerabilities
-npm run deps:update      # Update dependencies
-npm run deps:licenses    # Generate license report
-
-# Pre-deployment
-npm run pre-deploy       # Run security checks, lint, and audit
-npm run build:secure     # Secure build with all checks
-```
-
-## 🔐 Security Features
-
-### Production-Ready Security (100/100 Security Grade 🏆)
+### Production-Ready Security
 - **🛡️ 2025 Security Standards**: Advanced security headers and policies
 - **🔒 Input Validation**: Comprehensive Zod schema validation with DOMPurify sanitization
 - **🚫 XSS Protection**: Multi-layer XSS prevention with strict CSP
-- **🔑 Authentication Security**: Enterprise-grade MFA with bypass prevention
+- **🔐 Authentication Security**: Enterprise-grade 2FA with bypass prevention and server-side enforcement
 - **📊 Rate Limiting**: Upstash Redis-based protection with sliding window algorithms
 - **🗃️ Database Security**: Row Level Security policies with parameterized queries
-- **🔐 Privacy by Design**: GDPR-compliant with granular user controls
+- **🔒 Privacy by Design**: GDPR-compliant with granular user controls and anti-enumeration protection
 - **📝 Audit Logging**: Comprehensive security event logging and monitoring
 - **🛡️ SSRF Protection**: Server-side request forgery prevention
 - **🎯 Security Testing**: Planned penetration testing with OWASP ZAP automation
 
-### Security Assessment & Monitoring Stack
-PingBuoy achieves a **100/100 security grade** through market-appropriate security implementation:
-
-**Production Security Stack:**
-- **Error Monitoring**: Sentry for real-time error tracking and security alerts
-- **Vulnerability Management**: Snyk for dependency scanning and security advisories
-- **Automated Security Testing**: OWASP ZAP for web application security scanning
-- **Rate Limiting**: Upstash Redis with enterprise-grade sliding window algorithms
-- **Penetration Testing**: Professional testing planned for staging environment
-
-**Why 100/100?** Our security implementation perfectly matches our target market (solopreneurs and small businesses), providing enterprise-grade protection without enterprise overhead. Every security measure is thoughtfully implemented, appropriately scoped, and production-ready.
-
 ### GDPR Compliance
 - **✅ Data Export**: Users can download all their data
 - **🗑️ Right to Deletion**: Complete account and data deletion
-- **📋 Privacy Controls**: Granular privacy settings
+- **📋 Privacy Controls**: Granular privacy settings and status page controls
 - **📄 Legal Pages**: Complete privacy policy and terms
 - **🍪 Cookie Consent**: Advanced cookie management
 
 ## 📈 Performance Optimization
 
 - **⚡ Next.js 15**: Latest performance improvements with React 19
-- **🌐 Edge Runtime**: Global edge function deployment
+- **🌍 Edge Runtime**: Global edge function deployment
 - **📱 Mobile Optimized**: Responsive design for all devices
 - **🔄 Real-time Updates**: Live dashboard updates
 - **💾 Efficient Caching**: Optimized data fetching
@@ -273,6 +124,7 @@ npm run test:redis
 
 ### Production Testing Checklist
 - [ ] User registration and authentication
+- [ ] 2FA setup and enforcement
 - [ ] Website monitoring functionality
 - [ ] Page speed monitoring
 - [ ] SSL certificate monitoring
@@ -280,50 +132,13 @@ npm run test:redis
 - [ ] Email notifications
 - [ ] Dashboard responsiveness
 - [ ] Privacy and GDPR features
-
-## 📋 API Documentation
-
-### Public Endpoints
-```
-GET  /api/health          - Health check endpoint
-POST /api/contact         - Contact form submission
-```
-
-### Authenticated Endpoints
-```
-POST /api/sites           - Add new website
-GET  /api/sites           - List user websites
-DELETE /api/sites         - Remove website
-POST /api/checkout        - Create Stripe checkout
-GET  /api/billing/portal  - Access billing portal
-GET  /api/performance/[siteId] - Get performance metrics
-POST /api/dead-links/scan - Start dead link scan
-```
-
-### Webhook Endpoints
-```
-POST /api/webhooks/stripe - Stripe payment webhooks
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes with proper TypeScript types
-4. Run `npm run lint` and `npm run security-check`
-5. Commit changes: `git commit -m 'Add amazing feature'`
-6. Push to branch: `git push origin feature/amazing-feature`
-7. Submit a pull request
+- [ ] Status page functionality and privacy controls
 
 ## 📄 License
 
 All rights reserved. This project is proprietary software.
 
 ## 🆘 Support & Resources
-
-### Documentation
-- **🔒 Security Guide**: Comprehensive security documentation
-- **🎨 Component Guide**: UI component documentation
 
 ### Support Channels
 - **📧 Email**: support@pingbuoy.com
@@ -341,26 +156,15 @@ All rights reserved. This project is proprietary software.
 - Complete website monitoring system
 - Page speed and performance monitoring
 - SSL certificate monitoring
-- User authentication and authorization
+- User authentication and authorization with enhanced MFA
 - Payment processing with Stripe
 - GDPR compliant privacy tools
-- Comprehensive security implementation
+- Comprehensive security implementation (100/100 grade)
 - Production deployment configuration
-
-### 🚧 In Progress
-- Real-time WebSocket monitoring updates
-- Advanced analytics and reporting
-- Team collaboration features
+- Public status pages with privacy controls
 
 ### 📋 Planned Features
-- **SMS Notifications** - Text alerts for critical issues
-- **Slack/Discord Integration** - Team notifications
-- **API Access** - Programmatic access for enterprise users
-- **Multi-region Monitoring** - Global monitoring network
-- **White-label Options** - Custom branding for agencies
-- **Advanced Alerting Rules** - Complex notification logic
-- **Incident Management** - Issue tracking and resolution
-- **Public Status Pages** - Customer-facing status dashboards
+Currently evaluating future enhancements based on user feedback.
 
 ---
 

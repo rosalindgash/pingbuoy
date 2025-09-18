@@ -38,7 +38,6 @@ export const PLANS = {
       '7 days history',
       'No SSL expiry monitoring',
       'No API monitoring',
-      'No reports'
     ]
   },
   PRO: {
@@ -49,11 +48,10 @@ export const PLANS = {
     features: [
       'Monitor up to 25 websites',
       'Uptime monitoring (1-min checks)',
-      'Page Speed monitoring (hourly checks, Core Web Vitals)',
+      'Page Speed monitoring (hourly checks)',
       'SSL expiry monitoring (all sites, alerts before expiry)',
       'API monitoring (up to 5 endpoints)',
       'Alerts via Email + Slack + Discord + Webhooks',
-      'Optional weekly & monthly email reports',
       '90 days history',
       'Priority email support'
     ]
