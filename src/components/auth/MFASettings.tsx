@@ -76,17 +76,36 @@ export default function MFASettings() {
   const verifyAndEnableMFA = async () => {
     if (!enrollingFactor) return
 
+    // Security: Validate code format
+    if (!verifyCode || verifyCode.length !== 6 || !/^\d{6}$/.test(verifyCode)) {
+      setMessage('Please enter a valid 6-digit code.')
+      return
+    }
+
     setLoading(true)
     setMessage('')
 
     try {
+      // Security: Verify user is still authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        setMessage('Authentication required. Please log in again.')
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase.auth.mfa.challengeAndVerify({
         factorId: enrollingFactor.id,
         code: verifyCode
       })
 
       if (error) {
-        setMessage('Invalid code. Please try again.')
+        // Security: Rate limiting protection - don't expose too much info
+        if (error.message.includes('rate')) {
+          setMessage('Too many attempts. Please wait before trying again.')
+        } else {
+          setMessage('Invalid code. Please try again.')
+        }
         return
       }
 
@@ -99,21 +118,44 @@ export default function MFASettings() {
       }
     } catch (error) {
       authLogger.error('Error verifying MFA', error)
-      setMessage('Error verifying code')
+      setMessage('Error verifying code. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const disableMFA = async (factorId: string) => {
+    // Security: Validate factorId format
+    if (!factorId || typeof factorId !== 'string') {
+      setMessage('Invalid factor ID')
+      return
+    }
+
+    // Security: Confirm the action (this is a critical security operation)
+    if (!confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
+      return
+    }
+
     setLoading(true)
     setMessage('')
 
     try {
+      // Security: Verify user is still authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        setMessage('Authentication required. Please log in again.')
+        setLoading(false)
+        return
+      }
+
       const { error } = await supabase.auth.mfa.unenroll({ factorId })
 
       if (error) {
-        setMessage('Error disabling MFA: ' + error.message)
+        // Security: Don't expose detailed error messages
+        if (process.env.NODE_ENV === 'development') {
+          console.error('MFA disable error:', error)
+        }
+        setMessage('Error disabling MFA. Please try again.')
         return
       }
 
@@ -121,7 +163,7 @@ export default function MFASettings() {
       await loadMFAFactors()
     } catch (error) {
       authLogger.error('Error disabling MFA', error)
-      setMessage('Error disabling MFA')
+      setMessage('Error disabling MFA. Please try again.')
     } finally {
       setLoading(false)
     }

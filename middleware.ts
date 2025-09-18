@@ -62,18 +62,65 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Check authentication for protected routes (API only)
-  if (request.nextUrl.pathname.startsWith('/api/') && 
-      !request.nextUrl.pathname.startsWith('/api/auth') &&
-      !request.nextUrl.pathname.startsWith('/api/contact') &&
-      !request.nextUrl.pathname.startsWith('/api/waitlist') &&
-      !request.nextUrl.pathname.startsWith('/api/webhooks')) {
-    
-    const { data: { user } } = await supabase.auth.getUser()
+  // Check authentication for protected routes
+  const protectedPaths = ['/dashboard', '/api/sites', '/api/checkout', '/api/billing', '/api/performance']
+  const isProtectedRoute = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path)) ||
+                          (request.nextUrl.pathname.startsWith('/api/') &&
+                           !request.nextUrl.pathname.startsWith('/api/auth') &&
+                           !request.nextUrl.pathname.startsWith('/api/contact') &&
+                           !request.nextUrl.pathname.startsWith('/api/waitlist') &&
+                           !request.nextUrl.pathname.startsWith('/api/webhooks'))
+
+  if (isProtectedRoute) {
+    const { data: { user, session } } = await supabase.auth.getUser()
 
     if (!user) {
-      // Return 401 for API routes
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      if (request.nextUrl.pathname.startsWith('/api/')) {
+        // Return 401 for API routes
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      } else {
+        // Redirect to login for page routes
+        const redirectUrl = new URL('/login', request.url)
+        redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
+
+    // SECURITY: Check MFA bypass protection
+    try {
+      const { data: factors, error } = await supabase.auth.mfa.listFactors()
+
+      if (!error && factors?.totp?.some(f => f.status === 'verified')) {
+        // User has MFA enabled - verify they completed the second factor
+        // Note: This requires proper session handling from Supabase
+        const sessionData = await supabase.auth.getSession()
+        const mfaLevel = sessionData.data.session?.aal
+
+        if (mfaLevel !== 'aal2') {
+          // User has MFA but hasn't completed second factor
+          if (request.nextUrl.pathname.startsWith('/api/')) {
+            return NextResponse.json({
+              error: 'MFA verification required',
+              mfa_required: true
+            }, { status: 401 })
+          } else {
+            // For page routes, redirect to login with MFA prompt
+            const redirectUrl = new URL('/login', request.url)
+            redirectUrl.searchParams.set('mfa_required', 'true')
+            redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+            return NextResponse.redirect(redirectUrl)
+          }
+        }
+      }
+    } catch (error) {
+      // If MFA verification fails, err on the side of caution
+      console.error('MFA verification error in middleware:', error)
+      if (request.nextUrl.pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Authentication verification failed' }, { status: 401 })
+      } else {
+        const redirectUrl = new URL('/login', request.url)
+        return NextResponse.redirect(redirectUrl)
+      }
     }
   }
 

@@ -15,6 +15,9 @@ export default function SignupPage() {
           <p className="mt-2 text-sm text-gray-600">
             Start monitoring your websites for free
           </p>
+          <p className="mt-1 text-xs text-gray-500">
+            After creating your account, consider setting up two-factor authentication in Settings for enhanced security.
+          </p>
         </div>
         <SignupForm />
       </div>

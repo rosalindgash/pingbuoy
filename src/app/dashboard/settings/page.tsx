@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 import AccountInformation from '@/components/dashboard/AccountInformation'
 import BillingSection from '@/components/dashboard/BillingSection'
 import StatusPageSettings from '@/components/dashboard/StatusPageSettings'
-import { Bell, ArrowLeft } from 'lucide-react'
+import MFASettings from '@/components/auth/MFASettings'
+import { Bell, ArrowLeft, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -187,6 +188,15 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Security Settings - MFA */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Shield className="w-5 h-5 text-gray-400" />
+              <h2 className="text-lg font-medium text-gray-900">Security</h2>
+            </div>
+            <MFASettings />
           </div>
 
           {/* Status Page Settings */}

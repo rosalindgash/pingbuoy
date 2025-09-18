@@ -16,15 +16,36 @@ export default function MFAVerification({ onSuccess, onBack }: MFAVerificationPr
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Security: Validate code format before processing
+    if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+      setMessage('Please enter a valid 6-digit code.')
+      return
+    }
+
     setLoading(true)
     setMessage('')
 
     try {
-      const { data: factors } = await supabase.auth.mfa.listFactors()
+      // Security: Verify user is still authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        setMessage('Session expired. Please log in again.')
+        onBack() // Redirect back to login
+        return
+      }
+
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors()
+
+      if (factorsError) {
+        setMessage('Authentication error. Please try again.')
+        return
+      }
+
       const totpFactor = factors?.totp?.find(f => f.status === 'verified')
 
       if (!totpFactor) {
-        setMessage('No MFA factor found. Please contact support.')
+        setMessage('MFA not properly configured. Please contact support.')
         return
       }
 
@@ -34,16 +55,32 @@ export default function MFAVerification({ onSuccess, onBack }: MFAVerificationPr
       })
 
       if (error) {
-        setMessage('Invalid code. Please try again.')
+        // Security: Handle rate limiting and brute force protection
+        if (error.message.includes('rate') || error.message.includes('too many')) {
+          setMessage('Too many attempts. Please wait before trying again.')
+        } else if (error.message.includes('expired')) {
+          setMessage('Code expired. Please try again.')
+        } else {
+          setMessage('Invalid code. Please try again.')
+        }
+
+        // Security: Clear the code on error
+        setCode('')
         return
       }
 
       if (data) {
+        // Security: Clear sensitive data before proceeding
+        setCode('')
         onSuccess()
       }
     } catch (error) {
-      console.error('MFA verification error:', error)
+      // Security: Don't expose internal errors
+      if (process.env.NODE_ENV === 'development') {
+        console.error('MFA verification error:', error)
+      }
       setMessage('Verification failed. Please try again.')
+      setCode('') // Security: Clear code on error
     } finally {
       setLoading(false)
     }

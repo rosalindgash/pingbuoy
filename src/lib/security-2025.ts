@@ -190,11 +190,11 @@ export const authConfig2025 = {
     adaptiveAuth: true // Risk-based authentication
   },
   
-  // Passwordless authentication
+  // Passwordless authentication (future consideration)
   passwordless: {
-    webauthn: true,
-    magicLinks: true,
-    biometric: true
+    webauthn: false,
+    magicLinks: false,
+    biometric: false
   },
   
   // Identity and Access Management

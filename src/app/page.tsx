@@ -131,7 +131,7 @@ export default function HomePage() {
                 </div>
                 <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Smart Alerts & Reports</p>
                 <p className="mt-2 ml-16 text-base text-[#111827]/70">
-                  Email alerts for free users, plus Slack, webhooks, and PDF/CSV reports for Pro subscribers.
+                  Email alerts for free users, plus Slack, webhooks, and optional email reports for Pro subscribers.
                 </p>
               </div>
             </div>

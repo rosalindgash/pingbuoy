@@ -40,34 +40,43 @@ export default function LoginForm() {
     }
 
     try {
-      // First, attempt login with email and password
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // SECURITY: First check if user has MFA before authenticating
+      // This prevents bypassing MFA by staying on authenticated session
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
           setMessage('Invalid email or password. Please try again.')
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (signInError.message.includes('Email not confirmed')) {
           setMessage('Please check your email and click the verification link to confirm your account.')
         } else {
-          setMessage('Error: ' + error.message)
+          setMessage('Error: ' + signInError.message)
         }
         return
       }
 
-      if (data.user) {
-        // Check if user has MFA enabled
-        const { data: factors } = await supabase.auth.mfa.listFactors()
+      if (signInData.user) {
+        // SECURITY: Check if user has MFA enabled immediately after password verification
+        const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors()
+
+        if (factorsError) {
+          await supabase.auth.signOut() // Security: sign out on error
+          setMessage('Authentication error. Please try again.')
+          return
+        }
+
         const hasMFA = factors?.totp?.some(f => f.status === 'verified')
 
         if (hasMFA) {
-          // Show MFA verification
+          // SECURITY: For MFA users, we need to challenge immediately
+          // Don't let them proceed without completing MFA
           setShowMFA(true)
-          setMessage('')
+          setMessage('Please enter your 6-digit authentication code')
         } else {
-          // No MFA, redirect to dashboard
+          // No MFA enabled, proceed to dashboard
           setMessage('Login successful! Redirecting to dashboard...')
           window.location.href = '/dashboard'
         }

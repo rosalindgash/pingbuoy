@@ -53,7 +53,7 @@ export const PLANS = {
       'SSL expiry monitoring (all sites, alerts before expiry)',
       'API monitoring (up to 5 endpoints)',
       'Alerts via Email + Slack + Discord + Webhooks',
-      'Weekly & monthly PDF/CSV reports',
+      'Optional weekly & monthly email reports',
       '90 days history',
       'Priority email support'
     ]

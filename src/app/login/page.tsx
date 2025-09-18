@@ -15,6 +15,9 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-gray-600">
             Enter your email and password to sign in
           </p>
+          <p className="mt-1 text-xs text-gray-500">
+            For better security, consider setting up two-factor authentication in your account Settings after login.
+          </p>
         </div>
         <LoginForm />
       </div>
