@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Zap
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { pageMetadata } from '@/lib/seo'
 
 export const metadata: Metadata = pageMetadata.status

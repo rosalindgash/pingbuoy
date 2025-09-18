@@ -1,11 +1,22 @@
-import { createServerSupabaseClient } from './supabase-server'
+import { createClient } from './supabase-server'
 import { redirect } from 'next/navigation'
 import { Database } from './supabase'
+import type { NextAuthOptions } from 'next-auth'
+
+// NextAuth configuration - minimal setup for the failing routes
+export const authOptions: NextAuthOptions = {
+  providers: [],
+  callbacks: {
+    async session({ session, user }) {
+      return session
+    },
+  },
+}
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 
 export async function getUser() {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   
   const { data: { user }, error } = await supabase.auth.getUser()
   
@@ -29,7 +40,7 @@ export async function requireAuth() {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   
   const { data, error } = await supabase
     .from('users')

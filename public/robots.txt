@@ -1,0 +1,29 @@
+# Robots.txt for PingBuoy
+
+User-agent: *
+Allow: /
+
+# Allow crawling of public pages
+Allow: /pricing
+Allow: /features
+Allow: /contact
+Allow: /blog
+Allow: /help
+
+# Disallow private/sensitive areas
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /admin
+Disallow: /_next/
+Disallow: /login
+Disallow: /signup
+
+# Allow security and well-known resources
+Allow: /.well-known/
+
+# Site information
+Sitemap: https://pingbuoy.com/sitemap.xml
+
+# Security contact information
+# For security researchers and vulnerability reports
+# See: https://pingbuoy.com/.well-known/security.txt

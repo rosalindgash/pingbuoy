@@ -1,6 +1,6 @@
 import { PLANS, PRICE_IDS } from '@/lib/stripe'
 import { Check, X } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import CheckoutButton from '@/components/billing/CheckoutButton'
 import Link from 'next/link'
 import Image from 'next/image'

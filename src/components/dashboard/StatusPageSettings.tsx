@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Copy, ExternalLink, Eye } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface StatusPageSettingsProps {
   userEmail: string

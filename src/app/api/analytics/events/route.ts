@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import DOMPurify from 'dompurify'
-import { JSDOM } from 'jsdom'
+import { withServiceAuth, serviceAuth } from '@/lib/service-auth'
+import { apiLogger } from '@/lib/secure-logger'
+import {
+  checkDualLimit,
+  checkIPLimit,
+  getClientIP,
+  createRateLimitResponse,
+  getRateLimitHeaders,
+  RATE_LIMIT_CONFIGS
+} from '@/lib/redis-rate-limit'
 
-// Initialize DOMPurify for server-side use
-const window = new JSDOM('').window
-const purify = DOMPurify(window as any)
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Server-safe sanitization without DOM dependencies
+function sanitizeString(str: string, maxLength: number = 500): string {
+  return str
+    .replace(/<script\b[^<]*?(?:(?!<\/script>)<[^<]*?)*?<\/script>/gi, '') // eslint-disable-line security/detect-unsafe-regex
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim()
+    .substring(0, maxLength)
+}
 
 // Event validation schema
 const analyticsEventSchema = z.object({
@@ -20,7 +27,7 @@ const analyticsEventSchema = z.object({
   category: z.string().min(1).max(100),
   label: z.string().max(500).optional(),
   value: z.number().min(0).max(1000000).optional(),
-  custom_parameters: z.record(z.any()).optional(),
+  custom_parameters: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   timestamp: z.string().datetime(),
   session_id: z.string().max(100),
   page_url: z.string().url()
@@ -30,44 +37,34 @@ const batchEventsSchema = z.object({
   events: z.array(analyticsEventSchema).max(100) // Limit batch size
 })
 
-// Rate limiting
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
-const RATE_LIMIT_REQUESTS = 1000 // requests per hour
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
+// Note: Rate limiting now handled by Redis-based system
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const userLimit = rateLimitMap.get(ip)
-
-  if (!userLimit || now > userLimit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-
-  if (userLimit.count >= RATE_LIMIT_REQUESTS) {
-    return false
-  }
-
-  userLimit.count++
-  return true
+interface AnalyticsEvent {
+  action: string
+  category: string
+  label?: string
+  value?: number
+  timestamp: string
+  session_id: string
+  page_url: string
+  custom_parameters?: Record<string, string | number | boolean>
 }
 
-// Get client IP
-function getClientIP(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
-         request.headers.get('x-real-ip') || 
-         'unknown'
+interface SanitizedEvent extends AnalyticsEvent {
+  ip_address: string
+  user_agent: string
+  processed_at: string
 }
 
 // Sanitize analytics data
-function sanitizeAnalyticsEvent(event: any): any {
+function sanitizeAnalyticsEvent(event: AnalyticsEvent): AnalyticsEvent {
   const sanitized = {
-    action: purify.sanitize(event.action, { ALLOWED_TAGS: [] }).substring(0, 100),
-    category: purify.sanitize(event.category, { ALLOWED_TAGS: [] }).substring(0, 100),
-    label: event.label ? purify.sanitize(event.label, { ALLOWED_TAGS: [] }).substring(0, 500) : null,
-    value: typeof event.value === 'number' ? Math.max(0, Math.min(event.value, 1000000)) : null,
+    action: sanitizeString(event.action, 100),
+    category: sanitizeString(event.category, 100),
+    label: event.label ? sanitizeString(event.label, 500) : undefined,
+    value: typeof event.value === 'number' ? Math.max(0, Math.min(event.value, 1000000)) : undefined,
     timestamp: event.timestamp,
-    session_id: purify.sanitize(event.session_id, { ALLOWED_TAGS: [] }).substring(0, 100),
+    session_id: sanitizeString(event.session_id, 100),
     page_url: event.page_url,
     custom_parameters: {}
   }
@@ -76,14 +73,14 @@ function sanitizeAnalyticsEvent(event: any): any {
   if (event.custom_parameters && typeof event.custom_parameters === 'object') {
     for (const [key, value] of Object.entries(event.custom_parameters)) {
       if (typeof key === 'string' && key.length <= 50) {
-        const cleanKey = purify.sanitize(key, { ALLOWED_TAGS: [] }).substring(0, 50)
-        
+        const cleanKey = sanitizeString(key, 50)
+
         if (typeof value === 'string') {
-          sanitized.custom_parameters[cleanKey] = purify.sanitize(value as string, { ALLOWED_TAGS: [] }).substring(0, 500)
+          sanitized.custom_parameters![cleanKey] = sanitizeString(value, 500) // eslint-disable-line security/detect-object-injection
         } else if (typeof value === 'number') {
-          sanitized.custom_parameters[cleanKey] = Math.max(-1000000, Math.min(value as number, 1000000))
+          sanitized.custom_parameters![cleanKey] = Math.max(-1000000, Math.min(value, 1000000)) // eslint-disable-line security/detect-object-injection
         } else if (typeof value === 'boolean') {
-          sanitized.custom_parameters[cleanKey] = value
+          sanitized.custom_parameters![cleanKey] = value // eslint-disable-line security/detect-object-injection
         }
       }
     }
@@ -95,12 +92,57 @@ function sanitizeAnalyticsEvent(event: any): any {
 // POST: Store analytics events
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting
     const clientIP = getClientIP(request)
-    if (!checkRateLimit(clientIP)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429 }
+
+    // Check authentication to determine user plan
+    const authHeader = request.headers.get('Authorization')
+    let userId: string | null = null
+    let userPlan: 'free' | 'pro' | 'founder' = 'free'
+
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const supabase = await serviceAuth.createServiceClient('analytics_collector')
+        const { data: { user } } = await supabase.auth.getUser(authHeader.substring(7))
+        if (user) {
+          userId = user.id
+          // Get user plan from user metadata or subscription table
+          userPlan = (user.user_metadata?.plan as 'free' | 'pro' | 'founder') || 'free'
+        }
+      } catch (error) {
+        // Continue as unauthenticated user
+        apiLogger.warn('Analytics: Failed to authenticate user', error)
+      }
+    }
+
+    // Rate limiting based on authentication status
+    let rateLimitResult
+
+    if (userId) {
+      // Authenticated user - check both IP and user limits
+      rateLimitResult = await checkDualLimit(
+        clientIP,
+        userId,
+        RATE_LIMIT_CONFIGS.analytics.ip,
+        RATE_LIMIT_CONFIGS.analytics[userPlan],
+        'analytics'
+      )
+    } else {
+      // Unauthenticated - only IP-based limiting
+      rateLimitResult = await checkIPLimit(
+        clientIP,
+        RATE_LIMIT_CONFIGS.analytics.ip,
+        'analytics'
+      )
+    }
+
+    if (!rateLimitResult.success) {
+      const relevantResult = 'ip' in rateLimitResult
+        ? (rateLimitResult.ip.success ? rateLimitResult.user! : rateLimitResult.ip)
+        : rateLimitResult
+
+      return createRateLimitResponse(
+        relevantResult,
+        'Analytics rate limit exceeded. Please try again later.'
       )
     }
 
@@ -118,7 +160,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process and sanitize events
-    const sanitizedEvents = validatedData.events.map(event => {
+    const sanitizedEvents: SanitizedEvent[] = validatedData.events.map(event => {
       const sanitized = sanitizeAnalyticsEvent(event)
       
       // Add metadata
@@ -132,12 +174,14 @@ export async function POST(request: NextRequest) {
 
     // Store events in database (if we want to keep our own analytics)
     if (process.env.STORE_ANALYTICS_EVENTS === 'true') {
+      const supabase = await serviceAuth.createServiceClient('analytics_collector')
+
       const { error: dbError } = await supabase
         .from('analytics_events')
         .insert(sanitizedEvents)
 
       if (dbError) {
-        console.error('Analytics: Database error storing events:', dbError)
+        apiLogger.error('Analytics: Database error storing events', dbError)
         // Don't fail the request, just log the error
       }
     }
@@ -145,14 +189,20 @@ export async function POST(request: NextRequest) {
     // In production, you might also send to external analytics services
     // await sendToExternalAnalytics(sanitizedEvents)
 
+    const relevantRateLimit = 'ip' in rateLimitResult
+      ? (rateLimitResult.ip.success ? rateLimitResult.user! : rateLimitResult.ip)
+      : rateLimitResult
+
     return NextResponse.json({
       success: true,
       processed: sanitizedEvents.length,
       message: 'Events processed successfully'
+    }, {
+      headers: getRateLimitHeaders(relevantRateLimit)
     })
 
   } catch (error) {
-    console.error('Analytics API error:', error)
+    apiLogger.error('Analytics API error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -162,19 +212,7 @@ export async function POST(request: NextRequest) {
 
 // GET: Retrieve analytics data (for admin/dashboard use)
 export async function GET(request: NextRequest) {
-  try {
-    // This endpoint would be for internal use only
-    // In production, add proper authentication and authorization
-    
-    const authHeader = request.headers.get('Authorization')
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!authHeader?.includes(serviceKey!) || !serviceKey) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+  return withServiceAuth(request, 'analytics_collector', async () => {
 
     const { searchParams } = new URL(request.url)
     const timeframe = searchParams.get('timeframe') || '24h'
@@ -182,7 +220,7 @@ export async function GET(request: NextRequest) {
     
     // Calculate time range
     const now = new Date()
-    let startTime = new Date()
+    const startTime = new Date()
     
     switch (timeframe) {
       case '1h':
@@ -202,6 +240,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Query analytics data
+    const supabase = await serviceAuth.createServiceClient('analytics_collector')
     let query = supabase
       .from('analytics_events')
       .select('action, category, label, value, timestamp, custom_parameters')
@@ -216,11 +255,8 @@ export async function GET(request: NextRequest) {
     const { data: events, error } = await query
 
     if (error) {
-      console.error('Analytics: Database error fetching events:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch analytics data' },
-        { status: 500 }
-      )
+      apiLogger.error('Analytics: Database error fetching events', error)
+      throw new Error('Failed to fetch analytics data')
     }
 
     // Aggregate data for response
@@ -234,29 +270,22 @@ export async function GET(request: NextRequest) {
 
     events?.forEach(event => {
       // Count by category
-      aggregated.categories[event.category] = (aggregated.categories[event.category] || 0) + 1
-      
+      aggregated.categories[event.category] = (aggregated.categories[event.category] || 0) + 1 // eslint-disable-line security/detect-object-injection
+
       // Count by action
-      aggregated.actions[event.action] = (aggregated.actions[event.action] || 0) + 1
-      
+      aggregated.actions[event.action] = (aggregated.actions[event.action] || 0) + 1 // eslint-disable-line security/detect-object-injection
+
       // Count top pages from custom parameters
       if (event.custom_parameters?.page_url) {
-        const url = event.custom_parameters.page_url
-        aggregated.top_pages[url] = (aggregated.top_pages[url] || 0) + 1
+        const url = String(event.custom_parameters.page_url)
+        aggregated.top_pages[url] = (aggregated.top_pages[url] || 0) + 1 // eslint-disable-line security/detect-object-injection
       }
     })
 
-    return NextResponse.json({
+    return {
       success: true,
       data: aggregated,
       events: events?.slice(0, 50) // Return only first 50 events for detailed view
-    })
-
-  } catch (error) {
-    console.error('Analytics API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    }
+  })
 }

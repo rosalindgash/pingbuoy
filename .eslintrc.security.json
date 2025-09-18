@@ -1,0 +1,93 @@
+{
+  "extends": ["./.eslintrc.json"],
+  "plugins": ["./eslint-plugin-secure-logging"],
+  "rules": {
+    // Enhanced security rules for logging
+    "secure-logging/no-sensitive-data-logging": "error",
+    "secure-logging/require-structured-logging": "warn",
+
+    // Stricter console restrictions
+    "no-console": ["error", { "allow": [] }],
+
+    // Additional security patterns
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "console",
+        "message": "Use secure logger from @/lib/secure-logger instead"
+      }
+    ],
+
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.object.name='console']",
+        "message": "SECURITY: Use secure logger from @/lib/secure-logger instead of console.* to prevent sensitive data exposure"
+      },
+      {
+        "selector": "CallExpression[callee.name='eval']",
+        "message": "SECURITY: eval() can be dangerous and is not allowed"
+      },
+      {
+        "selector": "CallExpression[callee.object.name='JSON'][callee.property.name='stringify'] BinaryExpression[operator='+']",
+        "message": "SECURITY: Concatenating JSON.stringify output may expose sensitive data. Use structured logging."
+      },
+      {
+        "selector": "Literal[value=/password|secret|key|token/i]",
+        "message": "SECURITY: Literal strings containing sensitive keywords should be avoided in logs"
+      }
+    ],
+
+    // Template literal security
+    "no-template-curly-in-string": "error",
+
+    // Prevent debugging code
+    "no-debugger": "error",
+    "no-alert": "error",
+
+    // Additional TypeScript security
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+
+    // Prevent object injection
+    "security/detect-object-injection": "error",
+    "security/detect-possible-timing-attacks": "error",
+    "security/detect-unsafe-regex": "error",
+    "security/detect-buffer-noassert": "error",
+    "security/detect-child-process": "error",
+    "security/detect-disable-mustache-escape": "error",
+    "security/detect-eval-with-expression": "error",
+    "security/detect-no-csrf-before-method-override": "error",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-non-literal-regexp": "error",
+    "security/detect-non-literal-require": "error",
+    "security/detect-pseudoRandomBytes": "error",
+
+    // Secrets detection
+    "no-secrets/no-secrets": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "scripts/**/*.js",
+        "**/*.config.js",
+        "**/*.test.*",
+        "eslint-plugin-secure-logging.js"
+      ],
+      "rules": {
+        "no-console": "off",
+        "no-restricted-syntax": "off",
+        "secure-logging/no-sensitive-data-logging": "off"
+      }
+    },
+    {
+      "files": ["src/lib/secure-logger.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+# Pre-commit hooks configuration for PingBuoy
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  # General code quality and formatting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: detect-private-key
+        exclude: |
+          (?x)^(
+            \.github/workflows/.*\.yml|
+            \.github/workflows/.*\.yaml|
+            docs/.*|
+            README\.md|
+            .*\.md
+          )$
+
+  # Secrets detection with Gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+        name: Detect secrets with Gitleaks
+        description: Detect hardcoded secrets using Gitleaks
+        entry: gitleaks
+        language: golang
+        args: ['detect', '--source', '.', '--config', '.gitleaks.toml', '--verbose']
+        types: [text]
+
+  # JavaScript/TypeScript specific hooks
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.57.0
+    hooks:
+      - id: eslint
+        name: ESLint
+        files: \.[jt]sx?$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.57.0
+          - typescript@5.3.0
+          - '@typescript-eslint/parser@6.21.0'
+          - '@typescript-eslint/eslint-plugin@6.21.0'
+          - 'eslint-plugin-security@1.7.1'
+
+  # Prettier for code formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: Format with Prettier
+        types_or: [css, scss, javascript, ts, tsx, json, markdown, yaml, html]
+        exclude: |
+          (?x)^(
+            package-lock\.json|
+            \.next/.*|
+            node_modules/.*|
+            dist/.*|
+            build/.*
+          )$
+
+  # Security scanning with Semgrep
+  - repo: https://github.com/returntocorp/semgrep
+    rev: v1.52.0
+    hooks:
+      - id: semgrep
+        name: Semgrep Security Scan
+        args: ['--config=auto', '--error']
+        exclude: |
+          (?x)^(
+            node_modules/.*|
+            \.next/.*|
+            dist/.*|
+            build/.*|
+            coverage/.*
+          )$
+
+  # Check for secrets in environment files
+  - repo: local
+    hooks:
+      - id: check-env-files
+        name: Check .env files for secrets
+        entry: bash -c '
+          if ls .env* 1> /dev/null 2>&1; then
+            echo "❌ .env files detected in repository";
+            echo "Environment files should not be committed:";
+            ls -la .env* | head -10;
+            echo "";
+            echo "Add .env* to .gitignore and remove from repository:";
+            echo "  git rm --cached .env*";
+            echo "  echo \".env*\" >> .gitignore";
+            exit 1;
+          else
+            echo "✅ No .env files found in repository";
+          fi
+        '
+        language: system
+        files: '\.env.*'
+        always_run: true
+        pass_filenames: false
+
+  # Validate package.json dependencies
+  - repo: local
+    hooks:
+      - id: audit-dependencies
+        name: Audit npm dependencies
+        entry: bash -c '
+          if [ -f "package.json" ]; then
+            echo "🔍 Running npm audit...";
+            npm audit --audit-level=high;
+          else
+            echo "⚠️ No package.json found, skipping npm audit";
+          fi
+        '
+        language: system
+        files: 'package\.json'
+        always_run: false
+        pass_filenames: false
+
+  # Check for TODO/FIXME comments that might indicate security issues
+  - repo: local
+    hooks:
+      - id: check-security-todos
+        name: Check for security-related TODOs
+        entry: bash -c '
+          SECURITY_TODOS=$(grep -r -n -i "TODO.*\(security\|auth\|password\|secret\|token\|key\|vuln\|exploit\|hack\|attack\)" --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" src/ || true);
+          if [ -n "$SECURITY_TODOS" ]; then
+            echo "⚠️  Security-related TODOs found:";
+            echo "$SECURITY_TODOS";
+            echo "";
+            echo "Please address these security TODOs before committing.";
+            # Uncomment to make this a blocker:
+            # exit 1;
+          else
+            echo "✅ No security-related TODOs found";
+          fi
+        '
+        language: system
+        types: [text]
+        files: '\.(ts|js|tsx|jsx)$'
+
+  # Validate that security headers are configured
+  - repo: local
+    hooks:
+      - id: validate-security-config
+        name: Validate security configuration
+        entry: bash -c '
+          echo "🛡️ Validating security configuration...";
+
+          # Check for security middleware
+          if ! grep -q "security" src/middleware.ts 2>/dev/null; then
+            echo "⚠️ Warning: No security middleware detected";
+          fi
+
+          # Check for CSRF protection
+          if ! find src -name "*.ts" -exec grep -l "csrf\|CSRF" {} \; | head -1 >/dev/null; then
+            echo "⚠️ Warning: No CSRF protection detected";
+          fi
+
+          # Check for rate limiting
+          if ! find src -name "*.ts" -exec grep -l "rate.limit\|rateLimit" {} \; | head -1 >/dev/null; then
+            echo "⚠️ Warning: No rate limiting detected";
+          fi
+
+          echo "✅ Security configuration check completed";
+        '
+        language: system
+        files: 'src/.*\.(ts|js)$'
+        always_run: false
+        pass_filenames: false
+
+# Configuration
+default_language_version:
+  node: '18.18.0'
+
+# Global exclusions
+exclude: |
+  (?x)^(
+    node_modules/.*|
+    \.next/.*|
+    dist/.*|
+    build/.*|
+    coverage/.*|
+    \.git/.*|
+    .*\.min\.(js|css)$
+  )$
+
+# Fail fast - stop running hooks after first failure
+fail_fast: true
+
+# Minimum version of pre-commit required
+minimum_pre_commit_version: '3.0.0'

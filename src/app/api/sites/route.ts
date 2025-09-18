@@ -3,10 +3,28 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { addSite } from '@/lib/uptime'
 import { Database } from '@/lib/supabase'
 import { siteSchema, validateAndSanitize } from '@/lib/validation'
+import { validateCSRF } from '@/lib/csrf-protection'
+import { randomBytes } from 'crypto'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 
 export async function POST(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for site creation
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked site creation request`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     const rawData = await request.json()
     
@@ -15,10 +33,15 @@ export async function POST(request: NextRequest) {
     
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
+      console.warn(`[${requestId}] Authentication failed for site creation`, { hasUser: !!user })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    console.info(`[${requestId}] Site creation requested`, {
+      userId: user.id
+    })
 
     // Check user's plan and current site count
     const { data: userProfile } = await supabase
@@ -36,6 +59,12 @@ export async function POST(request: NextRequest) {
     const maxSites = userProfile?.plan === 'free' ? 3 : userProfile?.plan === 'pro' ? 25 : userProfile?.plan === 'founder' ? 999 : 999
 
     if (siteCount >= maxSites) {
+      console.warn(`[${requestId}] Site limit reached`, {
+        userId: user.id,
+        currentCount: siteCount,
+        maxAllowed: maxSites,
+        planType: userProfile?.plan || 'unknown'
+      })
       return NextResponse.json(
         { error: `You've reached your plan limit of ${maxSites} websites. Please upgrade to add more.` },
         { status: 403 }
@@ -43,10 +72,17 @@ export async function POST(request: NextRequest) {
     }
 
     const site = await addSite(user.id, url, name)
-    
+
+    console.info(`[${requestId}] Site created successfully`, {
+      userId: user.id,
+      siteId: site.id
+    })
+
     return NextResponse.json(site)
   } catch (error: unknown) {
-    console.error('Error adding site:', error)
+    console.error(`[${requestId}] Error creating site`, {
+      errorCode: 'SITE_CREATE_FAILED'
+    })
     
     // Handle validation errors specifically
     if (error instanceof Error && error.message.includes('Invalid')) {
@@ -64,17 +100,35 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for site deletion
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked site deletion request`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const rawSiteId = searchParams.get('id')
-    
+
     if (!rawSiteId) {
+      console.warn(`[${requestId}] Missing site ID for deletion`)
       return NextResponse.json({ error: 'Site ID required' }, { status: 400 })
     }
     
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(rawSiteId)) {
+      console.warn(`[${requestId}] Invalid site ID format provided`)
       return NextResponse.json({ error: 'Invalid site ID format' }, { status: 400 })
     }
     
@@ -82,10 +136,16 @@ export async function DELETE(request: NextRequest) {
     
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
+      console.warn(`[${requestId}] Authentication failed for site deletion`, { hasUser: !!user })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    console.info(`[${requestId}] Site deletion requested`, {
+      userId: user.id,
+      siteId: siteId
+    })
 
     const { error } = await supabase
       .from('sites')
@@ -94,12 +154,24 @@ export async function DELETE(request: NextRequest) {
       .eq('user_id', user.id)
 
     if (error) {
+      console.error(`[${requestId}] Database error during site deletion`, {
+        userId: user.id,
+        siteId: siteId,
+        errorCode: 'DATABASE_DELETE_FAILED'
+      })
       throw new Error('Failed to delete site: ' + error.message)
     }
+
+    console.info(`[${requestId}] Site deleted successfully`, {
+      userId: user.id,
+      siteId: siteId
+    })
     
     return NextResponse.json({ success: true })
   } catch (error: unknown) {
-    console.error('Error deleting site:', error)
+    console.error(`[${requestId}] Error deleting site`, {
+      errorCode: 'SITE_DELETE_FAILED'
+    })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

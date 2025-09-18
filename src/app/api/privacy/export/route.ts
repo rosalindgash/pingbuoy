@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase'
 import { headers } from 'next/headers'
 import { createHash } from 'crypto'
 
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
     const { format, includeDeleted, categories } = exportRequestSchema.parse(body)
 
     // Get user data from various tables
-    const userData: Record<string, any> = {}
+    const userData: Record<string, unknown> = {}
 
     // Profile data
     if (!categories || categories.includes('profile')) {
@@ -269,14 +271,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function convertToCSV(data: any): string {
+function convertToCSV(data: Record<string, unknown>): string {
   const rows: string[] = []
   
   // Header
   rows.push('Category,Field,Value,Date')
   
   // Flatten data structure for CSV
-  function flattenObject(obj: any, category: string, prefix = '') {
+  function flattenObject(obj: Record<string, unknown>, category: string, prefix = '') {
     for (const [key, value] of Object.entries(obj)) {
       const fieldName = prefix ? `${prefix}.${key}` : key
       

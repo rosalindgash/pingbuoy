@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Globe, TrendingUp, AlertTriangle, Settings, LogOut, User, Menu, X } from 'lucide-react'
+import { Plus, Globe, TrendingUp, AlertTriangle, Settings, LogOut, Menu, X, Puzzle } from 'lucide-react'
+import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
+import PerformanceMonitor from '@/components/dashboard/PerformanceMonitor'
 import { getSiteUptimeStats } from '@/lib/uptime-client'
 
 interface Site {
@@ -30,7 +32,7 @@ interface UserProfile {
 }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,18 +41,31 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showAddSite, setShowAddSite] = useState(false)
   const [showEditSite, setShowEditSite] = useState(false)
-  const [editingSite, setEditingSite] = useState<any>(null)
+  const [editingSite, setEditingSite] = useState<Site | null>(null)
   const [addSiteLoading, setAddSiteLoading] = useState(false)
   const [editSiteLoading, setEditSiteLoading] = useState(false)
   const [siteForm, setSiteForm] = useState({ name: '', url: '' })
   const pathname = usePathname()
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Globe },
-    { name: 'Uptime', href: '/dashboard/uptime', icon: TrendingUp },
-    { name: 'Dead Links', href: '/dashboard/dead-links', icon: AlertTriangle },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-  ]
+  // Build navigation based on user plan
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard', icon: Globe },
+      { name: 'Uptime', href: '/dashboard/uptime', icon: TrendingUp },
+      { name: 'Dead Links', href: '/dashboard/dead-links', icon: AlertTriangle },
+    ]
+
+    // Add integrations for Pro users
+    if (profile?.plan === 'pro' || profile?.plan === 'founder') {
+      baseNavigation.push({ name: 'Integrations', href: '/dashboard/integrations', icon: Puzzle })
+    }
+
+    baseNavigation.push({ name: 'Settings', href: '/dashboard/settings', icon: Settings })
+
+    return baseNavigation
+  }
+
+  const navigation = getNavigation()
 
   useEffect(() => {
     checkAuth()
@@ -515,6 +530,18 @@ export default function DashboardPage() {
                           <div className="text-sm text-gray-700 mb-2">Uptime History</div>
                           <UptimeChartClient siteId={site.id} />
                         </div>
+
+                        {/* Performance Monitoring - Pro Feature */}
+                        <div className="mt-6">
+                          <PerformanceMonitor
+                            site={{
+                              id: site.id,
+                              name: site.name,
+                              url: site.url
+                            }}
+                            isProUser={profile?.plan === 'pro' || profile?.plan === 'founder'}
+                          />
+                        </div>
                       </div>
                     )
                   })}
@@ -522,6 +549,46 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          {/* Pro Features Upsell for Free Users */}
+          {profile?.plan === 'free' && (
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-sm p-6 text-white mt-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <Puzzle className="h-8 w-8 text-white" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <h3 className="text-xl font-bold mb-2">Unlock Pro Integrations</h3>
+                  <p className="text-blue-100 mb-4">
+                    Get instant alerts through Slack, Discord, and custom webhooks. Monitor up to 25 websites with advanced features.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                      <span className="text-sm">Slack notifications</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                      <span className="text-sm">Discord alerts</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                      <span className="text-sm">Custom webhooks</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                      <span className="text-sm">25 websites</span>
+                    </div>
+                  </div>
+                  <Link href="/pricing">
+                    <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+                      Upgrade to Pro - $29/mo
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 

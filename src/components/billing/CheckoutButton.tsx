@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { getStripeJs } from '@/lib/stripe'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface CheckoutButtonProps {
   priceId: string

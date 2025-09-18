@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getSiteDeadLinksStats, getDeadLinks, getScans, startDeadLinkScan } from '@/lib/deadlinks-client'
-import { AlertTriangle, ExternalLink, Search, Play, Download, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { getSiteDeadLinksStats, startDeadLinkScan } from '@/lib/deadlinks-client'
+import type { User } from '@supabase/supabase-js'
+import { AlertTriangle, ExternalLink, Search, Play, CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 interface Site {
   id: string
@@ -25,12 +27,17 @@ interface SiteWithStats {
   brokenLinks: number
   totalDeadLinks: number
   fixedLinks: number
-  lastScan?: any
+  lastScan?: {
+    scanned_at: string
+    status: string
+    broken_links: number
+    total_links: number
+  }
   scanning?: boolean
 }
 
 export default function DeadLinksPage() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [sites, setSites] = useState<Site[]>([])
   const [sitesWithStats, setSitesWithStats] = useState<SiteWithStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,9 +159,19 @@ export default function DeadLinksPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dead Link Scanner</h1>
-          <p className="text-gray-600">Find and fix broken links on your websites</p>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Dead Link Scanner</h1>
+              <p className="text-gray-600">Find and fix broken links on your websites</p>
+            </div>
+            <Link href="/dashboard">
+              <Button variant="outline" className="flex items-center space-x-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Overall Stats */}
@@ -238,12 +255,6 @@ export default function DeadLinksPage() {
             <AlertTriangle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No websites to scan</h3>
             <p className="text-gray-600 mb-4">Add websites to your dashboard to start scanning for dead links</p>
-            <button
-              onClick={() => window.location.href = '/dashboard'}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Go to Dashboard
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

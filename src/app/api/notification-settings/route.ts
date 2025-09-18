@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { 
-  validateNotificationSettings, 
+import { createClient } from '@/lib/supabase-server'
+import {
+  validateNotificationSettings,
   validateNotificationUpdate,
-  validateProFeatureAccess,
-  NotificationSettings
+  validateProFeatureAccess
 } from '@/lib/notification-validation'
-import { headers } from 'next/headers'
-import { z } from 'zod'
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { validateCSRF } from '@/lib/csrf-protection'
+import { randomBytes } from 'crypto'
 
 // Rate limiting for API endpoints
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
@@ -55,7 +48,7 @@ function getClientIP(request: NextRequest): string {
 }
 
 // Authenticate user
-async function authenticateUser(request: NextRequest): Promise<{ user: any; error?: string }> {
+async function authenticateUser(request: NextRequest): Promise<{ user: { id: string; email: string } | null; error?: string }> {
   try {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -63,6 +56,7 @@ async function authenticateUser(request: NextRequest): Promise<{ user: any; erro
     }
 
     const token = authHeader.substring(7)
+    const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser(token)
 
     if (error || !user) {
@@ -70,7 +64,7 @@ async function authenticateUser(request: NextRequest): Promise<{ user: any; erro
     }
 
     return { user }
-  } catch (error) {
+  } catch {
     return { user: null, error: 'Authentication failed' }
   }
 }
@@ -140,6 +134,22 @@ export async function GET(request: NextRequest) {
 
 // POST: Create new notification settings
 export async function POST(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for notification settings creation
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked notification settings creation`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     // Rate limiting
     const clientIP = getClientIP(request)
@@ -223,6 +233,22 @@ export async function POST(request: NextRequest) {
 
 // PATCH: Update notification settings
 export async function PATCH(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for notification settings update
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked notification settings update`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     // Rate limiting
     const clientIP = getClientIP(request)
@@ -307,6 +333,22 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE: Delete notification settings (reset to defaults)
 export async function DELETE(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for notification settings deletion
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked notification settings deletion`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     // Rate limiting
     const clientIP = getClientIP(request)

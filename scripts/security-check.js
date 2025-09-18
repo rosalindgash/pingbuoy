@@ -232,16 +232,139 @@ class SecurityChecker {
     this.success('CI/CD security check completed')
   }
 
+  // Enhanced CORS validation
+  checkCORSConfiguration() {
+    this.log('Checking CORS configuration...')
+
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+
+    if (!allowedOrigins) {
+      this.error('ALLOWED_ORIGINS environment variable not configured')
+      return
+    }
+
+    // Check for wildcard in production
+    if (process.env.NODE_ENV === 'production' && allowedOrigins.includes('*')) {
+      this.error('CORS uses wildcard (*) in production - critical security risk')
+      return
+    }
+
+    // Parse and validate origins
+    const origins = allowedOrigins.split(',').map(origin => origin.trim()).filter(o => o.length > 0)
+
+    if (origins.length === 0) {
+      this.error('No valid origins configured in ALLOWED_ORIGINS')
+      return
+    }
+
+    // Validate each origin
+    let hasErrors = false
+    for (const origin of origins) {
+      if (origin === '*') continue // Already checked above
+
+      try {
+        const url = new URL(origin)
+
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          this.error(`Invalid protocol for origin ${origin}: only HTTP/HTTPS allowed`)
+          hasErrors = true
+        }
+
+        if (process.env.NODE_ENV === 'production' && url.protocol === 'http:') {
+          if (!url.hostname.includes('localhost') && !url.hostname.includes('127.0.0.1')) {
+            this.error(`HTTP origin not secure for production: ${origin}`)
+            hasErrors = true
+          }
+        }
+      } catch (error) {
+        this.error(`Invalid URL format for origin: ${origin}`)
+        hasErrors = true
+      }
+    }
+
+    if (!hasErrors) {
+      this.success(`CORS configured securely with ${origins.length} origins`)
+    }
+  }
+
+  // Check Supabase functions CORS implementation
+  checkSupabaseCORSImplementation() {
+    this.log('Checking Supabase functions CORS implementation...')
+
+    const functionsDir = path.join(__dirname, '..', 'supabase', 'functions')
+    if (!fs.existsSync(functionsDir)) {
+      this.log('Supabase functions directory not found - skipping CORS implementation check')
+      return
+    }
+
+    // Check for secure CORS configuration file
+    const corsConfigPath = path.join(functionsDir, '_shared', 'cors-config.ts')
+    if (!fs.existsSync(corsConfigPath)) {
+      this.error('Secure CORS configuration file missing: supabase/functions/_shared/cors-config.ts')
+      return
+    }
+
+    // Validate CORS configuration file
+    const corsConfig = fs.readFileSync(corsConfigPath, 'utf8')
+    const requiredComponents = ['withSecureCORS', 'SecureCORS', 'parseAllowedOrigins']
+
+    const missingComponents = requiredComponents.filter(component => !corsConfig.includes(component))
+    if (missingComponents.length > 0) {
+      this.error(`CORS configuration missing components: ${missingComponents.join(', ')}`)
+      return
+    }
+
+    // Check for insecure patterns
+    const insecurePatterns = [
+      "'Access-Control-Allow-Origin': '*'",
+      '"Access-Control-Allow-Origin": "*"'
+    ]
+
+    const foundInsecurePatterns = insecurePatterns.filter(pattern => corsConfig.includes(pattern))
+    if (foundInsecurePatterns.length > 0) {
+      this.error(`Insecure CORS patterns found in configuration`)
+      return
+    }
+
+    // Check individual function files
+    try {
+      const functions = fs.readdirSync(functionsDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('_'))
+        .map(dirent => dirent.name)
+
+      let functionIssues = 0
+      for (const functionName of functions) {
+        const indexPath = path.join(functionsDir, functionName, 'index.ts')
+        if (fs.existsSync(indexPath)) {
+          const content = fs.readFileSync(indexPath, 'utf8')
+
+          if (!content.includes('withSecureCORS')) {
+            this.error(`Function ${functionName} not using withSecureCORS middleware`)
+            functionIssues++
+          }
+        }
+      }
+
+      if (functionIssues === 0) {
+        this.success(`Supabase functions CORS implementation validated for ${functions.length} functions`)
+      }
+    } catch (error) {
+      this.warn('Unable to validate individual function CORS implementations')
+    }
+  }
+
   // Run all security checks
   async runAllChecks() {
     this.log('🚀 Starting comprehensive security check...', 'info')
-    
+
     try {
       this.checkForSecrets()
       this.checkEnvironmentConfig()
       this.checkSecurityHeaders()
       this.checkDependencies()
       this.checkCICD()
+      this.checkCORSConfiguration()
+      this.checkSupabaseCORSImplementation()
     } catch (error) {
       this.error(`Security check failed: ${error.message}`)
     }

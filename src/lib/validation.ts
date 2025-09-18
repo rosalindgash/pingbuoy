@@ -74,6 +74,28 @@ export const passwordSchema = z.string()
     return typeCount >= 3
   }, 'Password must contain at least 3 of: lowercase, uppercase, numbers, special characters')
 
+// Site validation schema
+export const siteSchema = z.object({
+  name: siteNameSchema,
+  url: urlSchema
+})
+
+// User profile validation schema
+export const userProfileSchema = z.object({
+  id: uuidSchema,
+  email: emailSchema,
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name too long')
+    .trim(),
+  plan: z.enum(['free', 'pro']).default('free'),
+  role: z.enum(['user', 'admin']).default('user'),
+  account_status: z.enum(['active', 'suspended', 'deletion_pending']).default('active'),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+  deletion_scheduled_at: z.string().datetime().nullable()
+})
+
 // Contact form validation
 export const contactSchema = z.object({
   name: z.string()

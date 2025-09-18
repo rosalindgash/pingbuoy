@@ -32,10 +32,32 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
-# vercel
+# Security sensitive files
+*.key
+*.pem
+*.p12
+*.jks
+*.crt
+*.cert
+*.der
+.aws/
+.gcp/
+secrets/
+secret.*
+*secret*
+*credential*
+*password*
+auth.json
+service-account.json
+
+# Vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Security: Exclude quarantine directory from deployment
+supabase_quarantine/

@@ -1,0 +1,120 @@
+{
+  "firewall_rules": [
+    {
+      "name": "Block Bot User Agents",
+      "description": "Block common bot and scraper user agents",
+      "expression": "(http.user_agent contains \"bot\" or http.user_agent contains \"crawler\" or http.user_agent contains \"spider\" or http.user_agent contains \"scraper\" or http.user_agent contains \"scanner\" or http.user_agent contains \"curl\" or http.user_agent contains \"wget\" or http.user_agent contains \"python\" or http.user_agent contains \"go-http-client\" or http.user_agent contains \"php\" or http.user_agent contains \"java\" or http.user_agent contains \"nikto\" or http.user_agent contains \"sqlmap\" or http.user_agent contains \"nessus\" or http.user_agent contains \"postman\" or http.user_agent contains \"insomnia\" or http.user_agent contains \"selenium\" or http.user_agent contains \"puppeteer\" or http.user_agent contains \"playwright\")",
+      "action": "block",
+      "priority": 1000,
+      "enabled": true
+    },
+    {
+      "name": "Block Empty User Agents",
+      "description": "Block requests with empty or very short user agents",
+      "expression": "(len(http.user_agent) < 10)",
+      "action": "block",
+      "priority": 1001,
+      "enabled": true
+    },
+    {
+      "name": "Block Suspicious Paths",
+      "description": "Block access to common attack paths",
+      "expression": "(http.request.uri.path contains \"/wp-admin\" or http.request.uri.path contains \"/wp-login\" or http.request.uri.path contains \"/.env\" or http.request.uri.path contains \"/.git\" or http.request.uri.path contains \"/admin/login\" or http.request.uri.path contains \"/phpinfo.php\" or http.request.uri.path contains \"/config.php\" or http.request.uri.path contains \"/shell.php\" or http.request.uri.path contains \"/xmlrpc.php\" or http.request.uri.path contains \"/database.yml\")",
+      "action": "block",
+      "priority": 1002,
+      "enabled": true
+    },
+    {
+      "name": "Block SQL Injection Attempts",
+      "description": "Block common SQL injection patterns in URLs",
+      "expression": "(http.request.uri contains \"union select\" or http.request.uri contains \"or 1=1\" or http.request.uri contains \"and 1=1\" or http.request.uri contains \"insert into\" or http.request.uri contains \"delete from\" or http.request.uri contains \"drop table\" or http.request.uri contains \"exec xp_\" or http.request.uri contains \"sp_password\")",
+      "action": "block",
+      "priority": 1003,
+      "enabled": true
+    },
+    {
+      "name": "Block XSS Attempts",
+      "description": "Block cross-site scripting attempts in URLs",
+      "expression": "(http.request.uri contains \"<script\" or http.request.uri contains \"javascript:\" or http.request.uri contains \"vbscript:\" or http.request.uri contains \"onload=\" or http.request.uri contains \"onerror=\" or http.request.uri contains \"alert(\" or http.request.uri contains \"document.cookie\")",
+      "action": "block",
+      "priority": 1004,
+      "enabled": true
+    },
+    {
+      "name": "Rate Limit by IP",
+      "description": "Rate limit requests per IP address",
+      "expression": "(ip.src ne 127.0.0.1)",
+      "action": "rate_limit",
+      "rate_limit": {
+        "threshold": 100,
+        "period": 60,
+        "action": "block",
+        "duration": 300
+      },
+      "priority": 1005,
+      "enabled": true
+    },
+    {
+      "name": "Block Long URLs",
+      "description": "Block excessively long URLs (potential buffer overflow)",
+      "expression": "(len(http.request.uri) > 2000)",
+      "action": "block",
+      "priority": 1006,
+      "enabled": true
+    },
+    {
+      "name": "Challenge High-Risk Countries",
+      "description": "Challenge requests from high-risk countries",
+      "expression": "(ip.geoip.country in {\"CN\" \"RU\" \"KP\" \"IR\"})",
+      "action": "challenge",
+      "priority": 1007,
+      "enabled": false,
+      "note": "Disabled by default - enable only if appropriate for your audience"
+    },
+    {
+      "name": "Block Missing Origin for Sensitive APIs",
+      "description": "Block POST requests to sensitive APIs without Origin/Referer",
+      "expression": "(http.request.method eq \"POST\" and http.request.uri.path contains \"/api/\" and not http.referer and not http.request.headers[\"origin\"])",
+      "action": "block",
+      "priority": 1008,
+      "enabled": true
+    },
+    {
+      "name": "Block Directory Traversal",
+      "description": "Block directory traversal attempts",
+      "expression": "(http.request.uri contains \"../\" or http.request.uri contains \"..\\\\\" or http.request.uri contains \"%2e%2e\" or http.request.uri contains \"%252e%252e\")",
+      "action": "block",
+      "priority": 1009,
+      "enabled": true
+    }
+  ],
+  "access_rules": [
+    {
+      "name": "Allow Legitimate Monitoring Services",
+      "description": "Allow known legitimate monitoring and uptime services",
+      "configuration": {
+        "target": "user_agent",
+        "value": "*pingdom*|*uptime*|*monitor*|*health*check*|*status*page*",
+        "mode": "whitelist"
+      },
+      "enabled": true
+    },
+    {
+      "name": "Allow Search Engine Bots",
+      "description": "Allow legitimate search engine crawlers",
+      "configuration": {
+        "target": "user_agent",
+        "value": "*googlebot*|*bingbot*|*slurp*|*duckduckbot*|*baiduspider*|*facebookexternalhit*|*twitterbot*|*linkedinbot*",
+        "mode": "whitelist"
+      },
+      "enabled": true
+    }
+  ],
+  "security_level": "medium",
+  "browser_integrity_check": true,
+  "hotlink_protection": false,
+  "security_header": true,
+  "pseudo_ipv4": false,
+  "origin_error_page_pass_thru": false,
+  "sort_query_string_for_cache": false
+}

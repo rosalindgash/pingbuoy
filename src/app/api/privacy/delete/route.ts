@@ -4,8 +4,10 @@ import { authOptions } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { headers } from 'next/headers'
-import { createHash, randomBytes } from 'crypto'
+import { randomBytes } from 'crypto'
 import { sendEmail } from '@/lib/email'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase'
 
 const deleteRequestSchema = z.object({
   reason: z.string().min(1).max(500),
@@ -18,6 +20,9 @@ const confirmDeleteSchema = z.object({
   token: z.string().min(32),
   finalConfirmation: z.boolean()
 })
+
+type DeleteRequestData = z.infer<typeof deleteRequestSchema>
+type ConfirmDeleteData = z.infer<typeof confirmDeleteSchema>
 
 export async function POST(req: NextRequest) {
   try {
@@ -149,12 +154,12 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleDeleteConfirmation(
-  body: any, 
-  supabase: any, 
-  userEmail: string, 
-  ip: string, 
+  body: unknown,
+  supabase: SupabaseClient<Database>,
+  userEmail: string,
+  ip: string,
   userAgent: string
-) {
+): Promise<NextResponse> {
   const { token, finalConfirmation } = confirmDeleteSchema.parse(body)
 
   if (!finalConfirmation) {

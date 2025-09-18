@@ -8,15 +8,19 @@ export const securityHeaders = {
   // Referrer policy
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   
-  // Content Security Policy
+  // Content Security Policy (Optimized - Removed unused allowances)
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://js.stripe.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: https:",
-    "connect-src 'self' https://*.supabase.co https://api.stripe.com",
+    "script-src 'self' https://js.stripe.com", // Removed 'unsafe-inline'
+    "style-src 'self' 'unsafe-inline'", // Removed Google Fonts - not used
+    "font-src 'self'", // Removed Google Fonts - not used
+    "img-src 'self' data: https://pingbuoy.com", // Restricted to specific domain
+    "connect-src 'self' https://*.supabase.co https://api.stripe.com wss://*.supabase.co", // Added WebSocket
     "frame-src https://js.stripe.com",
+    "object-src 'none'", // Added security
+    "base-uri 'self'", // Added security
+    "form-action 'self'", // Added security
+    "frame-ancestors 'none'" // Added security
   ].join('; '),
   
   // Strict Transport Security (HTTPS only)

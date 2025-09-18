@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 // Removed server-side import that was causing build error
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import SitesList from '@/components/dashboard/SitesList'
@@ -29,7 +30,7 @@ interface UserProfile {
 }
 
 export default function ClientDashboard() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(true)

@@ -13,7 +13,13 @@
       "Bash(supabase db diff:*)",
       "Bash(supabase db pull:*)",
       "Bash(supabase db:*)",
-      "Bash(supabase stop:*)"
+      "Bash(supabase stop:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(supabase functions deploy:*)",
+      "Bash(npm run security-check:*)",
+      "Bash(npm run:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

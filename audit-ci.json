@@ -1,0 +1,12 @@
+{
+  "moderate": true,
+  "allowlist": [],
+  "report-type": "full",
+  "pass-enoaudit": false,
+  "show-found": true,
+  "show-not-found": false,
+  "registry": "https://registry.npmjs.org/",
+  "package-manager": "npm",
+  "path": "./",
+  "summary-fail-level": "moderate"
+}

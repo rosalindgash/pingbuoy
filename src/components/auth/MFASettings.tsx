@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
+import { authLogger } from '@/lib/secure-logger'
 
 interface Factor {
   id: string
@@ -31,14 +32,14 @@ export default function MFASettings() {
 
       const { data: factors, error } = await supabase.auth.mfa.listFactors()
       if (error) {
-        console.error('Error loading MFA factors:', error)
+        authLogger.error('Error loading MFA factors', error)
         setMessage('Error loading MFA settings')
         return
       }
 
       setFactors(factors?.totp || [])
     } catch (error) {
-      console.error('Error:', error)
+      authLogger.error('Error loading MFA settings', error)
       setMessage('Error loading MFA settings')
     } finally {
       setLoading(false)
@@ -65,7 +66,7 @@ export default function MFASettings() {
         setEnrollingFactor(data)
       }
     } catch (error) {
-      console.error('Error enrolling MFA:', error)
+      authLogger.error('Error enrolling MFA', error)
       setMessage('Error setting up MFA')
     } finally {
       setIsEnrolling(false)
@@ -97,7 +98,7 @@ export default function MFASettings() {
         await loadMFAFactors()
       }
     } catch (error) {
-      console.error('Error verifying MFA:', error)
+      authLogger.error('Error verifying MFA', error)
       setMessage('Error verifying code')
     } finally {
       setLoading(false)
@@ -119,7 +120,7 @@ export default function MFASettings() {
       setMessage('MFA disabled successfully')
       await loadMFAFactors()
     } catch (error) {
-      console.error('Error disabling MFA:', error)
+      authLogger.error('Error disabling MFA', error)
       setMessage('Error disabling MFA')
     } finally {
       setLoading(false)

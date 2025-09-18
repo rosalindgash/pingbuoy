@@ -16,7 +16,7 @@ import {
   X,
   Code
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface WebhookIntegrationProps {
   userId: string

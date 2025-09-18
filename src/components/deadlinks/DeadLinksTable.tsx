@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { ExternalLink, Check, Download, Search } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Database } from '@/lib/supabase'
 
 type DeadLink = Database['public']['Tables']['dead_links']['Row']

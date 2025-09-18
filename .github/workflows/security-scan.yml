@@ -9,9 +9,9 @@ on:
     - cron: '0 0 * * 1' # Weekly on Mondays
 
 jobs:
-  security:
+  secrets-and-security:
     runs-on: ubuntu-latest
-    name: Security Scan
+    name: Secrets and Security Scan
     
     steps:
       - name: Checkout code
@@ -58,13 +58,21 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Check for secrets
+      - name: Check for secrets with TruffleHog
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: main
           head: HEAD
           extra_args: --debug --only-verified
+        continue-on-error: true
+
+      - name: Run Gitleaks secrets scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        continue-on-error: false
 
       - name: Supply Chain Security - SBOM Generation
         run: |
@@ -91,3 +99,99 @@ jobs:
             eslint-report.json
             semgrep-report.json
             trivy-results.sarif
+            sbom.json
+
+  commit-verification:
+    name: Commit Signature Verification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Verify commit signatures
+      run: |
+        echo "🔍 Checking commit signatures..."
+
+        # Get the base branch and current branch
+        BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+        HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+
+        # Get commits in this PR
+        COMMITS=$(git log --format="%H" origin/$BASE_BRANCH..HEAD)
+
+        UNSIGNED_COMMITS=""
+        TOTAL_COMMITS=0
+        SIGNED_COMMITS=0
+
+        for commit in $COMMITS; do
+          TOTAL_COMMITS=$((TOTAL_COMMITS + 1))
+
+          # Check if commit is signed
+          if git verify-commit $commit 2>/dev/null; then
+            echo "✅ $commit is signed"
+            SIGNED_COMMITS=$((SIGNED_COMMITS + 1))
+          else
+            echo "❌ $commit is NOT signed"
+            UNSIGNED_COMMITS="$UNSIGNED_COMMITS $commit"
+          fi
+        done
+
+        echo ""
+        echo "📊 Commit Signature Summary:"
+        echo "Total commits: $TOTAL_COMMITS"
+        echo "Signed commits: $SIGNED_COMMITS"
+        echo "Unsigned commits: $((TOTAL_COMMITS - SIGNED_COMMITS))"
+
+        # For now, we'll warn but not fail on unsigned commits
+        # Change this to exit 1 to enforce signing
+        if [ -n "$UNSIGNED_COMMITS" ]; then
+          echo ""
+          echo "⚠️  Warning: Some commits are not signed."
+          echo "Consider signing your commits for better security."
+          echo "See: https://docs.github.com/en/authentication/managing-commit-signature-verification"
+          echo ""
+          echo "Unsigned commits:"
+          for commit in $UNSIGNED_COMMITS; do
+            echo "  - $(git log --oneline -1 $commit)"
+          done
+
+          # Uncomment the next line to enforce commit signing
+          # exit 1
+        else
+          echo "🎉 All commits are properly signed!"
+        fi
+
+    - name: Comment on PR with signature status
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          let message = '🔐 **Commit Signature Check**\n\n';
+
+          // Read the step output to determine if commits are signed
+          const steps = context.payload.workflow_run?.jobs?.[0]?.steps || [];
+          const signatureStep = steps.find(step => step.name === 'Verify commit signatures');
+
+          if (signatureStep?.conclusion === 'success') {
+            message += '✅ All commits in this PR are properly signed!\n\n';
+            message += 'Thank you for following security best practices.';
+          } else {
+            message += '⚠️ Some commits in this PR are not signed.\n\n';
+            message += 'While not currently required, signing commits adds an extra layer of security.\n\n';
+            message += '**How to sign commits:**\n';
+            message += '1. [Set up GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)\n';
+            message += '2. [Configure Git signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)\n';
+            message += '3. Use `git commit -S` for signed commits\n';
+            message += '4. Enable automatic signing: `git config --global commit.gpgsign true`';
+          }
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: message
+          });

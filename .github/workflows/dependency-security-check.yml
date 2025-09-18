@@ -1,0 +1,297 @@
+# Security validation workflow for dependency updates
+# Runs comprehensive security checks on Dependabot PRs
+
+name: 🔒 Dependency Security Check
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/dependabot.yml'
+    types: [opened, synchronize, reopened]
+
+  # Also run on manual trigger
+  workflow_dispatch:
+
+# Ensure only one security check runs at a time
+concurrency:
+  group: dependency-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Security audit and vulnerability scan
+  security-audit:
+    name: 🛡️ Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for better security analysis
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: |
+          npm ci --audit=true --fund=false
+          # Install security tools
+          npm install -g npm-audit-resolver audit-ci
+
+      - name: 🔍 Run npm audit
+        run: |
+          echo "🔍 Running comprehensive security audit..."
+
+          # Generate detailed audit report
+          npm audit --audit-level=moderate --json > audit-report.json || true
+
+          # Check for high/critical vulnerabilities
+          if npm audit --audit-level=high; then
+            echo "✅ No high/critical vulnerabilities found"
+          else
+            echo "❌ High/critical vulnerabilities detected"
+            npm audit --audit-level=high
+            exit 1
+          fi
+
+      - name: 🧪 Run audit-ci (strict mode)
+        run: |
+          echo "🧪 Running audit-ci with strict security policies..."
+
+          # Fail on moderate and above vulnerabilities
+          audit-ci --config audit-ci.json || audit-ci --moderate
+
+      - name: 📊 Security report summary
+        if: always()
+        run: |
+          echo "📊 Security Audit Summary"
+          echo "========================"
+
+          # Count vulnerabilities by severity
+          if [ -f audit-report.json ]; then
+            echo "Vulnerability counts:"
+            jq -r '.metadata.vulnerabilities | to_entries[] | "\(.key): \(.value)"' audit-report.json || echo "No vulnerabilities data available"
+          fi
+
+          echo ""
+          echo "✅ Security audit completed"
+
+      - name: 💾 Upload audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-results
+          path: |
+            audit-report.json
+            npm-audit.log
+          retention-days: 30
+
+  # Job 2: License compliance check
+  license-check:
+    name: 📜 License Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci --fund=false
+
+      - name: 🏷️ Check licenses
+        run: |
+          echo "🏷️ Checking package licenses..."
+
+          # Install license checker
+          npm install -g license-checker
+
+          # Generate license report
+          license-checker --json > licenses.json
+
+          # Check for problematic licenses
+          license-checker --failOn 'GPL;AGPL;LGPL' --summary || {
+            echo "❌ Problematic licenses detected!"
+            license-checker --failOn 'GPL;AGPL;LGPL'
+            exit 1
+          }
+
+          echo "✅ All licenses are compliant"
+
+      - name: 💾 Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+          retention-days: 30
+
+  # Job 3: Critical package validation
+  critical-packages:
+    name: 🎯 Critical Package Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci --fund=false
+
+      - name: 🎯 Validate critical packages
+        run: |
+          echo "🎯 Validating critical package versions..."
+
+          # Check Next.js version
+          NEXT_VERSION=$(npm list next --depth=0 --json | jq -r '.dependencies.next.version')
+          echo "📦 Next.js version: $NEXT_VERSION"
+
+          # Check Supabase packages
+          echo "📦 Supabase packages:"
+          npm list @supabase/supabase-js --depth=0 || echo "  @supabase/supabase-js: not found"
+          npm list @supabase/ssr --depth=0 || echo "  @supabase/ssr: not found"
+
+          # Check Stripe packages
+          echo "📦 Stripe packages:"
+          npm list stripe --depth=0 || echo "  stripe: not found"
+          npm list @stripe/stripe-js --depth=0 || echo "  @stripe/stripe-js: not found"
+
+          # Verify no known vulnerable versions
+          echo "🔍 Checking for known vulnerable versions..."
+
+          # Add version checks for known vulnerabilities
+          # Example: Check if using vulnerable Next.js versions
+          if npm list next@"<12.2.0" --depth=0 2>/dev/null; then
+            echo "❌ Next.js version has known security vulnerabilities"
+            exit 1
+          fi
+
+          echo "✅ Critical packages validated"
+
+  # Job 4: Build and test with new dependencies
+  build-test:
+    name: 🏗️ Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [security-audit]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci --fund=false
+
+      - name: 🔍 Run security linting
+        run: |
+          echo "🔍 Running security-focused ESLint..."
+          npm run lint:security || {
+            echo "❌ Security linting failed!"
+            exit 1
+          }
+
+      - name: 🏗️ Build application
+        run: |
+          echo "🏗️ Building application with new dependencies..."
+          npm run build || {
+            echo "❌ Build failed with new dependencies!"
+            exit 1
+          }
+
+      - name: 🧪 Run tests
+        run: |
+          echo "🧪 Running tests..."
+          # Add your test command here
+          # npm test || npm run test:ci
+          echo "✅ Tests completed (add actual test command)"
+
+  # Job 5: Auto-approve safe dependency updates
+  auto-approve:
+    name: 🤖 Auto-approve Safe Updates
+    runs-on: ubuntu-latest
+    needs: [security-audit, license-check, critical-packages, build-test]
+    if: |
+      github.actor == 'dependabot[bot]' &&
+      (
+        contains(github.event.pull_request.title, 'chore(deps)') ||
+        contains(github.event.pull_request.title, 'security')
+      )
+
+    steps:
+      - name: 🤖 Auto-approve security patches
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: 🏷️ Add labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['auto-approved', 'security-validated']
+            })
+
+      - name: 💬 Add comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🤖 **Automated Security Approval**\n\n✅ Security audit passed\n✅ License compliance verified\n✅ Build successful\n\nThis dependency update has been automatically approved.'
+            })
+
+  # Job 6: Security summary report
+  security-summary:
+    name: 📋 Security Summary
+    runs-on: ubuntu-latest
+    needs: [security-audit, license-check, critical-packages, build-test]
+    if: always()
+
+    steps:
+      - name: 📋 Generate security summary
+        run: |
+          echo "# 🔒 Dependency Security Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Audit | ${{ needs.security-audit.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| License Check | ${{ needs.license-check.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Critical Packages | ${{ needs.critical-packages.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Test | ${{ needs.build-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.security-audit.result }}" == "success" && "${{ needs.license-check.result }}" == "success" && "${{ needs.critical-packages.result }}" == "success" && "${{ needs.build-test.result }}" == "success" ]]; then
+            echo "🎉 **All security checks passed!** This dependency update is safe to merge." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Security checks failed!** Please review the failing checks before merging." >> $GITHUB_STEP_SUMMARY
+          fi

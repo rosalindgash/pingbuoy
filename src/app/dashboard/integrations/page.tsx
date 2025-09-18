@@ -1,12 +1,13 @@
-import { Metadata } from 'next'
+'use client'
+
 import { Suspense } from 'react'
-import { 
-  Puzzle, 
-  Plus, 
-  Slack, 
-  Webhook, 
-  MessageSquare, 
-  Key, 
+import {
+  Puzzle,
+  Plus,
+  Slack,
+  Webhook,
+  MessageSquare,
+  Key,
   Settings,
   Activity,
   CheckCircle,
@@ -15,79 +16,17 @@ import {
   Clock,
   ExternalLink,
   Zap,
-  Shield
+  Shield,
+  ArrowLeft
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
+import { ReliableButton } from '@/components/ui/reliable-button'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
-  title: 'Integrations - PingBuoy Dashboard',
-  description: 'Connect PingBuoy with Slack, webhooks, and other services to receive monitoring alerts.',
-}
-
 // Mock data - in production, this would come from API
-const mockIntegrations = [
-  {
-    id: '1',
-    name: 'Production Alerts',
-    type: 'slack',
-    status: 'active',
-    lastTest: '2025-01-12T09:30:00Z',
-    lastTestStatus: 'success',
-    totalNotifications: 127,
-    config: {
-      channel: '#monitoring',
-      events: ['downtime', 'recovery']
-    }
-  },
-  {
-    id: '2',
-    name: 'Custom Webhook',
-    type: 'webhook',
-    status: 'error',
-    lastTest: '2025-01-12T08:15:00Z',
-    lastTestStatus: 'failed',
-    totalNotifications: 45,
-    config: {
-      url: 'https://api.example.com/webhooks/pingbuoy',
-      events: ['downtime']
-    }
-  },
-  {
-    id: '3',
-    name: 'Discord Notifications',
-    type: 'discord',
-    status: 'inactive',
-    lastTest: null,
-    lastTestStatus: null,
-    totalNotifications: 0,
-    config: {
-      channel: '#alerts',
-      events: ['downtime', 'recovery', 'maintenance']
-    }
-  }
-]
+const mockIntegrations = []
 
-const mockApiKeys = [
-  {
-    id: '1',
-    name: 'Production API',
-    prefix: 'pb_live_',
-    permissions: ['read', 'write'],
-    lastUsed: '2025-01-12T10:45:00Z',
-    totalRequests: 1523,
-    status: 'active'
-  },
-  {
-    id: '2',
-    name: 'Analytics Script',
-    prefix: 'pb_test_',
-    permissions: ['read'],
-    lastUsed: '2025-01-11T16:22:00Z',
-    totalRequests: 89,
-    status: 'active'
-  }
-]
+const mockApiKeys = []
 
 // Loading components
 function IntegrationsLoading() {
@@ -287,6 +226,12 @@ export default function IntegrationsPage() {
               </div>
             </div>
             <div className="flex space-x-3">
+              <Link href="/dashboard">
+                <Button variant="outline" className="flex items-center space-x-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back to Dashboard</span>
+                </Button>
+              </Link>
               <Link href="/dashboard/api">
                 <Button variant="outline" className="flex items-center space-x-2">
                   <ExternalLink className="h-4 w-4" />
@@ -312,11 +257,11 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active Integrations</p>
-                <p className="text-2xl font-bold text-gray-900">2</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -324,11 +269,11 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Notifications Sent</p>
-                <p className="text-2xl font-bold text-gray-900">172</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -336,11 +281,11 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">API Keys</p>
-                <p className="text-2xl font-bold text-gray-900">2</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="p-3 bg-yellow-100 rounded-lg">
@@ -348,7 +293,7 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">API Requests</p>
-                <p className="text-2xl font-bold text-gray-900">1.6K</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
@@ -436,13 +381,29 @@ export default function IntegrationsPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">Your Integrations</h2>
           </div>
-          
+
           <Suspense fallback={<IntegrationsLoading />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockIntegrations.map((integration) => (
-                <IntegrationCard key={integration.id} integration={integration} />
-              ))}
-            </div>
+            {mockIntegrations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mockIntegrations.map((integration) => (
+                  <IntegrationCard key={integration.id} integration={integration} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                <div className="p-3 bg-gray-100 rounded-lg w-fit mx-auto mb-4">
+                  <Puzzle className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No integrations yet</h3>
+                <p className="text-gray-600 mb-6">
+                  Connect your favorite tools to receive notifications when your sites go down or recover.
+                </p>
+                <Button className="flex items-center space-x-2 mx-auto">
+                  <Plus className="h-4 w-4" />
+                  <span>Add Your First Integration</span>
+                </Button>
+              </div>
+            )}
           </Suspense>
         </section>
 
@@ -460,12 +421,28 @@ export default function IntegrationsPage() {
               <span>Generate API Key</span>
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mockApiKeys.map((apiKey) => (
-              <ApiKeyCard key={apiKey.id} apiKey={apiKey} />
-            ))}
-          </div>
+
+          {mockApiKeys.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {mockApiKeys.map((apiKey) => (
+                <ApiKeyCard key={apiKey.id} apiKey={apiKey} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <div className="p-3 bg-gray-100 rounded-lg w-fit mx-auto mb-4">
+                <Key className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No API keys yet</h3>
+              <p className="text-gray-600 mb-6">
+                Generate API keys to access PingBuoy data programmatically from your applications.
+              </p>
+              <Button className="flex items-center space-x-2 mx-auto">
+                <Plus className="h-4 w-4" />
+                <span>Generate Your First API Key</span>
+              </Button>
+            </div>
+          )}
         </section>
 
         {/* Pro Features Upsell */}
@@ -499,9 +476,9 @@ export default function IntegrationsPage() {
                     <span className="text-sm">Custom event filtering</span>
                   </div>
                 </div>
-                <Button className="bg-white text-blue-600 hover:bg-blue-50">
+                <ReliableButton variant="outline-on-blue">
                   Upgrade to Pro
-                </Button>
+                </ReliableButton>
               </div>
             </div>
           </div>

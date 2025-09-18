@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   Star
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { useEffect, useState } from 'react'

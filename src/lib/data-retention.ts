@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
-import { sendEmail } from '@/lib/email'
+import { createClient } from './supabase-server'
+import { sendEmail } from './email'
 
 interface RetentionPolicy {
   table: string
@@ -107,7 +107,9 @@ const RETENTION_POLICIES: RetentionPolicy[] = [
 ]
 
 export class DataRetentionManager {
-  private supabase = createClient()
+  private getSupabase() {
+    return createClient()
+  }
 
   async enforceRetentionPolicies(): Promise<void> {
     const results = []
@@ -136,7 +138,8 @@ export class DataRetentionManager {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - policy.retentionPeriod)
     
-    let query = this.supabase
+    const supabase = await this.getSupabase()
+    let query = supabase
       .from(policy.table)
       .select('count', { count: 'exact', head: true })
       .lt(policy.dateColumn, cutoffDate.toISOString())
@@ -174,7 +177,8 @@ export class DataRetentionManager {
 
   private async archiveRecords(policy: RetentionPolicy, cutoffDate: Date) {
     // First, copy records to archive table
-    const { data: recordsToArchive, error: selectError } = await this.supabase
+    const supabase = await this.getSupabase()
+    const { data: recordsToArchive, error: selectError } = await supabase
       .from(policy.table)
       .select('*')
       .lt(policy.dateColumn, cutoffDate.toISOString())
@@ -209,14 +213,14 @@ export class DataRetentionManager {
     }))
 
     // Insert into archive table
-    const { error: archiveError } = await this.supabase
+    const { error: archiveError } = await supabase
       .from(policy.archiveTable!)
       .insert(archiveRecords)
 
     if (archiveError) throw archiveError
 
     // Delete from original table
-    let deleteQuery = this.supabase
+    let deleteQuery = supabase
       .from(policy.table)
       .delete()
       .lt(policy.dateColumn, cutoffDate.toISOString())
@@ -245,7 +249,8 @@ export class DataRetentionManager {
   }
 
   private async deleteRecords(policy: RetentionPolicy, cutoffDate: Date) {
-    let deleteQuery = this.supabase
+    const supabase = await this.getSupabase()
+    let deleteQuery = supabase
       .from(policy.table)
       .delete()
       .lt(policy.dateColumn, cutoffDate.toISOString())
@@ -284,7 +289,8 @@ export class DataRetentionManager {
     }
 
     try {
-      await this.supabase
+      const supabase = await this.getSupabase()
+      await supabase
         .from('job_logs')
         .insert(logEntry)
     } catch (error) {
@@ -327,7 +333,8 @@ export class DataRetentionManager {
 
   async processScheduledDeletions(): Promise<void> {
     // Find accounts scheduled for deletion where grace period has expired
-    const { data: accountsToDelete, error } = await this.supabase
+    const supabase = await this.getSupabase()
+    const { data: accountsToDelete, error } = await supabase
       .from('users')
       .select('*')
       .not('deletion_scheduled_at', 'is', null)
@@ -352,7 +359,8 @@ export class DataRetentionManager {
         console.error(`Failed to delete account for ${user.email}:`, error)
         
         // Mark deletion as failed
-        await this.supabase
+        const supabaseForError = await this.getSupabase()
+        await supabaseForError
           .from('privacy_requests')
           .update({
             status: 'failed',
@@ -367,6 +375,7 @@ export class DataRetentionManager {
 
   private async deleteUserAccount(user: any): Promise<void> {
     const userEmail = user.email
+    const supabase = await this.getSupabase()
 
     // Delete user data from all tables
     const tablesToCleanup = [
@@ -383,7 +392,7 @@ export class DataRetentionManager {
 
     for (const table of tablesToCleanup) {
       try {
-        await this.supabase
+        await supabase
           .from(table)
           .delete()
           .eq('user_email', userEmail)
@@ -394,13 +403,13 @@ export class DataRetentionManager {
     }
 
     // Delete user record
-    await this.supabase
+    await supabase
       .from('users')
       .delete()
       .eq('email', userEmail)
 
     // Mark privacy request as completed
-    await this.supabase
+    await supabase
       .from('privacy_requests')
       .update({
         status: 'completed',
@@ -425,8 +434,9 @@ export class DataRetentionManager {
     }
 
     try {
+      const supabase = await this.getSupabase()
       // Get last retention run
-      const { data: lastRun } = await this.supabase
+      const { data: lastRun } = await supabase
         .from('job_logs')
         .select('executed_at, results')
         .eq('job_type', 'data_retention')
@@ -439,7 +449,7 @@ export class DataRetentionManager {
       }
 
       // Get upcoming account deletions
-      const { data: scheduledDeletions } = await this.supabase
+      const { data: scheduledDeletions } = await supabase
         .from('users')
         .select('deletion_scheduled_at')
         .not('deletion_scheduled_at', 'is', null)
@@ -461,7 +471,7 @@ export class DataRetentionManager {
           const cutoffDate = new Date()
           cutoffDate.setDate(cutoffDate.getDate() - policy.retentionPeriod)
 
-          let query = this.supabase
+          let query = supabase
             .from(policy.table)
             .select('count', { count: 'exact', head: true })
             .lt(policy.dateColumn, cutoffDate.toISOString())

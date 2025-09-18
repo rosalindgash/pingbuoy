@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from './supabase-server'
 import { Database } from './supabase'
+import { strictSSRFDefense } from './ssrf-defense'
 
 type Site = Database['public']['Tables']['sites']['Row']
 type UptimeLog = Database['public']['Tables']['uptime_logs']['Row']
@@ -31,12 +32,11 @@ export async function getUserSites(userId: string): Promise<(Site & { uptime_log
 
 export async function addSite(userId: string, url: string, name: string): Promise<Site> {
   const supabase = await createServerSupabaseClient()
-  
-  // Validate URL format
-  try {
-    new URL(url)
-  } catch {
-    throw new Error('Invalid URL format')
+
+  // Validate URL format and security
+  const validation = await strictSSRFDefense().validateUrl(url)
+  if (!validation.isValid) {
+    throw new Error(`URL validation failed: ${validation.reason}`)
   }
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

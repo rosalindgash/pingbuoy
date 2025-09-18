@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { validateCSRF } from '@/lib/csrf-protection'
+import { randomBytes } from 'crypto'
 
 export async function POST(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for waitlist signup
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked waitlist signup`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     const { email, plan } = await request.json()
     

@@ -1,11 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+import { withSecureCORS } from '../_shared/cors-config.ts'
+import { createLogger, ErrorCodes } from '../_shared/logger.ts'
+import { withMonitoringAuth } from '../_shared/service-auth.ts'
 
 interface EmailRequest {
   to: string
@@ -40,10 +36,10 @@ function sanitizeEmailContent(content: string): string {
 }
 
 // Rate limiting check
-async function checkRateLimit(supabase: any, email: string): Promise<boolean> {
+async function checkRateLimit(supabase: any, email: string, logger: any): Promise<boolean> {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  
+
   try {
     // Check hourly limit (max 10 emails per hour per recipient)
     const { data: hourlyData, error: hourlyError } = await supabase
@@ -53,17 +49,21 @@ async function checkRateLimit(supabase: any, email: string): Promise<boolean> {
       .eq('success', true)
       .gte('sent_at', oneHourAgo)
       .limit(11)
-    
+
     if (hourlyError) {
-      console.error('Rate limit check error (hourly):', hourlyError)
+      logger.error('Rate limit check failed', {
+        limitType: 'hourly',
+        errorCode: ErrorCodes.DB_QUERY_ERROR,
+        error: hourlyError.code || 'UNKNOWN'
+      })
       return false
     }
-    
+
     if (hourlyData && hourlyData.length >= 10) {
-      console.log(`Rate limit exceeded (hourly) for ${email}`)
+      logger.rateLimitHit(email, 'hourly', hourlyData.length, 10)
       return false
     }
-    
+
     // Check daily limit (max 50 emails per day per recipient)
     const { data: dailyData, error: dailyError } = await supabase
       .from('email_logs')
@@ -72,20 +72,26 @@ async function checkRateLimit(supabase: any, email: string): Promise<boolean> {
       .eq('success', true)
       .gte('sent_at', oneDayAgo)
       .limit(51)
-    
+
     if (dailyError) {
-      console.error('Rate limit check error (daily):', dailyError)
+      logger.error('Rate limit check failed', {
+        limitType: 'daily',
+        errorCode: ErrorCodes.DB_QUERY_ERROR,
+        error: dailyError.code || 'UNKNOWN'
+      })
       return false
     }
-    
+
     if (dailyData && dailyData.length >= 50) {
-      console.log(`Rate limit exceeded (daily) for ${email}`)
+      logger.rateLimitHit(email, 'daily', dailyData.length, 50)
       return false
     }
-    
+
     return true
   } catch (error) {
-    console.error('Rate limit check error:', error)
+    logger.error('Rate limit check error', {
+      errorCode: ErrorCodes.DB_CONNECTION_ERROR
+    })
     return false
   }
 }
@@ -96,6 +102,7 @@ async function logEmailActivity(
   email: string,
   templateName: string,
   success: boolean,
+  logger: any,
   error?: string
 ): Promise<void> {
   try {
@@ -108,8 +115,12 @@ async function logEmailActivity(
       ip_address: '0.0.0.0', // Edge function IP
       user_agent: 'Supabase Edge Function'
     })
+    logger.dbOperation('INSERT', 'email_logs', true, 1)
   } catch (logError) {
-    console.error('Failed to log email activity:', logError)
+    logger.error('Failed to log email activity', {
+      errorCode: ErrorCodes.DB_QUERY_ERROR,
+      error: logError.code || 'UNKNOWN'
+    })
   }
 }
 
@@ -129,18 +140,13 @@ async function sendEmailViaProvider(emailData: EmailRequest): Promise<EmailRespo
     // const response = await ses.sendEmail(emailData).promise()
     
     // For now, simulate successful sending
-    console.log('Email sent successfully:', {
-      to: emailData.to,
-      subject: emailData.subject,
-      timestamp: new Date().toISOString()
-    })
+    // Note: No PII logged - only template information
     
     return {
       success: true,
       messageId: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     }
   } catch (error) {
-    console.error('Email sending error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -148,123 +154,152 @@ async function sendEmailViaProvider(emailData: EmailRequest): Promise<EmailRespo
   }
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+serve(withSecureCORS(async (req) => {
+  const logger = createLogger('send-email')
+  const startTime = Date.now()
+
+  logger.requestStart(req.method)
 
   // Only allow POST requests
   if (req.method !== 'POST') {
+    logger.error('Invalid request method', {
+      method: req.method,
+      errorCode: ErrorCodes.INVALID_REQUEST
+    })
+    logger.requestEnd(405, Date.now() - startTime)
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
     )
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration')
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
     // Parse request body
     const emailRequest: EmailRequest = await req.json()
-    
+
     // Validate required fields
     if (!emailRequest.to || !emailRequest.subject || (!emailRequest.html && !emailRequest.text)) {
+      logger.error('Missing required email fields', {
+        errorCode: ErrorCodes.MISSING_PARAMS,
+        hasTo: !!emailRequest.to,
+        hasSubject: !!emailRequest.subject,
+        hasContent: !!(emailRequest.html || emailRequest.text)
+      })
+      logger.requestEnd(400, Date.now() - startTime)
       return new Response(
         JSON.stringify({ error: 'Missing required email fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
-    
+
     // Validate email addresses
     if (!isValidEmail(emailRequest.to)) {
+      logger.error('Invalid recipient email format', {
+        errorCode: ErrorCodes.INVALID_EMAIL
+      })
+      logger.requestEnd(400, Date.now() - startTime)
       return new Response(
         JSON.stringify({ error: 'Invalid recipient email address' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
-    
+
     if (emailRequest.from && !isValidEmail(emailRequest.from)) {
+      logger.error('Invalid sender email format', {
+        errorCode: ErrorCodes.INVALID_EMAIL
+      })
+      logger.requestEnd(400, Date.now() - startTime)
       return new Response(
         JSON.stringify({ error: 'Invalid sender email address' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
-    
-    // Check rate limits
-    const canSend = await checkRateLimit(supabase, emailRequest.to)
-    if (!canSend) {
-      await logEmailActivity(supabase, emailRequest.to, 'rate-limited', false, 'Rate limit exceeded')
-      return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    
-    // Sanitize email content
-    const sanitizedEmail: EmailRequest = {
-      ...emailRequest,
-      to: emailRequest.to.toLowerCase().trim(),
-      from: emailRequest.from || 'noreply@pingbuoy.com',
-      subject: emailRequest.subject.substring(0, 200), // Limit subject length
-      html: emailRequest.html ? sanitizeEmailContent(emailRequest.html) : '',
-      text: emailRequest.text ? sanitizeEmailContent(emailRequest.text) : '',
-      headers: {
-        ...emailRequest.headers,
-        'X-Sender': 'PingBuoy',
-        'X-Priority': '3',
-        'X-Mailer': 'PingBuoy Email Service v1.0'
+
+    const results = await withMonitoringAuth('email_sender', async (supabase) => {
+      // Check rate limits
+      const canSend = await checkRateLimit(supabase, emailRequest.to, logger)
+      if (!canSend) {
+        await logEmailActivity(supabase, emailRequest.to, 'rate-limited', false, logger, 'Rate limit exceeded')
+        throw new Error('Rate limit exceeded')
       }
-    }
-    
-    // Send email via provider
-    const result = await sendEmailViaProvider(sanitizedEmail)
-    
-    // Log activity
-    await logEmailActivity(
-      supabase,
-      sanitizedEmail.to,
-      'api-request',
-      result.success,
-      result.error
-    )
-    
+      // Sanitize email content
+      const sanitizedEmail: EmailRequest = {
+        ...emailRequest,
+        to: emailRequest.to.toLowerCase().trim(),
+        from: emailRequest.from || 'noreply@pingbuoy.com',
+        subject: emailRequest.subject.substring(0, 200), // Limit subject length
+        html: emailRequest.html ? sanitizeEmailContent(emailRequest.html) : '',
+        text: emailRequest.text ? sanitizeEmailContent(emailRequest.text) : '',
+        headers: {
+          ...emailRequest.headers,
+          'X-Sender': 'PingBuoy',
+          'X-Priority': '3',
+          'X-Mailer': 'PingBuoy Email Service v1.0'
+        }
+      }
+      // Send email via provider
+      const result = await sendEmailViaProvider(sanitizedEmail)
+
+      // Log activity
+      await logEmailActivity(
+        supabase,
+        sanitizedEmail.to,
+        'api-request',
+        result.success,
+        logger,
+        result.error
+      )
+
+      logger.emailResult('api-request', result.success, result.success ? undefined : ErrorCodes.EMAIL_SEND_FAILED)
+
+      return {
+        success: result.success,
+        messageId: result.messageId,
+        error: result.error
+      }
+    })
     // Return result
-    if (result.success) {
+    if (results.success) {
+      logger.requestEnd(200, Date.now() - startTime)
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          messageId: result.messageId 
+        JSON.stringify({
+          success: true,
+          messageId: results.messageId
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
     } else {
+      logger.requestEnd(500, Date.now() - startTime)
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: result.error 
+        JSON.stringify({
+          success: false,
+          error: 'Email delivery failed'
         }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
     
   } catch (error) {
-    console.error('Email function error:', error)
-    
+    logger.error('Email function error', {
+      errorCode: ErrorCodes.EXTERNAL_SERVICE_ERROR,
+      duration: Date.now() - startTime
+    })
+
+    // Handle specific error cases
+    if (error.message === 'Rate limit exceeded') {
+      logger.requestEnd(429, Date.now() - startTime)
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded' }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    logger.requestEnd(500, Date.now() - startTime)
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+      JSON.stringify({
+        error: 'Internal server error'
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
-})
+}))

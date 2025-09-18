@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import DOMPurify from 'dompurify'
 import { JSDOM } from 'jsdom'
+import { safeFetchStrict } from '@/lib/ssrf-defense'
 
 // Initialize DOMPurify for server-side use
 const window = new JSDOM('').window
@@ -197,7 +198,7 @@ export class SecureIntegrationTester {
         ...(config.channel && { channel: config.channel })
       }
 
-      const response = await fetch(config.webhook_url, {
+      const response = await safeFetchStrict(config.webhook_url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +282,7 @@ export class SecureIntegrationTester {
         headers['X-Webhook-Signature'] = signature
       }
 
-      const response = await fetch(config.webhook_url, {
+      const response = await safeFetchStrict(config.webhook_url, {
         method: config.webhook_method,
         headers,
         body: JSON.stringify(payload),
@@ -365,7 +366,7 @@ export class SecureIntegrationTester {
         ]
       }
 
-      const response = await fetch(config.webhook_url, {
+      const response = await safeFetchStrict(config.webhook_url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -553,7 +554,7 @@ export class SecureIntegrationTester {
       
       // Basic connectivity test (HEAD request)
       try {
-        const response = await fetch(url, {
+        const response = await safeFetchStrict(url, {
           method: 'HEAD',
           signal: AbortSignal.timeout(5000)
         })

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { AlertTriangle, ExternalLink, Search } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { getDeadLinks, getScans } from '@/lib/deadlinks'
 import { Database } from '@/lib/supabase'
 

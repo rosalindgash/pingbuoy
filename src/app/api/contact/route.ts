@@ -1,21 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { contactSchema, validateAndSanitize } from '@/lib/validation'
-const nodemailer = require('nodemailer')
+import nodemailer from 'nodemailer'
+import {
+  checkIPLimit,
+  getClientIP,
+  createRateLimitResponse,
+  getRateLimitHeaders,
+  RATE_LIMIT_CONFIGS
+} from '@/lib/redis-rate-limit'
+import { validateCSRF } from '@/lib/csrf-protection'
+import { randomBytes } from 'crypto'
 
 export async function POST(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for contact form submission
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked contact form submission`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
+    const ip = getClientIP(request)
+
+    // Check rate limits first (IP-based for contact form)
+    const rateLimitResult = await checkIPLimit(
+      ip,
+      RATE_LIMIT_CONFIGS.contact.ip,
+      'contact'
+    )
+
+    if (!rateLimitResult.success) {
+      return createRateLimitResponse(
+        rateLimitResult,
+        'Too many contact form submissions. Please try again later.'
+      )
+    }
+
     const rawData = await request.json()
-    console.log('Received form data:', rawData)
-    
+    // Note: Avoiding logging form data to protect user privacy
+
     // Validate and sanitize input
     let validatedData
     try {
       validatedData = validateAndSanitize(contactSchema, rawData)
-    } catch (validationError: any) {
-      console.error('Validation error:', validationError.message)
-      console.error('Raw data that failed validation:', rawData)
+    } catch (validationError: unknown) {
+      const errorMessage = validationError instanceof Error ? validationError.message : 'Invalid form data'
+      console.error(`[${requestId}] Contact form validation failed:`, errorMessage)
+      // Note: Not logging raw data to protect user privacy
       return NextResponse.json(
-        { error: validationError.message || 'Invalid form data' },
+        { error: errorMessage },
         { status: 400 }
       )
     }
@@ -23,7 +65,7 @@ export async function POST(request: NextRequest) {
     const { name, email, subject, message } = validatedData
     const plan = rawData.plan ? String(rawData.plan) : 'Not specified'
 
-    // Create email content
+    // Create email content (IP removed for privacy)
     const emailContent = `
 New contact form submission from PingBuoy website:
 
@@ -37,7 +79,6 @@ ${message}
 
 ---
 Submitted at: ${new Date().toISOString()}
-IP Address: ${request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'Unknown'}
 `
 
     const htmlContent = `
@@ -49,8 +90,7 @@ IP Address: ${request.headers.get('x-forwarded-for') || request.headers.get('x-r
 <h3>Message:</h3>
 <p>${message.replace(/\n/g, '<br>')}</p>
 <hr>
-<p><small>Submitted at: ${new Date().toISOString()}<br>
-IP Address: ${request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'Unknown'}</small></p>
+<p><small>Submitted at: ${new Date().toISOString()}</small></p>
 `
 
     // Send email using nodemailer
@@ -78,12 +118,14 @@ IP Address: ${request.headers.get('x-forwarded-for') || request.headers.get('x-r
         html: htmlContent,
       })
 
-      console.log('Email sent successfully:', info.messageId)
-      return NextResponse.json({ success: true })
+      console.log(`[${requestId}] Contact form email sent successfully:`, info.messageId)
+      return NextResponse.json({ success: true }, {
+        headers: getRateLimitHeaders(rateLimitResult)
+      })
 
-    } catch (emailError: any) {
-      console.error('Error sending email:', emailError)
-      console.error('SMTP Config:', {
+    } catch (emailError: unknown) {
+      console.error(`[${requestId}] Error sending contact form email:`, emailError)
+      console.error(`[${requestId}] SMTP Config:`, {
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
         secure: process.env.SMTP_SECURE,
@@ -97,7 +139,7 @@ IP Address: ${request.headers.get('x-forwarded-for') || request.headers.get('x-r
     }
 
   } catch (error) {
-    console.error('Error processing contact form:', error)
+    console.error(`[${requestId}] Error processing contact form:`, error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

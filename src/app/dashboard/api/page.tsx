@@ -1,24 +1,22 @@
-import { Metadata } from 'next'
-import { 
-  Code, 
-  Key, 
-  Globe, 
-  Shield, 
-  Copy, 
+'use client'
+import {
+  Code,
+  Key,
+  Globe,
+  Shield,
+  Copy,
   ExternalLink,
   CheckCircle,
   AlertTriangle,
   Book,
   Zap,
   Database,
-  Lock
+  Lock,
+  Webhook,
+  ArrowLeft
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-
-export const metadata: Metadata = {
-  title: 'API Documentation - PingBuoy',
-  description: 'Complete API reference for PingBuoy monitoring service. Manage websites, alerts, and integrations programmatically.',
-}
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 // Code example component
 function CodeExample({ title, code, language = 'bash' }: { title: string; code: string; language?: string }) {
@@ -72,7 +70,7 @@ function APIEndpoint({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-start space-x-4 mb-4">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${methodColors[method]}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${methodColors[method]}`}> {/* eslint-disable-line security/detect-object-injection */}
           {method}
         </span>
         <div className="flex-1">
@@ -140,16 +138,24 @@ export default function APIDocumentationPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Code className="h-8 w-8 text-blue-600" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Code className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">API Documentation</h1>
+                <p className="text-gray-600 mt-1">
+                  Complete API reference for PingBuoy monitoring service
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">API Documentation</h1>
-              <p className="text-gray-600 mt-1">
-                Complete API reference for PingBuoy monitoring service
-              </p>
-            </div>
+            <Link href="/dashboard">
+              <Button variant="outline" className="flex items-center space-x-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -278,7 +284,7 @@ export default function APIDocumentationPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Using API Keys</h3>
                   <CodeExample
                     title="Authentication Header"
-                    code={`Authorization: Bearer pb_live_1234567890abcdef`}
+                    code={`Authorization: Bearer pb_live_1234567890abcdef`} // eslint-disable-line no-secrets/no-secrets
                   />
                 </div>
               </div>
@@ -300,19 +306,19 @@ export default function APIDocumentationPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-gray-900">Free Plan</h4>
-                      <p className="text-sm text-gray-600">1,000 requests/hour</p>
+                      <p className="text-sm text-gray-600">100 requests/hour</p>
                     </div>
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-blue-900">Pro Plan</h4>
-                      <p className="text-sm text-blue-700">10,000 requests/hour</p>
+                      <p className="text-sm text-blue-700">1,000 requests/hour</p>
                     </div>
                   </div>
 
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Rate Limit Headers</h3>
                   <CodeExample
                     title="Response Headers"
-                    code={`X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
+                    code={`X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
 X-RateLimit-Reset: 1641123456`}
                   />
                 </div>

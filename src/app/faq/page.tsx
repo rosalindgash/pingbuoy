@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronDown, HelpCircle, Shield, Zap, BarChart3 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 

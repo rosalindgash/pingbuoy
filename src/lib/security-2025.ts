@@ -1,50 +1,44 @@
 // Advanced Security Configuration for 2025
 // Addresses latest threats: AI/ML security, supply chain, cloud misconfigurations
 
-// Enhanced Content Security Policy for 2025 (stricter AI/ML considerations)
+// Enhanced Content Security Policy for 2025 (Optimized - Removed Unused Allowances)
 export const csp2025 = {
   'default-src': ["'self'"],
   'script-src': [
-    "'self'", 
-    "'wasm-unsafe-eval'", // For WebAssembly if needed
-    "https://js.stripe.com"
+    "'self'",
+    "https://js.stripe.com" // Only for Stripe checkout
   ],
   'script-src-elem': [
     "'self'",
-    "https://js.stripe.com"
+    "https://js.stripe.com" // Only for Stripe checkout
   ],
   'style-src': [
-    "'self'", 
-    "'unsafe-inline'", // Necessary for React/Next.js
-    "https://fonts.googleapis.com"
+    "'self'",
+    "'unsafe-inline'" // Required for Next.js/Tailwind CSS
   ],
   'font-src': [
-    "'self'",
-    "https://fonts.gstatic.com"
+    "'self'" // Only local fonts - Google Fonts not used
   ],
   'img-src': [
-    "'self'", 
-    "data:", 
-    "https:",
-    "blob:" // For generated images/charts
+    "'self'",
+    "data:", // For small inline images/icons
+    "https://pingbuoy.com" // Only for email templates referencing logo
   ],
   'connect-src': [
     "'self'",
-    "https://*.supabase.co",
-    "https://api.stripe.com",
+    "https://*.supabase.co", // Supabase API
+    "https://api.stripe.com", // Stripe API
     "wss://*.supabase.co" // WebSocket for real-time features
   ],
   'frame-src': [
-    "https://js.stripe.com"
+    "https://js.stripe.com" // Only for Stripe checkout iframe
   ],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
   'frame-ancestors': ["'none'"],
-  'upgrade-insecure-requests': true,
-  // 2025 Addition: Trusted Types for DOM manipulation security
-  'require-trusted-types-for': ["'script'"],
-  'trusted-types': ['default']
+  'upgrade-insecure-requests': true
+  // Removed trusted-types as it may break functionality and requires extensive refactoring
 }
 
 // Zero Trust Security Principles

@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { Button } from '@/components/ui/Button'
+// Link and Image imports removed as they are not used
+import { Button } from '@/components/ui/button'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 
@@ -65,7 +64,7 @@ export default function ContactPage() {
               Contact Us
             </h1>
             <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-              Have questions about PingBuoy? We're here to help! Send us a message and we'll get back to you as soon as possible.
+              Have questions about PingBuoy? We&apos;re here to help! Send us a message and we&apos;ll get back to you as soon as possible.
             </p>
           </div>
         </div>
@@ -78,7 +77,7 @@ export default function ContactPage() {
           {status === 'success' && (
             <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-800">
-                Thank you for your message! We'll get back to you soon.
+                Thank you for your message! We&apos;ll get back to you soon.
               </p>
             </div>
           )}
@@ -138,7 +137,7 @@ export default function ContactPage() {
                 <option value="">Select your plan (helps us prioritize your request)</option>
                 <option value="free">Free Plan</option>
                 <option value="pro">Pro Plan</option>
-                <option value="prospective">I'm considering PingBuoy</option>
+                <option value="prospective">I&apos;m considering PingBuoy</option>
               </select>
             </div>
 

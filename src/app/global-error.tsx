@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { AlertTriangle, Home } from 'lucide-react'
+import { logger } from '@/lib/secure-logger'
 
 interface GlobalErrorProps {
   error: Error & { digest?: string }
@@ -10,24 +11,13 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
-    // Log critical application errors securely
-    const errorInfo = {
+    // Log critical application errors securely with automatic redaction
+    logger.error('Critical application error', error, {
       type: 'global_error',
-      message: 'Critical application error',
-      timestamp: new Date().toISOString(),
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
       url: typeof window !== 'undefined' ? window.location.href : 'unknown',
       errorDigest: error.digest || 'no-digest'
-    }
-    
-    // Send to error monitoring service - don't expose sensitive details
-    if (process.env.NODE_ENV === 'production') {
-      console.error('Critical error tracked:', errorInfo)
-      // In production, send to your error monitoring service
-      // Example: errorTrackingService.logCritical(errorInfo)
-    } else {
-      console.error('Global error in development:', error)
-    }
+    })
   }, [error])
 
   // Provide a minimal, secure fallback UI

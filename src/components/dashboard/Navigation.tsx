@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   Shield
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 
 const navigation = [

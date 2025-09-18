@@ -1,12 +1,21 @@
-import { createClient } from '@supabase/supabase-js'
+import { serviceAuth } from './service-auth'
 import { renderEmailTemplate, EmailTemplateData } from './email-templates'
 import { z } from 'zod'
-import DOMPurify from 'dompurify'
-import { JSDOM } from 'jsdom'
+import {
+  checkDualLimit,
+  getClientIP,
+  RATE_LIMIT_CONFIGS,
+  getRateLimiter
+} from './redis-rate-limit'
 
-// Initialize DOMPurify for server-side use
-const window = new JSDOM('').window
-const purify = DOMPurify(window as any)
+// Server-safe sanitization without DOM dependencies
+function sanitizeString(str: string): string {
+  return str
+    .replace(/<script\b[^<]*?(?:(?!<\/script>)<[^<]*?)*?<\/script>/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim()
+}
 
 // Email validation schema
 const emailSchema = z.object({
@@ -16,7 +25,7 @@ const emailSchema = z.object({
   html: z.string().optional(),
   text: z.string().min(1, 'Email content is required'),
   templateName: z.string().optional(),
-  templateData: z.record(z.any()).optional()
+  templateData: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 })
 
 export interface EmailRequest {
@@ -35,67 +44,18 @@ export interface EmailResult {
   error?: string
 }
 
-// Rate limiting for email sending
-class EmailRateLimiter {
-  private static instance: EmailRateLimiter
-  private requests: Map<string, number[]> = new Map()
-  private readonly maxRequestsPerHour = 100
-  private readonly maxRequestsPerDay = 500
-
-  public static getInstance(): EmailRateLimiter {
-    if (!EmailRateLimiter.instance) {
-      EmailRateLimiter.instance = new EmailRateLimiter()
-    }
-    return EmailRateLimiter.instance
-  }
-
-  public canSendEmail(email: string): boolean {
-    const now = Date.now()
-    const hourAgo = now - (60 * 60 * 1000)
-    const dayAgo = now - (24 * 60 * 60 * 1000)
-    
-    const requests = this.requests.get(email) || []
-    
-    // Clean old requests
-    const recentRequests = requests.filter(timestamp => timestamp > dayAgo)
-    this.requests.set(email, recentRequests)
-    
-    // Check hourly limit
-    const hourlyRequests = recentRequests.filter(timestamp => timestamp > hourAgo)
-    if (hourlyRequests.length >= this.maxRequestsPerHour) {
-      return false
-    }
-    
-    // Check daily limit
-    if (recentRequests.length >= this.maxRequestsPerDay) {
-      return false
-    }
-    
-    // Add current request
-    recentRequests.push(now)
-    this.requests.set(email, recentRequests)
-    
-    return true
-  }
-}
+// Rate limiting now handled by Redis-based system
 
 export class SecureEmailSender {
   private static instance: SecureEmailSender
-  private supabase: any
-  private rateLimiter: EmailRateLimiter
+  private async getSupabaseClient() {
+    return await serviceAuth.createServiceClient('email_sender')
+  }
+  private rateLimiter = getRateLimiter()
   private readonly fromEmail = 'noreply@pingbuoy.com'
 
   private constructor() {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('Missing Supabase configuration for email service')
-    }
-    
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-    
-    this.rateLimiter = EmailRateLimiter.getInstance()
+    // Initialization handled in getRateLimiter()
   }
 
   public static getInstance(): SecureEmailSender {
@@ -110,21 +70,9 @@ export class SecureEmailSender {
       // Validate basic structure
       const validated = emailSchema.parse(request)
       
-      // Sanitize HTML content if present
+      // Basic HTML sanitization (server-safe)
       if (validated.html) {
-        validated.html = purify.sanitize(validated.html, {
-          ALLOWED_TAGS: [
-            'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a', 'ul', 'ol', 'li', 
-            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'table', 
-            'tr', 'td', 'th', 'thead', 'tbody', 'img'
-          ],
-          ALLOWED_ATTR: [
-            'href', 'target', 'style', 'class', 'src', 'alt', 'width', 'height',
-            'border', 'cellpadding', 'cellspacing'
-          ],
-          ALLOW_DATA_ATTR: false,
-          FORBID_SCRIPT: true
-        })
+        validated.html = sanitizeString(validated.html)
       }
       
       // Sanitize template data if present
@@ -132,7 +80,7 @@ export class SecureEmailSender {
         const sanitizedData: EmailTemplateData = {}
         for (const [key, value] of Object.entries(validated.templateData)) {
           if (typeof value === 'string') {
-            sanitizedData[key] = purify.sanitize(value, { ALLOWED_TAGS: [] })
+            sanitizedData[key] = sanitizeString(value)
           } else {
             sanitizedData[key] = value
           }
@@ -153,7 +101,8 @@ export class SecureEmailSender {
     error?: string
   ): Promise<void> {
     try {
-      await this.supabase.from('email_logs').insert({
+      const supabase = await this.getSupabaseClient()
+      await supabase.from('email_logs').insert({
         recipient_email: email,
         template_name: templateName || 'custom',
         sent_at: new Date().toISOString(),
@@ -167,13 +116,49 @@ export class SecureEmailSender {
     }
   }
 
-  public async sendEmail(request: EmailRequest): Promise<EmailResult> {
+  public async sendEmail(request: EmailRequest, sendingIP?: string, senderId?: string): Promise<EmailResult> {
     try {
-      // Rate limiting check
-      if (!this.rateLimiter.canSendEmail(request.to)) {
+      // Rate limiting check using Redis
+      const recipientResult = await this.rateLimiter.checkLimit(
+        `recipient:${request.to}`,
+        RATE_LIMIT_CONFIGS.email.recipient,
+        'email'
+      )
+
+      if (!recipientResult.success) {
         const error = 'Rate limit exceeded for email recipient'
         await this.logEmailActivity(request.to, request.templateName, false, error)
         return { success: false, error }
+      }
+
+      // Additional IP-based rate limiting if provided
+      if (sendingIP) {
+        const ipResult = await this.rateLimiter.checkLimit(
+          `ip:${sendingIP}`,
+          RATE_LIMIT_CONFIGS.email.ip,
+          'email'
+        )
+
+        if (!ipResult.success) {
+          const error = 'Rate limit exceeded for sending IP'
+          await this.logEmailActivity(request.to, request.templateName, false, error)
+          return { success: false, error }
+        }
+      }
+
+      // Sender-based rate limiting if provided
+      if (senderId) {
+        const senderResult = await this.rateLimiter.checkLimit(
+          `sender:${senderId}`,
+          RATE_LIMIT_CONFIGS.email.sender,
+          'email'
+        )
+
+        if (!senderResult.success) {
+          const error = 'Rate limit exceeded for sender'
+          await this.logEmailActivity(request.to, request.templateName, false, error)
+          return { success: false, error }
+        }
       }
 
       // Validate and sanitize input
@@ -210,7 +195,8 @@ export class SecureEmailSender {
       }
 
       // Send via Supabase Edge Function (would need to be implemented)
-      const { data, error } = await this.supabase.functions.invoke('send-email', {
+      const supabase = await this.getSupabaseClient()
+      const { data, error } = await supabase.functions.invoke('send-email', {
         body: emailData
       })
 

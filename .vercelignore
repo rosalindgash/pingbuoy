@@ -1,0 +1,2 @@
+# Security: Exclude quarantine directory from deployment
+supabase_quarantine/

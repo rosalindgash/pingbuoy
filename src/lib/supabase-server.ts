@@ -14,7 +14,7 @@ if (!supabaseAnonKey) {
   throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
 }
 
-export const createServerSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
+export const createClient = async (): Promise<SupabaseClient<Database>> => {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
@@ -61,3 +61,6 @@ export const createServerSupabaseClient = async (): Promise<SupabaseClient<Datab
     }
   )
 }
+
+// Legacy export for backward compatibility
+export const createServerSupabaseClient = createClient

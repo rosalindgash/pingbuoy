@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSiteUptimeStats, getSiteHourlyUptimeData } from '@/lib/uptime-client'
-import { Globe, TrendingUp, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Globe, TrendingUp, Clock, CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 interface Site {
   id: string
@@ -114,9 +116,19 @@ export default function UptimePage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Uptime Monitoring</h1>
-          <p className="text-gray-600">Monitor your websites' availability and performance</p>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Uptime Monitoring</h1>
+              <p className="text-gray-600">Monitor your websites' availability and performance</p>
+            </div>
+            <Link href="/dashboard">
+              <Button variant="outline" className="flex items-center space-x-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Overall Stats */}
@@ -200,12 +212,6 @@ export default function UptimePage() {
             <Globe className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No sites to monitor</h3>
             <p className="text-gray-600 mb-4">Add websites to start monitoring their uptime</p>
-            <button
-              onClick={() => window.location.href = '/dashboard'}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Go to Dashboard
-            </button>
           </div>
         ) : (
           <div className="space-y-6">

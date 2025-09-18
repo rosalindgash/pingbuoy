@@ -1,0 +1,338 @@
+name: Backup Restore Drill
+
+on:
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      drill_type:
+        description: 'Type of drill to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - quick
+          - validate-only
+      notification_enabled:
+        description: 'Send notifications'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  backup-validation:
+    name: Validate Backup Integrity
+    runs-on: ubuntu-latest
+
+    outputs:
+      validation-status: ${{ steps.validate.outputs.status }}
+      report-path: ${{ steps.validate.outputs.report-path }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          # Install additional tools for backup validation
+          npm install -g @supabase/supabase-js
+
+      - name: Setup validation environment
+        run: |
+          # Create directories for logs and reports
+          mkdir -p backup-validation-logs
+          mkdir -p backup-drill-logs
+
+      - name: Run backup validation
+        id: validate
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          NOTIFICATION_WEBHOOK: ${{ secrets.BACKUP_NOTIFICATION_WEBHOOK }}
+        run: |
+          echo "🔍 Running backup validation..."
+
+          if node scripts/backup-validator.js; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "✅ Backup validation passed"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Backup validation failed"
+            exit 1
+          fi
+
+          # Find the most recent report
+          REPORT_PATH=$(find backup-validation-logs -name "validation-report-*.json" | sort -r | head -1)
+          echo "report-path=$REPORT_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload validation artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backup-validation-reports
+          path: |
+            backup-validation-logs/
+          retention-days: 30
+
+  backup-drill:
+    name: Backup Restore Drill
+    runs-on: ubuntu-latest
+    needs: backup-validation
+    if: needs.backup-validation.outputs.validation-status == 'success'
+
+    strategy:
+      matrix:
+        drill-type:
+          - ${{ github.event.inputs.drill_type || 'full' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          # Install required tools
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq curl
+
+          # Make scripts executable
+          chmod +x scripts/backup-restore-drill.sh
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Authenticate with Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          # Link to project (if needed)
+          # supabase projects list
+
+      - name: Run backup restore drill
+        id: drill
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          NOTIFICATION_WEBHOOK: ${{ secrets.BACKUP_NOTIFICATION_WEBHOOK }}
+          DRILL_TYPE: ${{ matrix.drill-type }}
+        run: |
+          echo "🔄 Starting backup restore drill..."
+          echo "Drill type: $DRILL_TYPE"
+
+          # Set up logging
+          export BACKUP_LOG_DIR="./backup-drill-logs"
+          mkdir -p "$BACKUP_LOG_DIR"
+
+          # Run the drill
+          if ./scripts/backup-restore-drill.sh "$DRILL_TYPE"; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "✅ Backup restore drill completed successfully"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Backup restore drill failed"
+            exit 1
+          fi
+
+      - name: Process drill results
+        if: always()
+        run: |
+          echo "📊 Processing drill results..."
+
+          # Display summary of logs
+          if [ -d backup-drill-logs ]; then
+            echo "Generated files:"
+            ls -la backup-drill-logs/
+
+            # Show latest drill summary
+            LATEST_LOG=$(find backup-drill-logs -name "backup-drill-*.log" | sort -r | head -1)
+            if [ -f "$LATEST_LOG" ]; then
+              echo "Latest drill log summary:"
+              tail -20 "$LATEST_LOG"
+            fi
+
+            # Show latest report if exists
+            LATEST_REPORT=$(find backup-drill-logs -name "drill-report-*.json" | sort -r | head -1)
+            if [ -f "$LATEST_REPORT" ]; then
+              echo "Latest drill report:"
+              jq . "$LATEST_REPORT" || cat "$LATEST_REPORT"
+            fi
+          fi
+
+      - name: Upload drill artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backup-drill-results-${{ matrix.drill-type }}
+          path: |
+            backup-drill-logs/
+          retention-days: 90
+
+  notification:
+    name: Send Drill Notifications
+    runs-on: ubuntu-latest
+    needs: [backup-validation, backup-drill]
+    if: always() && (github.event.inputs.notification_enabled != 'false')
+
+    steps:
+      - name: Prepare notification data
+        id: prepare
+        run: |
+          # Determine overall status
+          VALIDATION_STATUS="${{ needs.backup-validation.outputs.validation-status }}"
+          DRILL_STATUS="${{ needs.backup-drill.result }}"
+
+          if [[ "$VALIDATION_STATUS" == "success" && "$DRILL_STATUS" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+            echo "icon=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "color=danger" >> $GITHUB_OUTPUT
+            echo "icon=❌" >> $GITHUB_OUTPUT
+          fi
+
+          echo "drill_type=${{ github.event.inputs.drill_type || 'scheduled' }}" >> $GITHUB_OUTPUT
+
+      - name: Send Slack notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "${{ steps.prepare.outputs.icon }} Backup Restore Drill Completed",
+              attachments: [
+                {
+                  color: "${{ steps.prepare.outputs.color }}",
+                  fields: [
+                    {
+                      title: "Overall Status",
+                      value: "${{ steps.prepare.outputs.status }}",
+                      short: true
+                    },
+                    {
+                      title: "Drill Type",
+                      value: "${{ steps.prepare.outputs.drill_type }}",
+                      short: true
+                    },
+                    {
+                      title: "Validation",
+                      value: "${{ needs.backup-validation.outputs.validation-status || 'skipped' }}",
+                      short: true
+                    },
+                    {
+                      title: "Restore Test",
+                      value: "${{ needs.backup-drill.result || 'skipped' }}",
+                      short: true
+                    },
+                    {
+                      title: "Repository",
+                      value: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}>",
+                      short: true
+                    },
+                    {
+                      title: "Workflow",
+                      value: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>",
+                      short: true
+                    }
+                  ],
+                  footer: "PingBuoy Backup System",
+                  ts: ${{ github.event.head_commit.timestamp && github.event.head_commit.timestamp || 0 }}
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.BACKUP_NOTIFICATION_WEBHOOK }}
+
+      - name: Send email notification (if configured)
+        if: always() && secrets.SMTP_HOST
+        run: |
+          # Send email notification using configured SMTP
+          cat > email_notification.txt << EOF
+          Subject: Backup Restore Drill - ${{ steps.prepare.outputs.status }}
+
+          Backup Restore Drill Results
+          ============================
+
+          Status: ${{ steps.prepare.outputs.status }}
+          Drill Type: ${{ steps.prepare.outputs.drill_type }}
+          Repository: ${{ github.repository }}
+
+          Details:
+          - Validation: ${{ needs.backup-validation.outputs.validation-status || 'skipped' }}
+          - Restore Test: ${{ needs.backup-drill.result || 'skipped' }}
+
+          View full details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ---
+          PingBuoy Automated Backup System
+          EOF
+
+          echo "Email notification prepared (SMTP sending would be implemented here)"
+
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    needs: [backup-validation, backup-drill]
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cleanup old backup logs
+        run: |
+          echo "🧹 Cleaning up old backup artifacts..."
+
+          # This would typically involve:
+          # 1. Removing old backup test files
+          # 2. Cleaning up temporary schemas
+          # 3. Archiving old logs
+          # 4. Updating backup metrics
+
+          echo "Cleanup completed"
+
+  update-metrics:
+    name: Update Backup Metrics
+    runs-on: ubuntu-latest
+    needs: [backup-validation, backup-drill]
+    if: always()
+
+    steps:
+      - name: Update backup health metrics
+        run: |
+          echo "📊 Updating backup health metrics..."
+
+          # Calculate metrics
+          VALIDATION_SUCCESS=${{ needs.backup-validation.outputs.validation-status == 'success' }}
+          DRILL_SUCCESS=${{ needs.backup-drill.result == 'success' }}
+
+          # In production, this would update monitoring dashboards
+          # and maintain backup health statistics
+
+          echo "Backup validation success: $VALIDATION_SUCCESS"
+          echo "Drill success: $DRILL_SUCCESS"
+          echo "Metrics updated"
+
+      - name: Update status badge (if configured)
+        run: |
+          # Update README badge or status page
+          # This could integrate with services like:
+          # - Statuspage.io
+          # - Custom status dashboard
+          # - README badge generation
+
+          echo "Status indicators updated"

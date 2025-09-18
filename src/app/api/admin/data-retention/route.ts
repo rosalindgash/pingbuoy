@@ -11,7 +11,7 @@ const runRetentionSchema = z.object({
 })
 
 // GET - Get retention status and report
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 }
 
 // DELETE - Process scheduled account deletions
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {

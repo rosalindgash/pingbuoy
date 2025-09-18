@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
+import { authLogger } from '@/lib/secure-logger'
 
 export default function AuthButton() {
   const [loading, setLoading] = useState(false)
@@ -31,14 +32,14 @@ export default function AuthButton() {
       })
 
       if (error) {
-        console.error('Supabase error:', error)
+        authLogger.error('Authentication failed', error)
         alert('Error: ' + error.message)
       } else {
         alert('Check your email for the login link!')
       }
     } catch (error) {
-      console.error('Fetch error:', error)
-      alert('An unexpected error occurred: ' + error)
+      authLogger.error('Unexpected authentication error', error)
+      alert('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

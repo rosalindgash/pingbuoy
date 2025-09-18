@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { Suspense } from 'react'
 import { NotificationSettings } from '@/components/NotificationSettings'
-import { Bell, History, Settings } from 'lucide-react'
+import { Bell, History, Settings, Shield } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Notification Settings - PingBuoy Dashboard',

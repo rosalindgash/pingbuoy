@@ -1,0 +1,59 @@
+# Branch Protection Configuration
+# This file documents the recommended branch protection settings
+# Apply these settings in GitHub repository settings > Branches
+
+main:
+  protection:
+    # Require pull request reviews before merging
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: true
+      require_code_owner_reviews: false
+      # Uncomment to require signed commits from reviewers
+      # require_last_push_approval: true
+
+    # Require status checks to pass before merging
+    required_status_checks:
+      strict: true
+      contexts:
+        - "Secrets and Security Scan"
+        - "CodeQL"
+        - "Dependency Review"
+        # Add commit verification when ready to enforce
+        # - "Commit Signature Verification"
+
+    # Enforce additional restrictions
+    enforce_admins: false
+    required_linear_history: false
+    allow_force_pushes: false
+    allow_deletions: false
+    block_creations: false
+
+    # Require signed commits (RECOMMENDED)
+    # Uncomment when ready to enforce commit signing
+    # required_signatures: true
+
+    restrictions:
+      # Restrict who can push to this branch
+      # teams: []
+      # users: []
+      apps: []
+
+develop:
+  protection:
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: true
+
+    required_status_checks:
+      strict: true
+      contexts:
+        - "Secrets and Security Scan"
+        - "CodeQL"
+
+    enforce_admins: false
+    allow_force_pushes: false
+    allow_deletions: false
+
+    # Consider enabling for develop branch too
+    # required_signatures: true

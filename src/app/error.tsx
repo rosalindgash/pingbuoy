@@ -4,7 +4,8 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
+import { logger } from '@/lib/secure-logger'
 
 interface ErrorProps {
   error: Error & { digest?: string }
@@ -13,24 +14,12 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
-    // Log error to monitoring service (but don't expose sensitive details to client)
-    const errorInfo = {
-      message: 'Application error occurred',
-      timestamp: new Date().toISOString(),
+    // Log error safely with automatic redaction
+    logger.error('Application error occurred', error, {
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
       url: typeof window !== 'undefined' ? window.location.href : 'unknown',
-      // Don't log the full error or stack trace to avoid exposing sensitive information
       errorDigest: error.digest || 'no-digest'
-    }
-    
-    // In production, send to your error monitoring service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: Send to error tracking service
-      console.error('Error tracked:', errorInfo)
-    } else {
-      // In development, show more details
-      console.error('Development error:', error)
-    }
+    })
   }, [error])
 
   const handleRefresh = () => {

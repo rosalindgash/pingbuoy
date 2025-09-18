@@ -52,7 +52,7 @@ export const PLANS = {
       'Page Speed monitoring (hourly checks, Core Web Vitals)',
       'SSL expiry monitoring (all sites, alerts before expiry)',
       'API monitoring (up to 5 endpoints)',
-      'Email + Slack + Webhooks alerts',
+      'Alerts via Email + Slack + Discord + Webhooks',
       'Weekly & monthly PDF/CSV reports',
       '90 days history',
       'Priority email support'

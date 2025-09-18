@@ -1,0 +1,42 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "react/no-unescaped-entities": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "security/detect-object-injection": "warn",
+    "security/detect-possible-timing-attacks": "warn",
+    "security/detect-unsafe-regex": "warn",
+    "no-secrets/no-secrets": "warn",
+
+    // Logging Security Rules
+    "no-console": ["error", {
+      "allow": []
+    }],
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.object.name='console']",
+        "message": "Use secure logger from @/lib/secure-logger instead of console.*. This prevents sensitive data exposure in production logs."
+      },
+      {
+        "selector": "MemberExpression[object.name='console'][property.name='log']",
+        "message": "Use logger.info() from @/lib/secure-logger instead of console.log(). Secure logger prevents sensitive data exposure."
+      },
+      {
+        "selector": "MemberExpression[object.name='console'][property.name='error']",
+        "message": "Use logger.error() from @/lib/secure-logger instead of console.error(). Secure logger redacts sensitive data and filters stack traces."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*.js", "**/*.config.js", "**/*.test.*"],
+      "rules": {
+        "no-console": "off",
+        "no-restricted-syntax": "off"
+      }
+    }
+  ]
+}

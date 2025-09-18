@@ -1,8 +1,26 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
 import { userProfileSchema, validateAndSanitize } from '@/lib/validation'
+import { validateCSRF } from '@/lib/csrf-protection'
+import { randomBytes } from 'crypto'
 
 export async function PUT(request: NextRequest) {
+  const requestId = randomBytes(8).toString('hex')
+
+  // CSRF Protection: Validate Origin/Referer for user profile update
+  const csrfValidation = validateCSRF(request)
+  if (!csrfValidation.isValid) {
+    console.warn(`[${requestId}] CSRF protection blocked profile update`, {
+      reason: csrfValidation.reason,
+      origin: csrfValidation.origin,
+      referer: csrfValidation.referer
+    })
+    return NextResponse.json(
+      { error: 'Request blocked by security policy' },
+      { status: 403 }
+    )
+  }
+
   try {
     const rawData = await request.json()
     

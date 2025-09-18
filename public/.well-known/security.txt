@@ -1,0 +1,45 @@
+Contact: security@pingbuoy.com
+Contact: https://pingbuoy.com/contact
+Expires: 2026-12-31T23:59:59.000Z
+Acknowledgments: https://pingbuoy.com/security/acknowledgments
+Preferred-Languages: en
+Canonical: https://pingbuoy.com/.well-known/security.txt
+Policy: https://pingbuoy.com/security/policy
+Hiring: https://pingbuoy.com/careers
+
+# Security Policy for PingBuoy
+#
+# We take security seriously. If you discover any security vulnerabilities
+# in PingBuoy, please report them responsibly to help us protect our users.
+#
+# SCOPE:
+# - PingBuoy main application (pingbuoy.com, www.pingbuoy.com, app.pingbuoy.com)
+# - API endpoints (/api/*)
+# - User data handling and authentication systems
+# - Payment processing integration
+# - Monitoring infrastructure
+#
+# OUT OF SCOPE:
+# - Third-party services and integrations
+# - Social engineering attacks
+# - Physical security
+# - Denial of service attacks
+# - Issues in outdated browser versions
+#
+# GUIDELINES:
+# - Please provide detailed steps to reproduce any security issues
+# - Allow reasonable time for investigation and remediation
+# - Do not access or modify user data without explicit permission
+# - Do not perform testing that could disrupt service availability
+#
+# RESPONSE TIME:
+# - Initial response: Within 48 hours
+# - Status updates: Every 7 days during investigation
+# - Resolution timeline: Varies based on severity and complexity
+#
+# RECOGNITION:
+# - Security researchers will be acknowledged (with permission)
+# - Hall of fame listing for significant contributions
+# - Potential bounty rewards for critical vulnerabilities
+#
+# Thank you for helping keep PingBuoy secure!

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase-server'
+import { withServiceAuth } from '@/lib/service-auth'
 import { z } from 'zod'
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import {
+  checkDualLimit,
+  getClientIP as getClientIPFromRequest,
+  createRateLimitResponse,
+  getRateLimitHeaders,
+  RATE_LIMIT_CONFIGS
+} from '@/lib/redis-rate-limit'
 
 // Query parameters schema
 const querySchema = z.object({
@@ -19,37 +21,10 @@ const querySchema = z.object({
   to_date: z.string().datetime().optional()
 })
 
-// Rate limiting
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
-const RATE_LIMIT_REQUESTS = 200 // requests per hour
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const userLimit = rateLimitMap.get(ip)
-
-  if (!userLimit || now > userLimit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-
-  if (userLimit.count >= RATE_LIMIT_REQUESTS) {
-    return false
-  }
-
-  userLimit.count++
-  return true
-}
-
-// Get client IP
-function getClientIP(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
-         request.headers.get('x-real-ip') || 
-         'unknown'
-}
+// Rate limiting now handled by Redis-based system
 
 // Authenticate user
-async function authenticateUser(request: NextRequest): Promise<{ user: any; error?: string }> {
+async function authenticateUser(request: NextRequest): Promise<{ user: { id: string; email: string } | null; error?: string }> {
   try {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -57,6 +32,7 @@ async function authenticateUser(request: NextRequest): Promise<{ user: any; erro
     }
 
     const token = authHeader.substring(7)
+    const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser(token)
 
     if (error || !user) {
@@ -64,7 +40,7 @@ async function authenticateUser(request: NextRequest): Promise<{ user: any; erro
     }
 
     return { user }
-  } catch (error) {
+  } catch {
     return { user: null, error: 'Authentication failed' }
   }
 }
@@ -72,21 +48,31 @@ async function authenticateUser(request: NextRequest): Promise<{ user: any; erro
 // GET: Retrieve user's notification history with filtering and pagination
 export async function GET(request: NextRequest) {
   try {
-    // Rate limiting
-    const clientIP = getClientIP(request)
-    if (!checkRateLimit(clientIP)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429 }
-      )
-    }
+    const clientIP = getClientIPFromRequest(request)
 
-    // Authentication
+    // Authentication first to get user info for rate limiting
     const { user, error: authError } = await authenticateUser(request)
     if (authError || !user) {
       return NextResponse.json(
         { error: authError || 'Unauthorized' },
         { status: 401 }
+      )
+    }
+
+    // Rate limiting with both IP and user limits
+    const rateLimitResult = await checkDualLimit(
+      clientIP,
+      user.id,
+      RATE_LIMIT_CONFIGS.api.ip,
+      RATE_LIMIT_CONFIGS.api.free, // Default to free plan
+      'notification_history'
+    )
+
+    if (!rateLimitResult.success) {
+      const relevantResult = rateLimitResult.ip.success ? rateLimitResult.user! : rateLimitResult.ip
+      return createRateLimitResponse(
+        relevantResult,
+        'Rate limit exceeded for notification history API'
       )
     }
 
@@ -97,7 +83,7 @@ export async function GET(request: NextRequest) {
     let parsedQuery
     try {
       parsedQuery = querySchema.parse(queryParams)
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid query parameters' },
         { status: 400 }
@@ -105,6 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
+    const supabase = await createClient()
     let query = supabase
       .from('notification_history')
       .select(`
@@ -164,6 +151,8 @@ export async function GET(request: NextRequest) {
     const hasNextPage = parsedQuery.page < totalPages
     const hasPrevPage = parsedQuery.page > 1
 
+    const relevantRateLimit = rateLimitResult.ip.success ? rateLimitResult.user! : rateLimitResult.ip
+
     return NextResponse.json({
       history: history || [],
       pagination: {
@@ -181,6 +170,8 @@ export async function GET(request: NextRequest) {
         from_date: parsedQuery.from_date,
         to_date: parsedQuery.to_date
       }
+    }, {
+      headers: getRateLimitHeaders(relevantRateLimit)
     })
 
   } catch (error) {
@@ -194,26 +185,24 @@ export async function GET(request: NextRequest) {
 
 // POST: Create notification history entry (system use only)
 export async function POST(request: NextRequest) {
-  try {
-    // Rate limiting
-    const clientIP = getClientIP(request)
-    if (!checkRateLimit(clientIP)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429 }
+  return withServiceAuth(request, 'notification_processor', async () => {
+    try {
+      // Rate limiting for system service
+      const clientIP = getClientIPFromRequest(request)
+      const rateLimitResult = await checkDualLimit(
+        clientIP,
+        null, // System service, no specific user
+        RATE_LIMIT_CONFIGS.api.ip,
+        RATE_LIMIT_CONFIGS.api.pro, // System service gets pro limits
+        'notification_system'
       )
-    }
 
-    // Check for service role authorization (only system can create history entries)
-    const authHeader = request.headers.get('Authorization')
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!authHeader?.includes(serviceKey!) || !serviceKey) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Service role required' },
-        { status: 401 }
-      )
-    }
+      if (!rateLimitResult.success) {
+        return createRateLimitResponse(
+          rateLimitResult.ip,
+          'Rate limit exceeded for notification system'
+        )
+      }
 
     // Parse request body
     const body = await request.json()
@@ -221,7 +210,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     const requiredFields = ['user_id', 'notification_type', 'alert_type', 'status', 'recipient']
     for (const field of requiredFields) {
-      if (!body[field]) {
+      if (!body[field]) { // eslint-disable-line security/detect-object-injection
         return NextResponse.json(
           { error: `Missing required field: ${field}` },
           { status: 400 }
@@ -264,32 +253,28 @@ export async function POST(request: NextRequest) {
       message: 'Notification history created successfully'
     }, { status: 201 })
 
-  } catch (error) {
-    console.error('Error in POST /api/notification-history:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    } catch (error) {
+      console.error('Error in POST /api/notification-history:', error)
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+    }
+  })
 }
 
 // DELETE: Delete old notification history (cleanup endpoint)
 export async function DELETE(request: NextRequest) {
-  try {
-    // Rate limiting
-    const clientIP = getClientIP(request)
-    if (!checkRateLimit(clientIP)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429 }
-      )
-    }
-
-    // Check for service role authorization
-    const authHeader = request.headers.get('Authorization')
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!authHeader?.includes(serviceKey!) || !serviceKey) {
+  return withServiceAuth(request, 'notification_processor', async () => {
+    try {
+      // Rate limiting
+      const clientIP = getClientIP(request)
+      if (!checkRateLimit(clientIP)) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded' },
+          { status: 429 }
+        )
+      }
       return NextResponse.json(
         { error: 'Unauthorized - Service role required' },
         { status: 401 }

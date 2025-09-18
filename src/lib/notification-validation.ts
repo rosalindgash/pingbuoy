@@ -1,10 +1,7 @@
 import { z } from 'zod'
-import DOMPurify from 'dompurify'
-import { JSDOM } from 'jsdom'
 
-// Initialize DOMPurify for server-side sanitization
-const window = new JSDOM('').window
-const purify = DOMPurify(window as any)
+// Server-safe validation without DOMPurify/JSDOM dependencies
+// For client-side usage, use DOMPurify directly in browser components
 
 // Phone number validation regex (E.164 format)
 const phoneRegex = /^\+[1-9]\d{1,14}$/
@@ -200,11 +197,15 @@ export class NotificationValidator {
     return NotificationValidator.instance
   }
 
-  // Sanitize user input
+  // Simple server-side sanitization (without DOMPurify)
   private sanitizeInput(value: any): any {
     if (typeof value === 'string') {
-      // Remove potential XSS and normalize
-      return purify.sanitize(value.trim(), { ALLOWED_TAGS: [] })
+      // Basic XSS prevention - remove script tags and normalize
+      return value
+        .trim()
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '')
     }
     return value
   }

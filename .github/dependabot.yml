@@ -1,0 +1,157 @@
+# Dependabot configuration for automated dependency updates
+# Focuses on security patches for critical packages
+
+version: 2
+updates:
+  # Main package.json dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+
+    # Security-first update strategy
+    open-pull-requests-limit: 10
+
+    # Group related updates to reduce PR noise
+    groups:
+      # Critical security packages (highest priority)
+      security-critical:
+        patterns:
+          - "next"
+          - "@supabase/*"
+          - "stripe"
+          - "@stripe/*"
+        update-types:
+          - "security"
+          - "patch"
+          - "minor"
+
+      # Authentication & security libraries
+      auth-security:
+        patterns:
+          - "jose"
+          - "bcrypt*"
+          - "*auth*"
+          - "jsonwebtoken"
+          - "passport*"
+          - "crypto*"
+        update-types:
+          - "security"
+          - "patch"
+
+      # Development tools & linting
+      dev-tools:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+          - "typescript"
+          - "prettier"
+          - "jest"
+          - "@types/*"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # React ecosystem
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@radix-ui/*"
+          - "lucide-react"
+        update-types:
+          - "patch"
+          - "minor"
+
+    # Allow specific dependency updates
+    allow:
+      # Always allow security updates
+      - dependency-type: "all"
+        update-type: "security"
+
+      # Allow patch updates for production dependencies
+      - dependency-type: "direct:production"
+        update-type: "patch"
+
+      # Allow minor updates for critical packages
+      - dependency-name: "next"
+        update-type: "minor"
+      - dependency-name: "@supabase/*"
+        update-type: "minor"
+      - dependency-name: "stripe"
+        update-type: "minor"
+      - dependency-name: "@stripe/*"
+        update-type: "minor"
+
+    # Ignore major version updates (manual review needed)
+    ignore:
+      - dependency-name: "*"
+        update-type: "version-update:semver-major"
+
+      # Ignore specific problematic packages
+      - dependency-name: "eslint"
+        versions: [">= 9.0.0"]  # ESLint 9 has breaking changes
+
+    # Commit message customization
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(dev-deps)"
+      include: "scope"
+
+    # PR customization
+    pull-request-branch-name:
+      separator: "/"
+
+    # Reviewers (customize with your team)
+    reviewers:
+      - "security-team"  # Replace with actual GitHub usernames/teams
+
+    # Labels for easy filtering
+    labels:
+      - "dependencies"
+      - "security"
+      - "automated"
+
+    # Target branch (usually main/master)
+    target-branch: "main"
+
+  # GitHub Actions security updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/New_York"
+
+    open-pull-requests-limit: 5
+
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+
+    labels:
+      - "github-actions"
+      - "security"
+      - "automated"
+
+  # Docker security updates (if using Docker)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+
+    open-pull-requests-limit: 3
+
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+
+    labels:
+      - "docker"
+      - "security"
+      - "automated"

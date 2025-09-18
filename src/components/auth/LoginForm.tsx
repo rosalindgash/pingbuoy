@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import MFAVerification from './MFAVerification'
@@ -32,6 +31,13 @@ export default function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setMessage('')
+
+    // Check if Supabase is configured
+    if (!supabase) {
+      setMessage('Authentication service is not configured. Please set up environment variables.')
+      setLoading(false)
+      return
+    }
 
     try {
       // First, attempt login with email and password
@@ -141,9 +147,13 @@ export default function LoginForm() {
           </div>
         )}
         
-        <Button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        >
           {loading ? 'Signing in...' : 'Sign in'}
-        </Button>
+        </button>
         
         <div className="text-center">
           <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">

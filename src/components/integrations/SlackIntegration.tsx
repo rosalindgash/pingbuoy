@@ -13,7 +13,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 
 interface SlackIntegrationProps {
   userId: string
