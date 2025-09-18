@@ -1,6 +1,6 @@
-# PingBuoy - Enterprise Website Monitoring SaaS
+# PingBuoy - Website Monitoring SaaS
 
-A comprehensive, production-ready website monitoring solution built with Next.js 15, Supabase, and Stripe. Monitor uptime, detect dead links, and get instant alerts when issues occur.
+A comprehensive, production-ready website monitoring solution built with Next.js 15, Supabase, and Stripe. Monitor uptime, track page performance, check SSL certificates, and get instant alerts when issues occur.
 
 ![Security Score](https://img.shields.io/badge/Security%20Score-96%2F100-brightgreen)
 ![Production Ready](https://img.shields.io/badge/Production-Ready-success)
@@ -10,26 +10,30 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 ## ✨ Features
 
 ### 🔍 Core Monitoring
-- **Uptime Monitoring**: Check websites every 5 minutes with instant downtime alerts
+- **Uptime Monitoring**: Check websites every 5 minutes (free) or 1 minute (Pro) with instant downtime alerts
+- **Page Speed Monitoring**: Track Core Web Vitals and performance metrics daily (free) or hourly (Pro)
+- **SSL Certificate Monitoring**: Monitor certificate expiry dates (Pro plan)
+- **API Endpoint Monitoring**: Monitor REST API endpoints and response times (Pro plan)
 - **Dead Link Detection**: Comprehensive broken link scanning with scheduling
 - **Response Time Tracking**: Monitor website performance metrics and trends
-- **Historical Analytics**: 30-day and 90-day uptime statistics with charts
-- **Real-time Status Dashboard**: Live monitoring with instant updates
+- **Historical Analytics**: 30-day and 90-day uptime statistics with interactive charts
 
 ### 👥 User Experience
 - **Magic Link Authentication**: Passwordless login with email verification
 - **Multi-Factor Authentication**: Optional TOTP/MFA for enhanced security
 - **Responsive Dashboard**: Mobile-optimized interface for monitoring on-the-go
+- **Real-time Updates**: Live dashboard updates with instant status changes
 - **Email Notifications**: Instant alerts for downtime, recovery, and reports
+- **Advanced Alerting**: Slack integration and webhooks (Pro plan)
 - **CSV/JSON Exports**: Download monitoring data for analysis
-- **Public Status Pages**: Share website status with customers (coming soon)
+- **PDF Reports**: Automated weekly and monthly reports (Pro plan)
 
 ### 💼 Business Features
-- **Tiered Pricing**: Free (5 sites), Pro (50 sites, $29/mo), Enterprise (unlimited)
+- **Tiered Pricing**: Free (3 sites), Pro (unlimited sites, $29/mo)
 - **Stripe Integration**: Secure payment processing and subscription management
-- **Waitlist System**: Capture leads for upcoming Enterprise plan
 - **Multi-user Support**: Each user manages their own sites and alerts
 - **Plan Enforcement**: Automatic site limits based on subscription
+- **Public Status Pages**: Share website status with customers (coming soon)
 
 ### 🔒 Security & Compliance
 - **GDPR Compliant**: Complete privacy controls and data export/deletion
@@ -38,9 +42,10 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 - **XSS Protection**: DOMPurify sanitization and CSP policies
 - **Row Level Security**: Database-level access controls
 - **Rate Limiting**: API protection against abuse
+- **SSRF Protection**: Server-side request forgery prevention
 
 ### 🚀 Performance & Reliability
-- **Next.js 15**: Latest App Router with server components
+- **Next.js 15**: Latest App Router with server components and React 19
 - **Edge Functions**: Supabase Edge Runtime for monitoring
 - **CDN Optimized**: Vercel edge network for global performance
 - **Database Optimization**: Efficient queries and proper indexing
@@ -50,11 +55,11 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 
 ### Frontend
 - **Next.js 15** - React framework with App Router
+- **React 19** - Latest React with server components
 - **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
+- **Tailwind CSS 4** - Modern utility-first styling
 - **Lucide React** - Beautiful icons
-- **Recharts** - Interactive charts
-- **React Hook Form** - Form management
+- **Recharts** - Interactive charts and analytics
 - **Zod** - Schema validation
 
 ### Backend & Database
@@ -77,7 +82,6 @@ A comprehensive, production-ready website monitoring solution built with Next.js
 ## 🚀 Quick Start
 
 ### Prerequisites
-
 - Node.js 18+ installed
 - Supabase account (free tier available)
 - Stripe account (test mode is fine for development)
@@ -118,14 +122,13 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 RESEND_API_KEY=re_...
 
 # App Configuration
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:4000
 ```
 
 4. **Set up Supabase Database**
    - Create a new Supabase project
-   - Go to SQL Editor in your Supabase dashboard
-   - Copy and run the contents of `database-schema.sql`
-   - Copy and run the contents of `database-migrations.sql`
+   - Run the database schema from the `supabase` directory
+   - Enable Row Level Security policies
 
 5. **Configure Stripe Products**
    - In Stripe Dashboard, create a product for "Pro Plan"
@@ -137,7 +140,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 npm run dev
 ```
 
-Visit `http://localhost:3000` to see the application.
+Visit `http://localhost:4000` to see the application.
 
 ## 📋 Environment Variables Reference
 
@@ -164,7 +167,8 @@ Visit `http://localhost:3000` to see the application.
 
 ### Key Features Implementation
 - **Authentication**: Supabase Auth with magic links and MFA
-- **Monitoring**: Edge Functions for uptime checks every 5 minutes
+- **Monitoring**: Edge Functions for uptime checks
+- **Performance**: PageSpeed Insights API integration
 - **Payments**: Stripe Checkout with webhook processing
 - **Security**: Comprehensive 2025 security standards implementation
 - **Privacy**: Full GDPR compliance with data export/deletion tools
@@ -172,33 +176,46 @@ Visit `http://localhost:3000` to see the application.
 ## 🚀 Production Deployment
 
 ### Automated Deployment (Recommended)
-1. **Follow the step-by-step guide**: See `deployment-guide.md` in your Documents folder
-2. **Deploy to Vercel**: Connect GitHub repository to Vercel
-3. **Configure Environment Variables**: Add all production keys in Vercel dashboard
-4. **Update Webhook URLs**: Configure Stripe webhooks with production URL
+1. **Deploy to Vercel**: Connect GitHub repository to Vercel
+2. **Configure Environment Variables**: Add all production keys in Vercel dashboard
+3. **Update Webhook URLs**: Configure Stripe webhooks with production URL
+4. **Database Migration**: Run migrations in production Supabase instance
 
 ### Manual Deployment
 The application supports deployment to:
 - **Vercel** (recommended)
 - **Railway**
-- **Heroku** 
+- **Heroku**
 - **DigitalOcean App Platform**
 - **AWS Amplify**
 - **Netlify**
 
-## 📊 Monitoring and Analytics
+## 📊 Available Scripts
 
-### Built-in Analytics
-- User registration and engagement tracking
-- Website uptime statistics and trends
-- Payment and subscription metrics
-- Error tracking and performance monitoring
+```bash
+# Development
+npm run dev              # Start development server on port 4000
+npm run build            # Build for production with Turbopack
+npm start                # Start production server
 
-### Third-party Integration Ready
-- Google Analytics 4 support
-- Stripe analytics dashboard
-- Supabase real-time analytics
-- Custom event tracking
+# Code Quality
+npm run lint             # Run ESLint checks
+npm run lint:security    # Run security-focused ESLint rules
+npm run security-check   # Run comprehensive security checks
+
+# Testing & Health
+npm run test:redis       # Test Redis connection
+npm run health:redis     # Check Redis health endpoint
+
+# Dependencies
+npm run deps:audit       # Audit dependencies for vulnerabilities
+npm run deps:update      # Update dependencies
+npm run deps:licenses    # Generate license report
+
+# Pre-deployment
+npm run pre-deploy       # Run security checks, lint, and audit
+npm run build:secure     # Secure build with all checks
+```
 
 ## 🔐 Security Features
 
@@ -210,6 +227,7 @@ The application supports deployment to:
 - **📊 Rate Limiting**: API protection against abuse
 - **🗃️ Database Security**: Row Level Security policies
 - **📝 Audit Logging**: Comprehensive security event logging
+- **🛡️ SSRF Protection**: Server-side request forgery prevention
 
 ### GDPR Compliance
 - **✅ Data Export**: Users can download all their data
@@ -220,7 +238,7 @@ The application supports deployment to:
 
 ## 📈 Performance Optimization
 
-- **⚡ Next.js 15**: Latest performance improvements
+- **⚡ Next.js 15**: Latest performance improvements with React 19
 - **🌐 Edge Runtime**: Global edge function deployment
 - **📱 Mobile Optimized**: Responsive design for all devices
 - **🔄 Real-time Updates**: Live dashboard updates
@@ -232,18 +250,20 @@ The application supports deployment to:
 ### Development Testing
 ```bash
 # Run type checking
-npm run type-check
-
-# Run linting
 npm run lint
 
-# Check security issues
+# Run security checks
 npm run security-check
+
+# Test specific components
+npm run test:redis
 ```
 
 ### Production Testing Checklist
 - [ ] User registration and authentication
 - [ ] Website monitoring functionality
+- [ ] Page speed monitoring
+- [ ] SSL certificate monitoring
 - [ ] Payment processing and webhooks
 - [ ] Email notifications
 - [ ] Dashboard responsiveness
@@ -253,17 +273,19 @@ npm run security-check
 
 ### Public Endpoints
 ```
-POST /api/waitlist        - Add to enterprise waitlist
 GET  /api/health          - Health check endpoint
+POST /api/contact         - Contact form submission
 ```
 
 ### Authenticated Endpoints
 ```
 POST /api/sites           - Add new website
-GET  /api/sites           - List user websites  
+GET  /api/sites           - List user websites
 DELETE /api/sites         - Remove website
 POST /api/checkout        - Create Stripe checkout
 GET  /api/billing/portal  - Access billing portal
+GET  /api/performance/[siteId] - Get performance metrics
+POST /api/dead-links/scan - Start dead link scan
 ```
 
 ### Webhook Endpoints
@@ -276,11 +298,10 @@ POST /api/webhooks/stripe - Stripe payment webhooks
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes with proper TypeScript types
-4. Add tests if applicable
-5. Run `npm run lint` and `npm run type-check`
-6. Commit changes: `git commit -m 'Add amazing feature'`
-7. Push to branch: `git push origin feature/amazing-feature`
-8. Submit a pull request
+4. Run `npm run lint` and `npm run security-check`
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push to branch: `git push origin feature/amazing-feature`
+7. Submit a pull request
 
 ## 📄 License
 
@@ -289,14 +310,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support & Resources
 
 ### Documentation
-- **📖 Deployment Guide**: `deployment-guide.md`
 - **🔒 Security Guide**: Comprehensive security documentation
 - **🎨 Component Guide**: UI component documentation
 
 ### Support Channels
 - **📧 Email**: support@pingbuoy.com
 - **🐛 Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
 
 ### Useful Links
 - [Supabase Documentation](https://supabase.com/docs)
@@ -308,6 +327,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### ✅ Completed (Production Ready)
 - Complete website monitoring system
+- Page speed and performance monitoring
+- SSL certificate monitoring
 - User authentication and authorization
 - Payment processing with Stripe
 - GDPR compliant privacy tools
@@ -327,9 +348,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **White-label Options** - Custom branding for agencies
 - **Advanced Alerting Rules** - Complex notification logic
 - **Incident Management** - Issue tracking and resolution
+- **Public Status Pages** - Customer-facing status dashboards
 
 ---
 
-**Built with ❤️ by the PingBuoy team**
+**Built with ❤️ for reliable website monitoring**
 
-*Last updated: December 2024 - Production Ready v1.0*
+*Version 1.0 - Production Ready*
