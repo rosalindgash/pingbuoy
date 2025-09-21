@@ -34,7 +34,7 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef
+const Button = React.forwardRef<
   React.ElementRef<"button">,
   React.ComponentPropsWithoutRef<"button"> & VariantProps<typeof buttonVariants> & {
     asChild?: boolean
@@ -50,3 +50,5 @@ const Button = React.forwardRef
   )
 })
 Button.displayName = "Button"
+
+export { Button, buttonVariants }

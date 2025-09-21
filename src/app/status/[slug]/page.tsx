@@ -8,8 +8,8 @@ import { notFound } from "next/navigation";
 
 // You already have these (names based on our previous messages).
 // Adjust import paths if your project structure differs.
-import { getUserPublicSitesBySlug } from "@/src/lib/db";
-import { getStatusesForSites } from "@/src/lib/status-cache";
+import { getUserPublicSitesBySlug } from "@/lib/db";
+import { getStatusesForSites } from "@/lib/status-cache";
 
 export const dynamic = "force-dynamic"; // ensure fresh data on each request
 
