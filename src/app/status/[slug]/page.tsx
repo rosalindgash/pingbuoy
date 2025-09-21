@@ -137,11 +137,11 @@ export default async function StatusPage({ params }: PageProps) {
         })}
       </ul>
 
-      {/*
-        If/when you add per-site public pages:
-        - Wrap the card in a Link to `/status/${slug}/${site.public_slug || site.slug}`
-        - The per-site page can use a single GET to Redis for that site's latest,
-          and pull history charts from Postgres.
+      /*
+        // If/when you add per-site public pages:
+        // - Wrap the card in a Link to `/status/${slug}/${site.public_slug || site.slug}`
+        // - The per-site page can use a single GET to Redis for that site's latest,
+        // and pull history charts from Postgres.
       */}
     </main>
   );
