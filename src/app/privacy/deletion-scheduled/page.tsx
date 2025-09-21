@@ -22,7 +22,9 @@ interface DeletionInfo {
 
 export default function DeletionScheduledPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status || 'loading'
   const [deletionInfo, setDeletionInfo] = useState<DeletionInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeUntilDeletion, setTimeUntilDeletion] = useState<string>('')
