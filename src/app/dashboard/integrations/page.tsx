@@ -3,9 +3,6 @@
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
-
-// ... rest of your imports
-import { Suspense } from 'react'
 import {
   Puzzle,
   Plus,
