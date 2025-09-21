@@ -318,18 +318,3 @@ export async function DELETE(request: NextRequest) {
     }
   })
 }
-
-    return NextResponse.json({
-      message: `Deleted ${deletedRecords?.length || 0} old notification history records`,
-      deletedCount: deletedRecords?.length || 0,
-      cutoffDate: cutoffDate.toISOString()
-    })
-
-  } catch (error) {
-    console.error('Error in DELETE /api/notification-history:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
