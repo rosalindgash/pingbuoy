@@ -8,12 +8,6 @@ import { Metadata } from 'next'
 import { Home, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: '404 - Page Not Found | PingBuoy',
-  description: 'The page you are looking for does not exist. Return to PingBuoy home page or explore our website monitoring features.',
-  robots: 'noindex, nofollow', // Prevent search engines from indexing error pages
-}
-
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
