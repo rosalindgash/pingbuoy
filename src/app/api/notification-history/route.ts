@@ -268,36 +268,56 @@ export async function DELETE(request: NextRequest) {
   return withServiceAuth(request, 'notification_processor', async () => {
     try {
       // Rate limiting
-      const clientIP = getClientIP(request)
-      if (!checkRateLimit(clientIP)) {
-        return NextResponse.json(
-          { error: 'Rate limit exceeded' },
-          { status: 429 }
+      const clientIP = getClientIPFromRequest(request)
+      const rateLimitResult = await checkDualLimit(
+        clientIP,
+        null, // System service, no specific user
+        RATE_LIMIT_CONFIGS.api.ip,
+        RATE_LIMIT_CONFIGS.api.pro, // System service gets pro limits
+        'notification_cleanup'
+      )
+
+      if (!rateLimitResult.success) {
+        return createRateLimitResponse(
+          rateLimitResult.ip,
+          'Rate limit exceeded for notification cleanup'
         )
       }
+
+      // Delete records older than 90 days
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - 90)
+
+      const supabase = await createClient()
+      const { data: deletedRecords, error: dbError } = await supabase
+        .from('notification_history')
+        .delete()
+        .lt('created_at', cutoffDate.toISOString())
+        .select('id')
+
+      if (dbError) {
+        console.error('Database error deleting old notification history:', dbError)
+        return NextResponse.json(
+          { error: 'Failed to delete old notification history' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        message: `Deleted ${deletedRecords?.length || 0} old notification history records`,
+        deletedCount: deletedRecords?.length || 0,
+        cutoffDate: cutoffDate.toISOString()
+      })
+
+    } catch (error) {
+      console.error('Error in DELETE /api/notification-history:', error)
       return NextResponse.json(
-        { error: 'Unauthorized - Service role required' },
-        { status: 401 }
-      )
-    }
-
-    // Delete records older than 90 days
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - 90)
-
-    const { data: deletedRecords, error: dbError } = await supabase
-      .from('notification_history')
-      .delete()
-      .lt('created_at', cutoffDate.toISOString())
-      .select('id')
-
-    if (dbError) {
-      console.error('Database error deleting old notification history:', dbError)
-      return NextResponse.json(
-        { error: 'Failed to delete old notification history' },
+        { error: 'Internal server error' },
         { status: 500 }
       )
     }
+  })
+}
 
     return NextResponse.json({
       message: `Deleted ${deletedRecords?.length || 0} old notification history records`,

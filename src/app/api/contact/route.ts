@@ -96,17 +96,16 @@ Submitted at: ${new Date().toISOString()}
     // Send email using nodemailer
     try {
       // Create transporter
-      const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST,
+      const transporter = nodemailer.createTransport({ 
+		host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
-        },
-        
-      ,
-    ...(process.env.NODE_ENV === "production" ? {} : { tls: { rejectUnauthorized: false } })
-  })
+        },          
+		...(process.env.NODE_ENV === "production" ? {} : { tls: { rejectUnauthorized: false } })
+	})
       
       const info = await transporter.sendMail({
         from: `"PingBuoy Contact Form" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
