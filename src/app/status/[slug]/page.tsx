@@ -8,7 +8,7 @@ import { notFound } from "next/navigation";
 
 // You already have these (names based on our previous messages).
 // Adjust import paths if your project structure differs.
-import { getUserPublicSitesBySlug } from "@/lib/db";
+// import { getUserPublicSitesBySlug } from "@/lib/db";
 import { getStatusesForSites } from "@/lib/status-cache";
 
 export const dynamic = "force-dynamic"; // ensure fresh data on each request
@@ -50,6 +50,8 @@ function formatWhen(iso?: string | null) {
   }
 }
 
+// TEMPORARY: Commented out until database integration is set up
+/*
 export default async function StatusPage({ params }: PageProps) {
   const slug = params?.slug?.trim();
   if (!slug) notFound();
@@ -141,6 +143,22 @@ export default async function StatusPage({ params }: PageProps) {
         - The per-site page can use a single GET to Redis for that site's latest,
           and pull history charts from Postgres.
       */}
+    </main>
+  );
+}
+*/
+
+// TEMPORARY BYPASS - Replace with above when database integration is ready
+export default async function StatusPage({ params }: PageProps) {
+  const slug = params?.slug?.trim();
+  if (!slug) notFound();
+
+  return (
+    <main className="mx-auto max-w-4xl p-6">
+      <h1 className="text-2xl font-semibold">Status</h1>
+      <p className="mt-2 text-neutral-600">
+        User status pages coming soon.
+      </p>
     </main>
   );
 }
