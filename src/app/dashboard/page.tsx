@@ -45,6 +45,8 @@ export default function DashboardPage() {
   const [addSiteLoading, setAddSiteLoading] = useState(false)
   const [editSiteLoading, setEditSiteLoading] = useState(false)
   const [siteForm, setSiteForm] = useState({ name: '', url: '' })
+  const [checkingAll, setCheckingAll] = useState(false)
+  const [checkingSites, setCheckingSites] = useState<Record<string, boolean>>({})
   const pathname = usePathname()
 
   // Build navigation based on user plan
@@ -234,6 +236,69 @@ export default function DashboardPage() {
     window.location.href = '/login'
   }
 
+  const handleManualCheck = async (siteId: string) => {
+    setCheckingSites(prev => ({ ...prev, [siteId]: true }))
+
+    try {
+      const response = await fetch(`/api/sites/${siteId}/ping`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        // Update the site status in our local state
+        setSites(prev => prev.map(site =>
+          site.id === siteId
+            ? { ...site, status: result.status, last_checked: result.checkedAt }
+            : site
+        ))
+        // Refresh uptime stats for this site
+        fetchUptimeStats(siteId)
+      }
+    } catch (error) {
+      console.error('Error checking site:', error)
+    } finally {
+      setCheckingSites(prev => ({ ...prev, [siteId]: false }))
+    }
+  }
+
+  const handleCheckAllSites = async () => {
+    setCheckingAll(true)
+
+    try {
+      // Check all sites in parallel
+      const checkPromises = sites.map(site =>
+        fetch(`/api/sites/${site.id}/ping`, { method: 'POST' })
+          .then(response => response.ok ? response.json() : null)
+          .then(result => ({ siteId: site.id, result }))
+          .catch(() => ({ siteId: site.id, result: null }))
+      )
+
+      const results = await Promise.all(checkPromises)
+
+      // Update all site statuses
+      setSites(prev => prev.map(site => {
+        const checkResult = results.find(r => r.siteId === site.id)
+        if (checkResult?.result) {
+          return {
+            ...site,
+            status: checkResult.result.status,
+            last_checked: checkResult.result.checkedAt
+          }
+        }
+        return site
+      }))
+
+      // Refresh uptime stats for all sites
+      sites.forEach(site => fetchUptimeStats(site.id))
+
+    } catch (error) {
+      console.error('Error checking all sites:', error)
+    } finally {
+      setCheckingAll(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -278,7 +343,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-white">
+      <div className="hidden lg:flex lg:w-48 lg:flex-col lg:fixed lg:inset-y-0 bg-white">
         <div className="flex h-16 items-center px-4">
           <Link href="/dashboard">
             <Image src="/ping-buoy-header-logo.png" alt="PingBuoy" width={132} height={35} className="h-9 w-auto cursor-pointer" />
@@ -312,7 +377,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-48">
         {/* Top bar */}
         <div className="flex h-16 items-center justify-between bg-white px-4 lg:px-6">
           <button
@@ -343,13 +408,25 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                 <p className="text-gray-600">Monitor your websites and track their performance</p>
               </div>
-              <button
-                onClick={() => setShowAddSite(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Website
-              </button>
+              <div className="flex items-center space-x-3">
+                {sites.length > 0 && (
+                  <button
+                    onClick={handleCheckAllSites}
+                    disabled={checkingAll}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700 disabled:opacity-50"
+                  >
+                    <Activity className="w-4 h-4 mr-2" />
+                    {checkingAll ? 'Checking...' : 'Check All Sites'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowAddSite(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Website
+                </button>
+              </div>
             </div>
           </div>
 
@@ -419,20 +496,13 @@ export default function DashboardPage() {
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      profile?.plan === 'founder' ? 'bg-purple-500' : 
-                      profile?.plan === 'pro' ? 'bg-blue-500' : 'bg-gray-500'
-                    }`}>
-                      <span className="text-white text-sm font-semibold">
-                        {profile?.plan?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    <Activity className="w-8 h-8 text-blue-500" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Plan</dt>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Active Sites</dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : 'Free'}
+                        {sites.filter(site => site.is_active).length}
                       </dd>
                     </dl>
                   </div>
@@ -493,18 +563,19 @@ export default function DashboardPage() {
                           {/* Center: Compact stats */}
                           <div className="hidden md:flex items-center space-x-6 mx-6">
                             <div className="text-center">
+                              <div className="text-xs text-gray-500 mb-1">Uptime</div>
                               <div className="text-sm font-semibold text-gray-900">
                                 {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
                               </div>
-                              <div className="text-xs text-gray-500">Uptime</div>
                             </div>
                             <div className="text-center">
+                              <div className="text-xs text-gray-500 mb-1">Checks</div>
                               <div className="text-sm font-semibold text-gray-900">
                                 {statsLoading ? '...' : stats ? stats.total : 'N/A'}
                               </div>
-                              <div className="text-xs text-gray-500">Checks</div>
                             </div>
                             <div className="text-center">
+                              <div className="text-xs text-gray-500 mb-1">Last Check</div>
                               <div className="text-sm font-semibold text-gray-900">
                                 {site.last_checked
                                   ? new Date(site.last_checked).toLocaleDateString('en-US', {
@@ -513,12 +584,20 @@ export default function DashboardPage() {
                                   : 'Never'
                                 }
                               </div>
-                              <div className="text-xs text-gray-500">Last Check</div>
                             </div>
                           </div>
 
                           {/* Right: Actions */}
                           <div className="flex items-center space-x-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleManualCheck(site.id)}
+                              disabled={checkingSites[site.id]}
+                              className="text-green-600 hover:text-green-800 text-sm px-2 py-1 rounded hover:bg-green-50 disabled:opacity-50 flex items-center"
+                              title="Run manual check"
+                            >
+                              <Activity className="w-3 h-3 mr-1" />
+                              {checkingSites[site.id] ? 'Checking...' : 'Check'}
+                            </button>
                             <button
                               onClick={() => handleEditSite(site)}
                               className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50"
@@ -537,18 +616,19 @@ export default function DashboardPage() {
                         {/* Mobile stats - show on small screens */}
                         <div className="md:hidden mt-3 grid grid-cols-3 gap-3 text-center">
                           <div>
+                            <div className="text-xs text-gray-500 mb-1">Uptime</div>
                             <div className="text-sm font-semibold text-gray-900">
                               {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
                             </div>
-                            <div className="text-xs text-gray-500">Uptime</div>
                           </div>
                           <div>
+                            <div className="text-xs text-gray-500 mb-1">Checks</div>
                             <div className="text-sm font-semibold text-gray-900">
                               {statsLoading ? '...' : stats ? stats.total : 'N/A'}
                             </div>
-                            <div className="text-xs text-gray-500">Checks</div>
                           </div>
                           <div>
+                            <div className="text-xs text-gray-500 mb-1">Last Check</div>
                             <div className="text-sm font-semibold text-gray-900">
                               {site.last_checked
                                 ? new Date(site.last_checked).toLocaleDateString('en-US', {
@@ -557,7 +637,6 @@ export default function DashboardPage() {
                                 : 'Never'
                               }
                             </div>
-                            <div className="text-xs text-gray-500">Last Check</div>
                           </div>
                         </div>
                       </div>
