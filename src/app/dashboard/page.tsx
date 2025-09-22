@@ -63,6 +63,11 @@ export default function DashboardPage() {
       baseNavigation.push({ name: 'Integrations', href: '/dashboard/integrations', icon: Puzzle })
     }
 
+    // Add Core Web Vitals for founder accounts
+    if (profile?.plan === 'founder') {
+      baseNavigation.push({ name: 'Core Vitals', href: '/dashboard/core-vitals', icon: Activity })
+    }
+
     baseNavigation.push({ name: 'Settings', href: '/dashboard/settings', icon: Settings })
 
     return baseNavigation

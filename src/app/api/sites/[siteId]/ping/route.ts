@@ -16,13 +16,20 @@ export async function POST(
           get(name: string) {
             return cookieStore.get(name)?.value
           },
+          set(name: string, value: string, options: any) {
+            // Required for SSR client
+          },
+          remove(name: string, options: any) {
+            // Required for SSR client
+          },
         },
       }
     )
 
     // Check authentication
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      console.error('Authentication failed in ping API:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
