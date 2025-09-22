@@ -462,86 +462,103 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {sites.map((site) => {
                     const stats = uptimeStats[site.id]
                     const statsLoading = uptimeLoading[site.id]
-                    
+
                     return (
-                      <div key={site.id} className="border rounded-lg p-4 space-y-4">
-                        {/* Site Header */}
+                      <div key={site.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className={`w-3 h-3 rounded-full ${
+                          {/* Left: Site info with status */}
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
                               site.status === 'up' ? 'bg-green-500' :
                               site.status === 'down' ? 'bg-red-500' : 'bg-gray-500'
                             }`} />
-                            <div>
-                              <h4 className="font-medium text-gray-900">{site.name}</h4>
-                              <p className="text-sm text-gray-500">{site.url}</p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-medium text-gray-900 truncate">{site.name}</h4>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ${
+                                  site.status === 'up' ? 'bg-green-100 text-green-700' :
+                                  site.status === 'down' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500 truncate">{site.url}</p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              site.status === 'up' ? 'bg-green-100 text-green-800' :
-                              site.status === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
-                            </span>
+
+                          {/* Center: Compact stats */}
+                          <div className="hidden md:flex items-center space-x-6 mx-6">
+                            <div className="text-center">
+                              <div className="text-sm font-semibold text-gray-900">
+                                {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-500">Uptime</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-sm font-semibold text-gray-900">
+                                {statsLoading ? '...' : stats ? stats.total : 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-500">Checks</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-sm font-semibold text-gray-900">
+                                {site.last_checked
+                                  ? new Date(site.last_checked).toLocaleDateString('en-US', {
+                                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                    })
+                                  : 'Never'
+                                }
+                              </div>
+                              <div className="text-xs text-gray-500">Last Check</div>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions */}
+                          <div className="flex items-center space-x-2 flex-shrink-0">
                             <button
                               onClick={() => handleEditSite(site)}
-                              className="text-blue-600 hover:text-blue-900 text-sm mr-2"
+                              className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handleDeleteSite(site.id)}
-                              className="text-red-600 hover:text-red-900 text-sm"
+                              className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50"
                             >
                               Delete
                             </button>
                           </div>
                         </div>
 
-                        {/* Uptime Stats */}
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="text-lg font-semibold text-gray-900">
+                        {/* Mobile stats - show on small screens */}
+                        <div className="md:hidden mt-3 grid grid-cols-3 gap-3 text-center">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
                               {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
                             </div>
-                            <div className="text-xs text-gray-500">30-day uptime</div>
+                            <div className="text-xs text-gray-500">Uptime</div>
                           </div>
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="text-lg font-semibold text-gray-900">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
                               {statsLoading ? '...' : stats ? stats.total : 'N/A'}
                             </div>
-                            <div className="text-xs text-gray-500">Total checks</div>
+                            <div className="text-xs text-gray-500">Checks</div>
                           </div>
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="text-lg font-semibold text-green-600">
-                              {statsLoading ? '...' : stats ? stats.up : 'N/A'}
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              {site.last_checked
+                                ? new Date(site.last_checked).toLocaleDateString('en-US', {
+                                    month: 'short', day: 'numeric'
+                                  })
+                                : 'Never'
+                              }
                             </div>
-                            <div className="text-xs text-gray-500">Successful checks</div>
+                            <div className="text-xs text-gray-500">Last Check</div>
                           </div>
-                        </div>
-
-                        {/* Uptime Chart */}
-                        <div>
-                          <div className="text-sm text-gray-700 mb-2">Uptime History</div>
-                          <UptimeChartClient siteId={site.id} />
-                        </div>
-
-                        {/* Basic Website Monitoring */}
-                        <div className="mt-6">
-                          <BasicMonitor
-                            site={{
-                              id: site.id,
-                              name: site.name,
-                              url: site.url,
-                              status: site.status,
-                              last_checked: site.last_checked
-                            }}
-                          />
                         </div>
                       </div>
                     )
