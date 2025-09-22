@@ -62,9 +62,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // TEMPORARILY DISABLE ALL AUTH CHECKS - DEBUGGING REDIRECT LOOP
-  // Let client-side handle authentication until we can debug the middleware issue
-  /*
+  // Define protected routes
   const protectedPaths = ['/dashboard', '/api/sites', '/api/checkout', '/api/billing', '/api/performance']
   const isProtectedRoute = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path)) ||
                           (request.nextUrl.pathname.startsWith('/api/') &&
@@ -73,31 +71,45 @@ export async function middleware(request: NextRequest) {
                            !request.nextUrl.pathname.startsWith('/api/waitlist') &&
                            !request.nextUrl.pathname.startsWith('/api/webhooks'))
 
-  if (isProtectedRoute) {
-    try {
-      const { data: { user, session } } = await supabase.auth.getUser()
+  // Skip auth check if already on login page to prevent redirect loops
+  const isLoginPage = request.nextUrl.pathname === '/login'
 
-      if (!user || !session) {
+  if (isProtectedRoute && !isLoginPage) {
+    try {
+      // Use getSession() for better cookie reading reliability
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        console.error('Session error in middleware:', sessionError)
         if (request.nextUrl.pathname.startsWith('/api/')) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        } else {
-          const redirectUrl = new URL('/login', request.url)
-          redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-          return NextResponse.redirect(redirectUrl)
+          return NextResponse.json({ error: 'Session error' }, { status: 401 })
         }
-      }
-    } catch (authError) {
-      console.error('Authentication error in middleware:', authError)
-      if (request.nextUrl.pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
-      } else {
         const redirectUrl = new URL('/login', request.url)
         redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       }
+
+      if (!session?.user) {
+        if (request.nextUrl.pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const redirectUrl = new URL('/login', request.url)
+        redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // Session is valid, continue with request
+    } catch (authError) {
+      console.error('Authentication error in middleware:', authError)
+      if (request.nextUrl.pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+      }
+      // Only redirect if not already on login page
+      const redirectUrl = new URL('/login', request.url)
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
     }
   }
-  */
 
 
   // Rate limiting for sensitive endpoints

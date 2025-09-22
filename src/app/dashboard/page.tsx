@@ -8,7 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
-import PerformanceMonitor from '@/components/dashboard/PerformanceMonitor'
+import BasicMonitor from '@/components/dashboard/BasicMonitor'
 import { getSiteUptimeStats } from '@/lib/uptime-client'
 
 interface Site {
@@ -531,15 +531,16 @@ export default function DashboardPage() {
                           <UptimeChartClient siteId={site.id} />
                         </div>
 
-                        {/* Performance Monitoring - Pro Feature */}
+                        {/* Basic Website Monitoring */}
                         <div className="mt-6">
-                          <PerformanceMonitor
+                          <BasicMonitor
                             site={{
                               id: site.id,
                               name: site.name,
-                              url: site.url
+                              url: site.url,
+                              status: site.status,
+                              last_checked: site.last_checked
                             }}
-                            isProUser={profile?.plan === 'pro' || profile?.plan === 'founder'}
                           />
                         </div>
                       </div>
