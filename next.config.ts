@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
         source: '/(.*)',
         headers: [
           {
+            key: 'X-Test-Header',
+            value: 'testing-123',
+          },
+          {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
@@ -73,14 +77,6 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-		  {
-			key: 'X-Test-Header',
-			value: 'testing-123',
-		  },
-			
-     // ... your other headers
-   ]
-		  
           // HSTS header for production
           ...(process.env.NODE_ENV === 'production' 
             ? [{
