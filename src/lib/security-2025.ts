@@ -10,7 +10,7 @@ export const csp2025 = {
   ],
   'script-src-elem': [
     "'self'",
-	'unsafe-inline',
+    "'unsafe-inline'",
     "https://js.stripe.com" // Only for Stripe checkout
   ],
   'style-src': [
