@@ -310,23 +310,23 @@ export default function CoreWebVitalsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
             <div>
               <strong>LCP (Largest Contentful Paint)</strong>
-              <p className="text-gray-600">≤2.5s good, ≤4.0s needs improvement, >4.0s poor</p>
+              <p className="text-gray-600">&le;2.5s good, &le;4.0s needs improvement, &gt;4.0s poor</p>
             </div>
             <div>
               <strong>FID (First Input Delay)</strong>
-              <p className="text-gray-600">≤100ms good, ≤300ms needs improvement, >300ms poor</p>
+              <p className="text-gray-600">&le;100ms good, &le;300ms needs improvement, &gt;300ms poor</p>
             </div>
             <div>
               <strong>CLS (Cumulative Layout Shift)</strong>
-              <p className="text-gray-600">≤0.1 good, ≤0.25 needs improvement, >0.25 poor</p>
+              <p className="text-gray-600">&le;0.1 good, &le;0.25 needs improvement, &gt;0.25 poor</p>
             </div>
             <div>
               <strong>FCP (First Contentful Paint)</strong>
-              <p className="text-gray-600">≤1.8s good, ≤3.0s needs improvement, >3.0s poor</p>
+              <p className="text-gray-600">&le;1.8s good, &le;3.0s needs improvement, &gt;3.0s poor</p>
             </div>
             <div>
               <strong>TTFB (Time to First Byte)</strong>
-              <p className="text-gray-600">≤800ms good, ≤1.8s needs improvement, >1.8s poor</p>
+              <p className="text-gray-600">&le;800ms good, &le;1.8s needs improvement, &gt;1.8s poor</p>
             </div>
           </div>
         </div>
