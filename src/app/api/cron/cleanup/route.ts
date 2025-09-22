@@ -11,48 +11,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the plan from request body
-    const body = await request.json().catch(() => ({}))
-    const targetPlan = body.plan || 'all' // 'free', 'pro', or 'all'
-
-    // Call the Supabase Edge Function for uptime monitoring
+    // Call the Supabase Edge Function for data cleanup
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !serviceKey) {
-      console.error('Missing Supabase configuration for uptime monitoring')
+      console.error('Missing Supabase configuration for cleanup')
       return NextResponse.json({ error: 'Service configuration error' }, { status: 500 })
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/uptime-monitor`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/cleanup_old_uptime_logs`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${serviceKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        plan: targetPlan,
-        include_page_speed: targetPlan === 'pro' || targetPlan === 'all',
-        include_ssl_check: targetPlan === 'pro' || targetPlan === 'all'
-      })
+        'Content-Type': 'application/json',
+        'apikey': serviceKey
+      }
     })
 
     if (!response.ok) {
-      throw new Error(`Uptime monitor failed: ${response.status}`)
+      throw new Error(`Cleanup failed: ${response.status}`)
     }
-
-    const result = await response.json()
 
     return NextResponse.json({
       success: true,
-      message: 'Uptime monitoring completed',
-      data: result
+      message: 'Data cleanup completed',
+      timestamp: new Date().toISOString()
     })
 
   } catch (error) {
-    console.error('Cron uptime check failed:', error)
+    console.error('Cron cleanup failed:', error)
     return NextResponse.json(
-      { error: 'Uptime monitoring failed' },
+      { error: 'Data cleanup failed' },
       { status: 500 }
     )
   }

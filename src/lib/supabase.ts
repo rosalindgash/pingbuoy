@@ -81,6 +81,10 @@ export type Database = {
           response_time: number | null
           status_code: number | null
           checked_at: string
+          page_speed_score: number | null
+          load_time_ms: number | null
+          ssl_expires_at: string | null
+          ssl_valid: boolean | null
         }
         Insert: {
           id?: string
@@ -89,6 +93,10 @@ export type Database = {
           response_time?: number | null
           status_code?: number | null
           checked_at?: string
+          page_speed_score?: number | null
+          load_time_ms?: number | null
+          ssl_expires_at?: string | null
+          ssl_valid?: boolean | null
         }
         Update: {
           id?: string
@@ -97,6 +105,10 @@ export type Database = {
           response_time?: number | null
           status_code?: number | null
           checked_at?: string
+          page_speed_score?: number | null
+          load_time_ms?: number | null
+          ssl_expires_at?: string | null
+          ssl_valid?: boolean | null
         }
       }
       alerts: {

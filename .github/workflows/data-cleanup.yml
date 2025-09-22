@@ -1,0 +1,26 @@
+name: Data Cleanup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  cleanup-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cleanup Old Monitoring Data
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/cleanup" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --fail \
+            --max-time 120
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+      - name: Log cleanup completion
+        run: echo "Data cleanup completed at $(date)"

@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [siteForm, setSiteForm] = useState({ name: '', url: '' })
   const [checkingAll, setCheckingAll] = useState(false)
   const [checkingSites, setCheckingSites] = useState<Record<string, boolean>>({})
+  const [pageSpeedChecking, setPageSpeedChecking] = useState<Record<string, boolean>>({})
   const pathname = usePathname()
 
   // Build navigation based on user plan
@@ -308,6 +309,31 @@ export default function DashboardPage() {
       console.error('Error checking all sites:', error)
     } finally {
       setCheckingAll(false)
+    }
+  }
+
+  const handlePageSpeedCheck = async (siteId: string) => {
+    setPageSpeedChecking(prev => ({ ...prev, [siteId]: true }))
+
+    try {
+      const response = await fetch(`/api/page-speed/${siteId}`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        // Refresh uptime stats for this site
+        fetchUptimeStats(siteId)
+      } else {
+        const error = await response.json()
+        if (error.upgrade_required) {
+          alert('Page speed monitoring is a Pro feature. Please upgrade your account.')
+        }
+      }
+    } catch (error) {
+      console.error('Error running page speed check:', error)
+    } finally {
+      setPageSpeedChecking(prev => ({ ...prev, [siteId]: false }))
     }
   }
 
@@ -573,7 +599,7 @@ export default function DashboardPage() {
                           </div>
 
                           {/* Center: Compact stats */}
-                          <div className="hidden md:flex items-center space-x-6 mx-6">
+                          <div className="hidden md:flex items-center space-x-4 mx-6">
                             <div className="text-center">
                               <div className="text-xs text-gray-500 mb-1">Uptime</div>
                               <div className="text-sm font-semibold text-gray-900">
@@ -586,6 +612,24 @@ export default function DashboardPage() {
                                 {statsLoading ? '...' : stats ? stats.total : 'N/A'}
                               </div>
                             </div>
+                            {/* Pro feature: Page Speed */}
+                            {(profile?.plan === 'pro' || profile?.plan === 'founder') && (
+                              <div className="text-center">
+                                <div className="text-xs text-gray-500 mb-1">Speed</div>
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {statsLoading ? '...' : 'N/A'}
+                                </div>
+                              </div>
+                            )}
+                            {/* Pro feature: SSL Status */}
+                            {(profile?.plan === 'pro' || profile?.plan === 'founder') && site.url.startsWith('https') && (
+                              <div className="text-center">
+                                <div className="text-xs text-gray-500 mb-1">SSL</div>
+                                <div className="text-sm font-semibold text-green-600">
+                                  Valid
+                                </div>
+                              </div>
+                            )}
                             <div className="text-center">
                               <div className="text-xs text-gray-500 mb-1">Last Check</div>
                               <div className="text-sm font-semibold text-gray-900">
@@ -610,6 +654,18 @@ export default function DashboardPage() {
                               <Activity className="w-3 h-3 mr-1" />
                               {checkingSites[site.id] ? 'Checking...' : 'Check'}
                             </button>
+                            {/* Pro feature: Page Speed Check */}
+                            {(profile?.plan === 'pro' || profile?.plan === 'founder') && (
+                              <button
+                                onClick={() => handlePageSpeedCheck(site.id)}
+                                disabled={pageSpeedChecking[site.id]}
+                                className="text-purple-600 hover:text-purple-800 text-sm px-2 py-1 rounded hover:bg-purple-50 disabled:opacity-50 flex items-center"
+                                title="Run page speed check"
+                              >
+                                <TrendingUp className="w-3 h-3 mr-1" />
+                                {pageSpeedChecking[site.id] ? 'Speed...' : 'Speed'}
+                              </button>
+                            )}
                             <button
                               onClick={() => handleEditSite(site)}
                               className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50"
