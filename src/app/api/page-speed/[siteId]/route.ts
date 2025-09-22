@@ -40,14 +40,7 @@ export async function POST(
       return NextResponse.json({ error: 'Site not found' }, { status: 404 })
     }
 
-    // Check if user has Pro access for page speed monitoring
-    const userPlan = (site as any).users.plan
-    if (userPlan === 'free') {
-      return NextResponse.json({
-        error: 'Page speed monitoring is a Pro feature',
-        upgrade_required: true
-      }, { status: 403 })
-    }
+    // Page speed monitoring is available to all users
 
     // Perform page speed check using Google PageSpeed Insights API
     const pageSpeedApiKey = process.env.GOOGLE_PAGESPEED_API_KEY
@@ -96,11 +89,10 @@ export async function POST(
       const lighthouseResult = pageSpeedData.lighthouseResult
       const performanceScore = Math.round((lighthouseResult?.categories?.performance?.score || 0) * 100)
 
-      // Get Core Web Vitals
+      // Get basic page speed metrics (not Core Web Vitals - those are for PingBuoy status only)
       const audits = lighthouseResult?.audits || {}
-      const lcp = audits['largest-contentful-paint']?.numericValue || null
-      const fid = audits['max-potential-fid']?.numericValue || null
-      const cls = audits['cumulative-layout-shift']?.numericValue || null
+      const speedIndex = audits['speed-index']?.numericValue || null
+      const firstContentfulPaint = audits['first-contentful-paint']?.numericValue || null
 
       const checkedAt = new Date().toISOString()
 
@@ -113,7 +105,7 @@ export async function POST(
           response_time: loadTime,
           status_code: 200,
           page_speed_score: performanceScore,
-          load_time_ms: Math.round(lcp || loadTime),
+          load_time_ms: Math.round(firstContentfulPaint || speedIndex || loadTime),
           ssl_valid: sslInfo?.valid || null,
           ssl_expires_at: sslInfo?.expires_at || null,
           checked_at: checkedAt
@@ -133,11 +125,10 @@ export async function POST(
         siteId,
         pageSpeed: {
           score: performanceScore,
-          loadTime: Math.round(lcp || loadTime),
+          loadTime: Math.round(firstContentfulPaint || speedIndex || loadTime),
           metrics: {
-            lcp: lcp ? Math.round(lcp) : null,
-            fid: fid ? Math.round(fid) : null,
-            cls: cls ? Math.round(cls * 1000) / 1000 : null
+            speedIndex: speedIndex ? Math.round(speedIndex) : null,
+            firstContentfulPaint: firstContentfulPaint ? Math.round(firstContentfulPaint) : null
           }
         },
         ssl: sslInfo,

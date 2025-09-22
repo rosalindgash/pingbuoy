@@ -14,14 +14,15 @@ This document explains how the automatic uptime monitoring system works with tie
 ### 2. Manual Monitoring
 - **All Users**: Individual site checks via "Check" button in dashboard
 - **All Users**: Bulk checks via "Check All Sites" button
-- **Pro/Founder Users**: Page speed checks via "Speed" button
+- **All Users**: Page speed checks via "Speed" button
+- **Pro/Founder Users**: SSL certificate monitoring
 - Uses `/api/sites/[siteId]/ping` and `/api/page-speed/[siteId]` endpoints
 - Results stored in `uptime_logs` table with plan-specific data
 
 ### 3. Real-time Dashboard Updates
 - Dashboard auto-refreshes every 30 seconds
-- Shows current status and uptime statistics
-- **Pro features**: Page speed scores and SSL certificate status
+- Shows current status, uptime statistics, and page speed scores
+- **Pro features**: SSL certificate status and expiry tracking
 - Displays recent check results
 
 ## Required Environment Variables
