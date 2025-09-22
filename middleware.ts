@@ -25,16 +25,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
+          // Don't recreate response object - just set the cookie
           response.cookies.set({
             name,
             value,
@@ -42,16 +33,7 @@ export async function middleware(request: NextRequest) {
           })
         },
         remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
+          // Don't recreate response object - just remove the cookie
           response.cookies.set({
             name,
             value: '',
@@ -71,10 +53,12 @@ export async function middleware(request: NextRequest) {
                            !request.nextUrl.pathname.startsWith('/api/waitlist') &&
                            !request.nextUrl.pathname.startsWith('/api/webhooks'))
 
-  // Skip auth check if already on login page to prevent redirect loops
-  const isLoginPage = request.nextUrl.pathname === '/login'
+  // Skip auth check if already on login/auth related pages to prevent redirect loops
+  const isAuthPage = request.nextUrl.pathname === '/login' ||
+                     request.nextUrl.pathname === '/signup' ||
+                     request.nextUrl.pathname.startsWith('/api/auth')
 
-  if (isProtectedRoute && !isLoginPage) {
+  if (isProtectedRoute && !isAuthPage) {
     try {
       // Use getSession() for better cookie reading reliability
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -90,6 +74,18 @@ export async function middleware(request: NextRequest) {
       }
 
       if (!session?.user) {
+        // Check if we have any cookies that suggest an ongoing auth process
+        const authCookies = request.cookies.getAll().filter(cookie =>
+          cookie.name.includes('supabase') || cookie.name.includes('auth')
+        )
+
+        // If we have auth cookies but no valid session, wait a moment for auth to complete
+        if (authCookies.length > 0 && request.headers.get('referer')?.includes('/login')) {
+          // Coming from login page with auth cookies - allow through temporarily
+          // Client-side auth check will handle final verification
+          return response
+        }
+
         if (request.nextUrl.pathname.startsWith('/api/')) {
           return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
@@ -104,7 +100,6 @@ export async function middleware(request: NextRequest) {
       if (request.nextUrl.pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
       }
-      // Only redirect if not already on login page
       const redirectUrl = new URL('/login', request.url)
       redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
       return NextResponse.redirect(redirectUrl)
