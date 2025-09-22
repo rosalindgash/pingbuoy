@@ -47,7 +47,6 @@ export default function DashboardPage() {
   const [siteForm, setSiteForm] = useState({ name: '', url: '' })
   const [checkingAll, setCheckingAll] = useState(false)
   const [checkingSites, setCheckingSites] = useState<Record<string, boolean>>({})
-  const [pageSpeedChecking, setPageSpeedChecking] = useState<Record<string, boolean>>({})
   const pathname = usePathname()
 
   // Build navigation based on user plan
@@ -314,25 +313,6 @@ export default function DashboardPage() {
     }
   }
 
-  const handlePageSpeedCheck = async (siteId: string) => {
-    setPageSpeedChecking(prev => ({ ...prev, [siteId]: true }))
-
-    try {
-      const response = await fetch(`/api/page-speed/${siteId}`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        // Refresh uptime stats for this site
-        fetchUptimeStats(siteId)
-      }
-    } catch (error) {
-      console.error('Error running page speed check:', error)
-    } finally {
-      setPageSpeedChecking(prev => ({ ...prev, [siteId]: false }))
-    }
-  }
 
   if (loading) {
     return (
@@ -648,16 +628,6 @@ export default function DashboardPage() {
                             >
                               <Activity className="w-3 h-3 mr-1" />
                               {checkingSites[site.id] ? 'Checking...' : 'Check'}
-                            </button>
-                            {/* Page Speed Check - Available to all users */}
-                            <button
-                              onClick={() => handlePageSpeedCheck(site.id)}
-                              disabled={pageSpeedChecking[site.id]}
-                              className="text-purple-600 hover:text-purple-800 text-sm px-2 py-1 rounded hover:bg-purple-50 disabled:opacity-50 flex items-center"
-                              title="Run page speed check"
-                            >
-                              <TrendingUp className="w-3 h-3 mr-1" />
-                              {pageSpeedChecking[site.id] ? 'Speed...' : 'Speed'}
                             </button>
                             <button
                               onClick={() => handleEditSite(site)}

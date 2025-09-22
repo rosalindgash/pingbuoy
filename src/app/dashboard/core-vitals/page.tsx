@@ -121,11 +121,12 @@ export default function CoreVitalsPage() {
   const fetchData = async () => {
     try {
       // Fetch Core Web Vitals for PingBuoy's own sites
+      // Group by URL and get latest metrics for each
       const { data: vitals } = await supabase
         .from('core_web_vitals')
         .select('*')
         .order('checked_at', { ascending: false })
-        .limit(50)
+        .limit(100)
 
       if (vitals) {
         setVitalsData(vitals)

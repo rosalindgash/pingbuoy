@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-// For public status, we'll use direct database calls with service role key
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Create a service role client for public status checks
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,33 +80,22 @@ export async function GET(request: NextRequest) {
 
 async function checkSystemHealth() {
   try {
-    // Test database connectivity using REST API
-    const dbResponse = await fetch(`${SUPABASE_URL}/rest/v1/sites?select=count&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact'
-      }
-    })
+    // Test database connectivity
+    const { data: dbTest, error: dbError } = await supabase
+      .from('sites')
+      .select('count')
+      .limit(1)
 
-    const database_responsive = dbResponse.ok
+    const database_responsive = !dbError
 
     // Check if monitoring is active (recent uptime logs within 10 minutes)
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
-    const logsResponse = await fetch(`${SUPABASE_URL}/rest/v1/uptime_logs?select=checked_at&checked_at=gte.${tenMinutesAgo}&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const { data: recentLogs } = await supabase
+      .from('uptime_logs')
+      .select('checked_at')
+      .gte('checked_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .limit(1)
 
-    let monitoring_active = false
-    if (logsResponse.ok) {
-      const logs = await logsResponse.json()
-      monitoring_active = logs && logs.length > 0
-    }
+    const monitoring_active = (recentLogs && recentLogs.length > 0)
 
     return {
       database_responsive,
@@ -118,79 +116,44 @@ async function checkSystemHealth() {
 
 async function getSystemMetrics() {
   try {
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-
     // Get total number of sites being monitored
-    const sitesResponse = await fetch(`${SUPABASE_URL}/rest/v1/sites?select=count&is_active=eq.true`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact'
-      }
-    })
-
-    let totalSites = 0
-    if (sitesResponse.ok) {
-      const sitesCount = sitesResponse.headers.get('content-range')
-      totalSites = sitesCount ? parseInt(sitesCount.split('/')[1]) || 0 : 0
-    }
+    const { count: totalSites } = await supabase
+      .from('sites')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
 
     // Get checks performed in last 24 hours
-    const checksResponse = await fetch(`${SUPABASE_URL}/rest/v1/uptime_logs?select=count&checked_at=gte.${yesterday}`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact'
-      }
-    })
+    const { count: checks24h } = await supabase
+      .from('uptime_logs')
+      .select('*', { count: 'exact', head: true })
+      .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
-    let checks24h = 0
-    if (checksResponse.ok) {
-      const checksCount = checksResponse.headers.get('content-range')
-      checks24h = checksCount ? parseInt(checksCount.split('/')[1]) || 0 : 0
-    }
+    // Get average response time from recent checks
+    const { data: avgResponseData } = await supabase
+      .from('uptime_logs')
+      .select('response_time')
+      .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .not('response_time', 'is', null)
+      .limit(1000)
 
-    // Get recent response times for average calculation
-    const responseTimeResponse = await fetch(`${SUPABASE_URL}/rest/v1/uptime_logs?select=response_time&checked_at=gte.${yesterday}&response_time=not.is.null&limit=1000`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const avgResponseTime = avgResponseData && avgResponseData.length > 0
+      ? Math.round(avgResponseData.reduce((sum, log) => sum + (log.response_time || 0), 0) / avgResponseData.length)
+      : 285
 
-    let avgResponseTime = 285
-    if (responseTimeResponse.ok) {
-      const responseData = await responseTimeResponse.json()
-      if (responseData && responseData.length > 0) {
-        const sum = responseData.reduce((acc: number, log: any) => acc + (log.response_time || 0), 0)
-        avgResponseTime = Math.round(sum / responseData.length)
-      }
-    }
+    // Calculate monitoring uptime (percentage of successful checks in last 24h)
+    const { data: uptimeData } = await supabase
+      .from('uptime_logs')
+      .select('status')
+      .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .limit(1000)
 
-    // Get uptime percentage from recent checks
-    const uptimeResponse = await fetch(`${SUPABASE_URL}/rest/v1/uptime_logs?select=status&checked_at=gte.${yesterday}&limit=1000`, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    let monitoringUptime = 99.8
-    if (uptimeResponse.ok) {
-      const uptimeData = await uptimeResponse.json()
-      if (uptimeData && uptimeData.length > 0) {
-        const upCount = uptimeData.filter((log: any) => log.status === 'up').length
-        monitoringUptime = Math.round((upCount / uptimeData.length) * 100 * 10) / 10
-      }
-    }
+    const monitoringUptime = uptimeData && uptimeData.length > 0
+      ? Math.round((uptimeData.filter(log => log.status === 'up').length / uptimeData.length) * 100 * 10) / 10
+      : 99.8
 
     return {
-      total_sites: totalSites,
-      checks_24h: checks24h,
+      total_sites: totalSites || 0,
+      checks_24h: checks24h || 0,
       avg_response_time: avgResponseTime,
       monitoring_uptime: monitoringUptime
     }
