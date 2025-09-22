@@ -1,6 +1,4 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   // Temporarily disable ESLint and TypeScript errors during builds
   eslint: {
     ignoreDuringBuilds: true,
@@ -8,10 +6,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  
+
   // Security configurations
   poweredByHeader: false,
-  
+
   // HTTPS redirect in production
   async redirects() {
     if (process.env.NODE_ENV === 'production') {
@@ -32,7 +30,7 @@ const nextConfig: NextConfig = {
     }
     return []
   },
-  
+
   // Security headers
   async headers() {
     return [
@@ -78,7 +76,7 @@ const nextConfig: NextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           // HSTS header for production
-          ...(process.env.NODE_ENV === 'production' 
+          ...(process.env.NODE_ENV === 'production'
             ? [{
                 key: 'Strict-Transport-Security',
                 value: 'max-age=31536000; includeSubDomains; preload',
@@ -91,4 +89,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
