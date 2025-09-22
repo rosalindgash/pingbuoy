@@ -32,6 +32,7 @@ const nextConfig = {
   },
 
   // Security headers
+/*
   async headers() {
     return [
       {
@@ -88,5 +89,6 @@ const nextConfig = {
     ]
   },
 };
+*/
 
 module.exports = nextConfig;
