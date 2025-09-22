@@ -12,7 +12,6 @@ import {
   TrendingUp,
   ExternalLink,
   Zap,
-  RefreshCw,
   Globe,
   Shield
 } from 'lucide-react'
@@ -44,7 +43,6 @@ interface StatusData {
 export default function StatusPage() {
   const [statusData, setStatusData] = useState<StatusData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchStatusData()
@@ -56,10 +54,18 @@ export default function StatusPage() {
 
   const fetchStatusData = async () => {
     try {
-      setRefreshing(true)
-
+      console.log('Fetching status data from /api/public/status')
       const response = await fetch('/api/public/status')
+
+      if (!response.ok) {
+        console.error('Status API returned error:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        throw new Error(`API returned ${response.status}`)
+      }
+
       const data = await response.json()
+      console.log('Status API response:', data)
 
       // Transform API data to include descriptions
       const servicesWithDescriptions = data.services.map((service: any) => ({
@@ -86,7 +92,6 @@ export default function StatusPage() {
       })
     } finally {
       setLoading(false)
-      setRefreshing(false)
     }
   }
 
@@ -99,10 +104,6 @@ export default function StatusPage() {
       'Email Notifications': 'Alert delivery and notification system'
     }
     return descriptions[name] || 'PingBuoy service component'
-  }
-
-  const handleRefresh = () => {
-    fetchStatusData()
   }
 
 // Status components
@@ -225,14 +226,6 @@ function ServiceCard({ service }: { service: ServiceStatus }) {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
               <Link href="/" className="text-gray-600 hover:text-gray-900">
                 Back to Website
               </Link>
