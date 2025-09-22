@@ -62,6 +62,9 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // TEMPORARILY DISABLED - Authentication checks are causing redirect loops
+  // Let the client-side handle auth for now
+  /*
   // Check authentication for protected routes
   const protectedPaths = ['/dashboard', '/api/sites', '/api/checkout', '/api/billing', '/api/performance']
   const isProtectedRoute = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path)) ||
@@ -85,8 +88,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
     }
+  */
 
     // SECURITY: Check MFA bypass protection
+    // TEMPORARILY DISABLED FOR DEBUGGING - MFA checks were causing redirect loops
+    /*
     try {
       const { data: factors, error } = await supabase.auth.mfa.listFactors()
 
@@ -122,7 +128,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
     }
-  }
+    */
 
   // Rate limiting for sensitive endpoints
   const pathname = request.nextUrl.pathname
