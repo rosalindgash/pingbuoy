@@ -73,6 +73,18 @@ export default function DashboardPage() {
     checkAuth()
   }, [])
 
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    if (!user) return
+
+    const interval = setInterval(async () => {
+      // Refresh sites data
+      await fetchSites(user.id)
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [user])
+
   const checkAuth = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()

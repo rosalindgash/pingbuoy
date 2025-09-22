@@ -61,19 +61,33 @@ export async function POST(
       status = 'down'
     }
 
+    const checkedAt = new Date().toISOString()
+
+    // Log the check in uptime_logs table
+    await supabase
+      .from('uptime_logs')
+      .insert({
+        site_id: siteId,
+        status,
+        response_time: responseTime,
+        status_code: status === 'up' ? 200 : 0,
+        checked_at: checkedAt
+      })
+
     // Update the site status in database
     await supabase
       .from('sites')
       .update({
         status,
-        last_checked: new Date().toISOString()
+        last_checked: checkedAt
       })
       .eq('id', siteId)
 
     return NextResponse.json({
       status,
       responseTime,
-      checkedAt: new Date().toISOString()
+      checkedAt,
+      siteId
     })
 
   } catch (error) {
