@@ -58,51 +58,26 @@ export async function middleware(request: NextRequest) {
                      request.nextUrl.pathname === '/signup' ||
                      request.nextUrl.pathname.startsWith('/api/auth')
 
-  if (isProtectedRoute && !isAuthPage) {
+  // Only protect API routes in middleware - let client-side handle page auth
+  // This prevents redirect loops while still securing API endpoints
+  const isProtectedApiRoute = request.nextUrl.pathname.startsWith('/api/') &&
+                              !request.nextUrl.pathname.startsWith('/api/auth') &&
+                              !request.nextUrl.pathname.startsWith('/api/contact') &&
+                              !request.nextUrl.pathname.startsWith('/api/waitlist') &&
+                              !request.nextUrl.pathname.startsWith('/api/webhooks')
+
+  if (isProtectedApiRoute) {
     try {
-      // Use getSession() for better cookie reading reliability
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      if (sessionError) {
-        console.error('Session error in middleware:', sessionError)
-        if (request.nextUrl.pathname.startsWith('/api/')) {
-          return NextResponse.json({ error: 'Session error' }, { status: 401 })
-        }
-        const redirectUrl = new URL('/login', request.url)
-        redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
+      if (sessionError || !session?.user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
 
-      if (!session?.user) {
-        // Check if we have any cookies that suggest an ongoing auth process
-        const authCookies = request.cookies.getAll().filter(cookie =>
-          cookie.name.includes('supabase') || cookie.name.includes('auth')
-        )
-
-        // If we have auth cookies but no valid session, wait a moment for auth to complete
-        if (authCookies.length > 0 && request.headers.get('referer')?.includes('/login')) {
-          // Coming from login page with auth cookies - allow through temporarily
-          // Client-side auth check will handle final verification
-          return response
-        }
-
-        if (request.nextUrl.pathname.startsWith('/api/')) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-        const redirectUrl = new URL('/login', request.url)
-        redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      // Session is valid, continue with request
+      // Session is valid for API route, continue
     } catch (authError) {
-      console.error('Authentication error in middleware:', authError)
-      if (request.nextUrl.pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
-      }
-      const redirectUrl = new URL('/login', request.url)
-      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
+      console.error('API authentication error:', authError)
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
     }
   }
 
