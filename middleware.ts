@@ -62,10 +62,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // TEMPORARILY DISABLED - Authentication checks are causing redirect loops
-  // Let the client-side handle auth for now
-  /*
-  // Check authentication for protected routes
+  // Check authentication for protected routes (without aggressive MFA enforcement)
   const protectedPaths = ['/dashboard', '/api/sites', '/api/checkout', '/api/billing', '/api/performance']
   const isProtectedRoute = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path)) ||
                           (request.nextUrl.pathname.startsWith('/api/') &&
@@ -75,60 +72,38 @@ export async function middleware(request: NextRequest) {
                            !request.nextUrl.pathname.startsWith('/api/webhooks'))
 
   if (isProtectedRoute) {
-    const { data: { user, session } } = await supabase.auth.getUser()
+    try {
+      const { data: { user, session } } = await supabase.auth.getUser()
 
-    if (!user) {
+      if (!user || !session) {
+        if (request.nextUrl.pathname.startsWith('/api/')) {
+          // Return 401 for API routes
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        } else {
+          // Redirect to login for page routes
+          const redirectUrl = new URL('/login', request.url)
+          redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+          return NextResponse.redirect(redirectUrl)
+        }
+      }
+
+      // MFA is only for login authentication - handled by Supabase Auth
+      // No additional MFA enforcement needed in middleware
+      // Users can enable/disable MFA in their dashboard settings
+
+    } catch (authError) {
+      console.error('Authentication error in middleware:', authError)
+
       if (request.nextUrl.pathname.startsWith('/api/')) {
-        // Return 401 for API routes
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
       } else {
-        // Redirect to login for page routes
         const redirectUrl = new URL('/login', request.url)
         redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       }
     }
-  */
+  }
 
-    // SECURITY: Check MFA bypass protection
-    // TEMPORARILY DISABLED FOR DEBUGGING - MFA checks were causing redirect loops
-    /*
-    try {
-      const { data: factors, error } = await supabase.auth.mfa.listFactors()
-
-      if (!error && factors?.totp?.some(f => f.status === 'verified')) {
-        // User has MFA enabled - verify they completed the second factor
-        // Note: This requires proper session handling from Supabase
-        const sessionData = await supabase.auth.getSession()
-        const mfaLevel = sessionData.data.session?.aal
-
-        if (mfaLevel !== 'aal2') {
-          // User has MFA but hasn't completed second factor
-          if (request.nextUrl.pathname.startsWith('/api/')) {
-            return NextResponse.json({
-              error: 'MFA verification required',
-              mfa_required: true
-            }, { status: 401 })
-          } else {
-            // For page routes, redirect to login with MFA prompt
-            const redirectUrl = new URL('/login', request.url)
-            redirectUrl.searchParams.set('mfa_required', 'true')
-            redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-            return NextResponse.redirect(redirectUrl)
-          }
-        }
-      }
-    } catch (error) {
-      // If MFA verification fails, err on the side of caution
-      console.error('MFA verification error in middleware:', error)
-      if (request.nextUrl.pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Authentication verification failed' }, { status: 401 })
-      } else {
-        const redirectUrl = new URL('/login', request.url)
-        return NextResponse.redirect(redirectUrl)
-      }
-    }
-    */
 
   // Rate limiting for sensitive endpoints
   const pathname = request.nextUrl.pathname

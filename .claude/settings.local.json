@@ -19,7 +19,9 @@
       "Bash(supabase functions deploy:*)",
       "Bash(npm run security-check:*)",
       "Bash(npm run:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(taskkill:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
