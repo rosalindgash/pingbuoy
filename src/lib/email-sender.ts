@@ -19,8 +19,15 @@ function sanitizeString(str: string): string {
 
 // Email validation schema
 const emailSchema = z.object({
-  to: z.string().email('Invalid email address'),
-  from: z.string().email('Invalid sender email').optional(),
+  to: z.string().min(1, 'Email is required').refine((email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }, 'Invalid email address'),
+  from: z.string().refine((email) => {
+    if (!email) return true // optional field
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }, 'Invalid sender email').optional(),
   subject: z.string().min(1, 'Subject is required').max(200, 'Subject too long'),
   html: z.string().optional(),
   text: z.string().min(1, 'Email content is required'),

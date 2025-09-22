@@ -3,4 +3,5 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   poweredByHeader: false,
 };
+
 module.exports = nextConfig;

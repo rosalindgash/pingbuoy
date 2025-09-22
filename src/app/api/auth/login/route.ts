@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { emailSchema } from '@/lib/validation'
 import {
   checkDualLimit,
   getClientIP,
@@ -10,7 +11,7 @@ import {
 } from '@/lib/redis-rate-limit'
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email format').max(254),
+  email: emailSchema,
   password: z.string().min(1, 'Password is required').max(1000)
 })
 

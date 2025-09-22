@@ -11,7 +11,10 @@ import type { Database } from '@/lib/supabase'
 
 const deleteRequestSchema = z.object({
   reason: z.string().min(1).max(500),
-  confirmEmail: z.string().email(),
+  confirmEmail: z.string().min(1, 'Email is required').refine((email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }, 'Invalid email address'),
   deleteData: z.boolean().default(true),
   retainLegalBasis: z.boolean().default(false) // For compliance/legal requirements
 })

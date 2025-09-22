@@ -34,10 +34,15 @@ export const commonSchemas = {
   alertId: uuidSchema,
 }
 
-// Email validation (strict)
+// Email validation (lenient - allows any valid email format including custom domains)
 export const emailSchema = z.string()
-  .email('Invalid email format')
+  .min(1, 'Email is required')
   .max(254, 'Email too long')
+  .refine((email) => {
+    // More lenient email validation that allows custom domains
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }, 'Please enter a valid email address')
   .toLowerCase()
 
 // URL validation (strict)
