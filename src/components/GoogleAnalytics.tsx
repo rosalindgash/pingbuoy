@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
 
-// Function to send Core Web Vitals to our database
+// Function to send Core Web Vitals to Google Analytics and our database
 function sendToAnalytics({ name, value, id }: { name: string; value: number; id: string }) {
   // Send to Google Analytics
   if (typeof gtag !== 'undefined') {
@@ -34,7 +34,7 @@ function sendToAnalytics({ name, value, id }: { name: string; value: number; id:
 
 export default function GoogleAnalytics({ measurementId }: { measurementId: string }) {
   useEffect(() => {
-    // Measure Core Web Vitals
+    // Measure Core Web Vitals and send to both GA4 and our database
     getCLS(sendToAnalytics)
     getFID(sendToAnalytics)
     getFCP(sendToAnalytics)
@@ -42,23 +42,6 @@ export default function GoogleAnalytics({ measurementId }: { measurementId: stri
     getTTFB(sendToAnalytics)
   }, [])
 
-  return (
-    <>
-      {/* Google Analytics */}
-      <script async src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`} />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${measurementId}', {
-              page_title: document.title,
-              page_location: window.location.href,
-            });
-          `,
-        }}
-      />
-    </>
-  )
+  // No need to render scripts since gtag is already in <head>
+  return null
 }
