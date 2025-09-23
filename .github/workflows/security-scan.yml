@@ -113,12 +113,15 @@ jobs:
         fetch-depth: 0
 
     - name: Verify commit signatures
+      env:
+        BASE_REF: ${{ github.event.pull_request.base.ref }}
+        HEAD_REF: ${{ github.event.pull_request.head.ref }}
       run: |
         echo "🔍 Checking commit signatures..."
 
         # Get the base branch and current branch (sanitized to prevent injection)
-        BASE_BRANCH="$(echo '${{ github.event.pull_request.base.ref }}' | sed 's/[^a-zA-Z0-9/_-]//g')"
-        HEAD_BRANCH="$(echo '${{ github.event.pull_request.head.ref }}' | sed 's/[^a-zA-Z0-9/_-]//g')"
+        BASE_BRANCH="$(echo "$BASE_REF" | sed 's/[^a-zA-Z0-9/_-]//g')"
+        HEAD_BRANCH="$(echo "$HEAD_REF" | sed 's/[^a-zA-Z0-9/_-]//g')"
 
         # Get commits in this PR
         COMMITS=$(git log --format="%H" origin/$BASE_BRANCH..HEAD)
