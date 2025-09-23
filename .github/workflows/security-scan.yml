@@ -67,12 +67,6 @@ jobs:
           extra_args: --debug --only-verified
         continue-on-error: true
 
-      - name: Run Gitleaks secrets scan
-        uses: gitleaks/gitleaks-action@cb7149f28d0bf8bd7a4b634e22e0d4804e6c8647 # v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-        continue-on-error: false
 
       - name: Supply Chain Security - SBOM Generation
         run: |

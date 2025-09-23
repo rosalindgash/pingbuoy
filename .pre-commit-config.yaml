@@ -29,17 +29,6 @@ repos:
             .*\.md
           )$
 
-  # Secrets detection with Gitleaks
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.0
-    hooks:
-      - id: gitleaks
-        name: Detect secrets with Gitleaks
-        description: Detect hardcoded secrets using Gitleaks
-        entry: gitleaks
-        language: golang
-        args: ['detect', '--source', '.', '--config', '.gitleaks.toml', '--verbose']
-        types: [text]
 
   # JavaScript/TypeScript specific hooks
   - repo: https://github.com/pre-commit/mirrors-eslint

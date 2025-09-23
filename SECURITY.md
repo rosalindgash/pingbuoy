@@ -56,7 +56,7 @@
 ### 9. Monitoring & Scanning (Enhanced)
 - **Automated Security Scanning**: GitHub Actions with multiple security tools
 - **Dependency Scanning**: Continuous vulnerability monitoring with npm audit
-- **Secret Scanning**: TruffleHog for accidental secret commits
+- **Secret Scanning**: TruffleHog scans for verified secrets in commits
 - **Code Analysis**: ESLint security rules and Semgrep scanning
 - **Container Scanning**: Trivy vulnerability scanning
 - **SIEM Integration**: Security Information and Event Management capabilities
