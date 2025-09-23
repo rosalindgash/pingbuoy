@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals'
 
 // Function to send Core Web Vitals to Google Analytics and our database
 function sendToAnalytics({ name, value, id }: { name: string; value: number; id: string }) {
@@ -35,11 +35,11 @@ function sendToAnalytics({ name, value, id }: { name: string; value: number; id:
 export default function GoogleAnalytics({ measurementId }: { measurementId: string }) {
   useEffect(() => {
     // Measure Core Web Vitals and send to both GA4 and our database
-    getCLS(sendToAnalytics)
-    getFID(sendToAnalytics)
-    getFCP(sendToAnalytics)
-    getLCP(sendToAnalytics)
-    getTTFB(sendToAnalytics)
+    onCLS(sendToAnalytics)
+    onFID(sendToAnalytics)
+    onFCP(sendToAnalytics)
+    onLCP(sendToAnalytics)
+    onTTFB(sendToAnalytics)
   }, [])
 
   // No need to render scripts since gtag is already in <head>
