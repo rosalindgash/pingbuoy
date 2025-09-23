@@ -10,12 +10,10 @@ export const csp2025 = {
   ],
   'script-src-elem': [
     "'self'",
-    "'unsafe-inline'",
     "https://js.stripe.com" // Only for Stripe checkout
   ],
   'style-src': [
-    "'self'",
-    "'unsafe-inline'" // Required for Next.js/Tailwind CSS
+    "'self'"
   ],
   'font-src': [
     "'self'" // Only local fonts - Google Fonts not used
