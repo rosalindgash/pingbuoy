@@ -321,14 +321,20 @@ export const securityHeaders2025 = getSecurityHeaders2025()
 
 // Utility function to generate cryptographically secure nonces
 export function generateNonce(): string {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    const array = new Uint8Array(16)
-    crypto.getRandomValues(array)
-    return btoa(String.fromCharCode.apply(null, Array.from(array)))
+  // Use Node.js crypto in server environment (middleware runs on server)
+  try {
+    const { randomBytes } = require('crypto')
+    return randomBytes(16).toString('base64')
+  } catch (error) {
+    // Fallback to Web Crypto API if available
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const array = new Uint8Array(16)
+      crypto.getRandomValues(array)
+      return btoa(String.fromCharCode.apply(null, Array.from(array)))
+    }
+    // Last resort fallback
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
-  // Fallback for Node.js environment
-  const crypto = require('crypto')
-  return crypto.randomBytes(16).toString('base64')
 }
 
 // Incident Response (2025)
