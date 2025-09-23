@@ -45,7 +45,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@6e7b396d5b2930facb82b8edc9ea3a8ec461de15 # master
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -59,7 +59,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Check for secrets with TruffleHog
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@74ebe28b8d6b8bd28bbf0a7b6b1c1b9f3c0d2d6c # main
         with:
           path: ./
           base: main
@@ -68,7 +68,7 @@ jobs:
         continue-on-error: true
 
       - name: Run Gitleaks secrets scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@cb7149f28d0bf8bd7a4b634e22e0d4804e6c8647 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
@@ -116,9 +116,9 @@ jobs:
       run: |
         echo "🔍 Checking commit signatures..."
 
-        # Get the base branch and current branch
-        BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-        HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+        # Get the base branch and current branch (sanitized to prevent injection)
+        BASE_BRANCH="$(echo '${{ github.event.pull_request.base.ref }}' | sed 's/[^a-zA-Z0-9/_-]//g')"
+        HEAD_BRANCH="$(echo '${{ github.event.pull_request.head.ref }}' | sed 's/[^a-zA-Z0-9/_-]//g')"
 
         # Get commits in this PR
         COMMITS=$(git log --format="%H" origin/$BASE_BRANCH..HEAD)

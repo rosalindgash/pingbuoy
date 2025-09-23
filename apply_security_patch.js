@@ -21,7 +21,15 @@ function backup(file) {
 }
 
 function read(file) {
-  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+  // Prevent path traversal attacks by ensuring file is within current directory
+  const resolvedPath = path.resolve(file);
+  const basePath = path.resolve(process.cwd());
+
+  if (!resolvedPath.startsWith(basePath + path.sep) && resolvedPath !== basePath) {
+    throw new Error(`Access denied: File path '${file}' is outside the allowed directory`);
+  }
+
+  return fs.existsSync(resolvedPath) ? fs.readFileSync(resolvedPath, 'utf8') : null;
 }
 
 function write(file, content) {

@@ -244,7 +244,7 @@ jobs:
 
     steps:
       - name: 🤖 Auto-approve security patches
-        uses: hmarr/auto-approve-action@v3
+        uses: hmarr/auto-approve-action@44888ca675ab29b2e9ec7eeaecbca2757d6d8c96 # v3
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
