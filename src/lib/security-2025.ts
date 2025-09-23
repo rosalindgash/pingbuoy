@@ -54,13 +54,22 @@ export const csp2025 = {
 export function generateCSPWithNonces(scriptNonce?: string, styleNonce?: string) {
   const cspWithNonces = { ...csp2025 }
 
+  // For scripts: add 'unsafe-inline' as fallback and nonce for inline scripts
+  // External scripts are already allowed via explicit domains
   if (scriptNonce) {
-    cspWithNonces['script-src'] = [...csp2025['script-src'], `'nonce-${scriptNonce}'`]
-    cspWithNonces['script-src-elem'] = [...csp2025['script-src-elem'], `'nonce-${scriptNonce}'`]
+    cspWithNonces['script-src'] = [...csp2025['script-src'], `'nonce-${scriptNonce}'`, "'unsafe-inline'"]
+    // script-src-elem doesn't need nonces, just the allowed domains
+    cspWithNonces['script-src-elem'] = [...csp2025['script-src-elem']]
+  } else {
+    // Fallback when no nonce
+    cspWithNonces['script-src'] = [...csp2025['script-src'], "'unsafe-inline'"]
   }
 
+  // For styles: add nonce and unsafe-inline for compatibility
   if (styleNonce) {
-    cspWithNonces['style-src'] = [...csp2025['style-src'], `'nonce-${styleNonce}'`]
+    cspWithNonces['style-src'] = [...csp2025['style-src'], `'nonce-${styleNonce}'`, "'unsafe-inline'"]
+  } else {
+    cspWithNonces['style-src'] = [...csp2025['style-src'], "'unsafe-inline'"]
   }
 
   return cspWithNonces
