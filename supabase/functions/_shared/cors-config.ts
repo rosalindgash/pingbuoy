@@ -44,40 +44,55 @@ export class SecureCORS {
   }
 
   /**
-   * Parse allowed origins from environment variable
+   * Parse allowed origins from environment variables
    */
   private parseAllowedOrigins(): string[] {
-    const allowedOriginsEnv = Deno.env.get('ALLOWED_ORIGINS')
+    const origins: string[] = []
 
-    if (!allowedOriginsEnv) {
-      console.warn('⚠️  ALLOWED_ORIGINS not set, using secure defaults')
+    // Check for individual origin environment variables
+    const origin1 = Deno.env.get('ALLOWED_ORIGIN_1')
+    const origin2 = Deno.env.get('ALLOWED_ORIGIN_2')
+
+    if (origin1) origins.push(origin1)
+    if (origin2) origins.push(origin2)
+
+    // Fallback to legacy ALLOWED_ORIGINS variable for backward compatibility
+    const allowedOriginsEnv = Deno.env.get('ALLOWED_ORIGINS')
+    if (allowedOriginsEnv && origins.length === 0) {
+      console.warn('⚠️  Using legacy ALLOWED_ORIGINS variable. Consider migrating to ALLOWED_ORIGIN_1 and ALLOWED_ORIGIN_2')
+
+      // Handle wildcard case (insecure)
+      if (allowedOriginsEnv.includes('*')) {
+        console.error('❌ Wildcard (*) detected in ALLOWED_ORIGINS - this is insecure!')
+
+        if (Deno.env.get('DENO_DEPLOYMENT_ID')) {
+          // In production, reject wildcards
+          throw new Error('Wildcard origins not allowed in production')
+        } else {
+          console.warn('⚠️  Allowing wildcard in development only')
+          return ['*']
+        }
+      }
+
+      // Parse comma-separated origins
+      const legacyOrigins = allowedOriginsEnv
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(origin => origin.length > 0)
+
+      origins.push(...legacyOrigins)
+    }
+
+    if (origins.length === 0) {
+      console.warn('⚠️  No ALLOWED_ORIGIN_1 or ALLOWED_ORIGIN_2 set, using secure defaults')
       return this.getDefaultAllowedOrigins()
     }
-
-    // Handle wildcard case (insecure)
-    if (allowedOriginsEnv.includes('*')) {
-      console.error('❌ Wildcard (*) detected in ALLOWED_ORIGINS - this is insecure!')
-
-      if (Deno.env.get('DENO_DEPLOYMENT_ID')) {
-        // In production, reject wildcards
-        throw new Error('Wildcard origins not allowed in production')
-      } else {
-        console.warn('⚠️  Allowing wildcard in development only')
-        return ['*']
-      }
-    }
-
-    // Parse comma-separated origins
-    const origins = allowedOriginsEnv
-      .split(',')
-      .map(origin => origin.trim())
-      .filter(origin => origin.length > 0)
 
     // Validate each origin
     const validOrigins = origins.filter(origin => this.validateOrigin(origin))
 
     if (validOrigins.length === 0) {
-      console.error('❌ No valid origins found in ALLOWED_ORIGINS')
+      console.error('❌ No valid origins found in environment variables')
       return this.getDefaultAllowedOrigins()
     }
 
