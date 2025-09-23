@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
 import BasicMonitor from '@/components/dashboard/BasicMonitor'
 import { getSiteUptimeStats } from '@/lib/uptime-client'
+import MonitoringTriggers from '@/components/monitoring/MonitoringTriggers'
 
 interface Site {
   id: string
@@ -525,6 +526,17 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Manual Monitoring Triggers - Show only when there are sites */}
+          {sites.length > 0 && (
+            <div className="mb-8">
+              <MonitoringTriggers
+                siteId={sites[0].id}
+                siteName={sites[0].name}
+                siteUrl={sites[0].url}
+              />
+            </div>
+          )}
 
           {/* Sites List */}
           <div className="bg-white shadow rounded-lg">
