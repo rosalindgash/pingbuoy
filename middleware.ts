@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { securityHeaders2025 } from '@/lib/security-2025'
+import { getSecurityHeaders2025, generateNonce } from '@/lib/security-2025'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -10,10 +10,19 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Apply enhanced 2025 security headers to all responses
-  Object.entries(securityHeaders2025).forEach(([key, value]) => {
+  // Generate nonces for scripts and styles
+  const scriptNonce = generateNonce()
+  const styleNonce = generateNonce()
+
+  // Apply enhanced 2025 security headers with nonces to all responses
+  const securityHeaders = getSecurityHeaders2025(scriptNonce, styleNonce)
+  Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value)
   })
+
+  // Add nonces to headers for use in components
+  response.headers.set('x-script-nonce', scriptNonce)
+  response.headers.set('x-style-nonce', styleNonce)
 
   // Handle Supabase auth for protected routes
   const supabase = createServerClient(

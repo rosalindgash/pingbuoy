@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import MFAVerification from './MFAVerification'
 import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginForm() {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -78,7 +80,7 @@ export default function LoginForm() {
         } else {
           // No MFA enabled, proceed to dashboard
           setMessage('Login successful! Redirecting to dashboard...')
-          window.location.href = '/dashboard'
+          router.push('/dashboard')
         }
       }
     } catch (error) {
@@ -91,7 +93,7 @@ export default function LoginForm() {
 
   const handleMFASuccess = () => {
     setMessage('Login successful! Redirecting to dashboard...')
-    window.location.href = '/dashboard'
+    router.push('/dashboard')
   }
 
   const handleMFABack = () => {
