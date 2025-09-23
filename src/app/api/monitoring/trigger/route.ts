@@ -97,18 +97,10 @@ export async function POST(request: NextRequest) {
         break
 
       case 'performance':
-        // Manual page speed check
-        result = await pageSpeedService.checkAndLog(site.id, site.url, user.id, 'mobile')
-        if (result) {
-          result = {
-            type: 'performance',
-            ...result
-          }
-        } else {
-          result = {
-            type: 'performance',
-            error: 'Failed to run performance check'
-          }
+        // Performance monitoring is not available for users - PageSpeed Insights removed
+        result = {
+          type: 'performance',
+          error: 'Performance monitoring is not available for user sites'
         }
         break
 

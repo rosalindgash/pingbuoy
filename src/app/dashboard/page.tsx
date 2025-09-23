@@ -601,13 +601,6 @@ export default function DashboardPage() {
                                 {statsLoading ? '...' : stats ? stats.total : 'N/A'}
                               </div>
                             </div>
-                            {/* Page Speed - Available to all users */}
-                            <div className="text-center">
-                              <div className="text-xs text-gray-500 mb-1">Speed</div>
-                              <div className="text-sm font-semibold text-gray-900">
-                                {statsLoading ? '...' : 'N/A'}
-                              </div>
-                            </div>
                             {/* Pro feature: SSL Status */}
                             {(profile?.plan === 'pro' || profile?.plan === 'founder') && site.url.startsWith('https') && (
                               <div className="text-center">

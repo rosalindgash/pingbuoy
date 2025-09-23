@@ -48,7 +48,6 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
   const getActionLabel = (action: string) => {
     switch (action) {
       case 'uptime': return 'Check Uptime'
-      case 'performance': return 'Check Performance'
       case 'deadlinks': return 'Scan Dead Links'
       default: return action
     }
@@ -57,7 +56,6 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'uptime': return <Activity className="h-4 w-4" />
-      case 'performance': return <Gauge className="h-4 w-4" />
       case 'deadlinks': return <Link className="h-4 w-4" />
       default: return <Play className="h-4 w-4" />
     }
@@ -70,8 +68,8 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
         Trigger immediate monitoring checks for <strong>{siteName}</strong>
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {(['uptime', 'performance', 'deadlinks'] as const).map((action) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {(['uptime', 'deadlinks'] as const).map((action) => (
           <button
             key={action}
             onClick={() => triggerMonitoring(action)}
@@ -116,20 +114,6 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
             </div>
           )}
 
-          {results.result.type === 'performance' && (
-            <div className="text-sm text-green-700">
-              <p>Performance Score: <span className="font-medium">{results.result.performance_score || 'N/A'}</span></p>
-              {results.result.lcp && (
-                <p>LCP: <span className="font-medium">{results.result.lcp}ms</span></p>
-              )}
-              {results.result.fid && (
-                <p>FID: <span className="font-medium">{results.result.fid}ms</span></p>
-              )}
-              {results.result.cls && (
-                <p>CLS: <span className="font-medium">{results.result.cls}</span></p>
-              )}
-            </div>
-          )}
 
           {results.result.type === 'deadlinks' && (
             <div className="text-sm text-green-700">
