@@ -1,25 +1,20 @@
 // Advanced Security Configuration for 2025
 // Addresses latest threats: AI/ML security, supply chain, cloud misconfigurations
 
-// Enhanced Content Security Policy for 2025 with Google Analytics and Nonce Support
+// Enhanced Content Security Policy for 2025 with Google Analytics Support
 export const csp2025 = {
   'default-src': ["'self'"],
   'script-src': [
     "'self'",
-    "https://js.stripe.com", // Stripe checkout
-    "https://www.googletagmanager.com", // Google Analytics
-    "https://www.google-analytics.com", // Google Analytics
-    "https://ssl.google-analytics.com" // Google Analytics SSL
-  ],
-  'script-src-elem': [
-    "'self'",
+    "'unsafe-inline'", // Allow inline scripts for compatibility
     "https://js.stripe.com", // Stripe checkout
     "https://www.googletagmanager.com", // Google Analytics
     "https://www.google-analytics.com", // Google Analytics
     "https://ssl.google-analytics.com" // Google Analytics SSL
   ],
   'style-src': [
-    "'self'"
+    "'self'",
+    "'unsafe-inline'" // Allow inline styles for compatibility
   ],
   'font-src': [
     "'self'" // Only local fonts - Google Fonts not used
@@ -47,32 +42,6 @@ export const csp2025 = {
   'form-action': ["'self'"],
   'frame-ancestors': ["'none'"],
   'upgrade-insecure-requests': true
-  // Removed trusted-types as it may break functionality and requires extensive refactoring
-}
-
-// Function to generate CSP with nonces for inline scripts and styles
-export function generateCSPWithNonces(scriptNonce?: string, styleNonce?: string) {
-  const cspWithNonces = { ...csp2025 }
-
-  // For scripts: add 'unsafe-inline' as fallback and nonce for inline scripts
-  // External scripts are already allowed via explicit domains
-  if (scriptNonce) {
-    cspWithNonces['script-src'] = [...csp2025['script-src'], `'nonce-${scriptNonce}'`, "'unsafe-inline'"]
-    // script-src-elem doesn't need nonces, just the allowed domains
-    cspWithNonces['script-src-elem'] = [...csp2025['script-src-elem']]
-  } else {
-    // Fallback when no nonce
-    cspWithNonces['script-src'] = [...csp2025['script-src'], "'unsafe-inline'"]
-  }
-
-  // For styles: add nonce and unsafe-inline for compatibility
-  if (styleNonce) {
-    cspWithNonces['style-src'] = [...csp2025['style-src'], `'nonce-${styleNonce}'`, "'unsafe-inline'"]
-  } else {
-    cspWithNonces['style-src'] = [...csp2025['style-src'], "'unsafe-inline'"]
-  }
-
-  return cspWithNonces
 }
 
 // Zero Trust Security Principles
@@ -291,42 +260,35 @@ export const privacyConfig2025 = {
   }
 }
 
-// Security Headers for 2025
-export function getSecurityHeaders2025(scriptNonce?: string, styleNonce?: string) {
-  const cspConfig = generateCSPWithNonces(scriptNonce, styleNonce)
-
-  return {
-    // Enhanced security headers
-    'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Cross-Origin-Embedder-Policy': 'require-corp',
-    'Cross-Origin-Opener-Policy': 'same-origin',
-    'Cross-Origin-Resource-Policy': 'same-origin',
-    'Permissions-Policy': [
-      'camera=()',
-      'microphone=()',
-      'geolocation=()',
-      'interest-cohort=()',
-      'payment=(self)',
-      'usb=()',
-      'serial=()'
-    ].join(', '),
-    'Content-Security-Policy': Object.entries(cspConfig)
-      .map(([key, value]) => {
-        if (typeof value === 'boolean') {
-          return key
-        }
-        return `${key} ${Array.isArray(value) ? value.join(' ') : value}`
-      })
-      .join('; ')
-  }
+// Security Headers for 2025 - Simplified
+export const securityHeaders2025 = {
+  // Enhanced security headers
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Permissions-Policy': [
+    'camera=()',
+    'microphone=()',
+    'geolocation=()',
+    'interest-cohort=()',
+    'payment=(self)',
+    'usb=()',
+    'serial=()'
+  ].join(', '),
+  'Content-Security-Policy': Object.entries(csp2025)
+    .map(([key, value]) => {
+      if (typeof value === 'boolean') {
+        return key
+      }
+      return `${key} ${Array.isArray(value) ? value.join(' ') : value}`
+    })
+    .join('; ')
 }
-
-// Backward compatibility - default headers without nonces
-export const securityHeaders2025 = getSecurityHeaders2025()
 
 // Utility function to generate cryptographically secure nonces
 export function generateNonce(): string {
