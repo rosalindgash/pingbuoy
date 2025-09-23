@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
       case 'CLS':
         vitalsData.cls = value
         break
-      case 'FID':
-        vitalsData.fid = value
+      case 'INP': // INP replaced FID as the official Core Web Vital
+        vitalsData.fid = value // Store in fid column for compatibility
         break
       case 'FCP':
         vitalsData.fcp = value

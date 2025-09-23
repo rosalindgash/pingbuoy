@@ -203,8 +203,8 @@ export default function CoreVitalsPage() {
     switch (metric) {
       case 'lcp':
         return value <= 2500 ? 'good' : value <= 4000 ? 'needs-improvement' : 'poor'
-      case 'fid':
-        return value <= 100 ? 'good' : value <= 300 ? 'needs-improvement' : 'poor'
+      case 'fid': // Now stores INP values but kept as 'fid' for compatibility
+        return value <= 200 ? 'good' : value <= 500 ? 'needs-improvement' : 'poor' // INP thresholds
       case 'cls':
         return value <= 0.1 ? 'good' : value <= 0.25 ? 'needs-improvement' : 'poor'
       case 'fcp':
@@ -397,7 +397,7 @@ export default function CoreVitalsPage() {
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LCP</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">INP</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CLS</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FCP</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TTFB</th>
@@ -455,8 +455,8 @@ export default function CoreVitalsPage() {
                     <p className="text-gray-600">&le;2.5s good, &le;4.0s needs improvement, &gt;4.0s poor</p>
                   </div>
                   <div>
-                    <strong>FID (First Input Delay)</strong>
-                    <p className="text-gray-600">&le;100ms good, &le;300ms needs improvement, &gt;300ms poor</p>
+                    <strong>INP (Interaction to Next Paint)</strong>
+                    <p className="text-gray-600">&le;200ms good, &le;500ms needs improvement, &gt;500ms poor</p>
                   </div>
                   <div>
                     <strong>CLS (Cumulative Layout Shift)</strong>

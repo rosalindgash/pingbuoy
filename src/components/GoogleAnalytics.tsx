@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals'
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals'
 
 // Function to send Core Web Vitals to Google Analytics and our database
 function sendToAnalytics({ name, value, id }: { name: string; value: number; id: string }) {
@@ -36,7 +36,7 @@ export default function GoogleAnalytics({ measurementId }: { measurementId: stri
   useEffect(() => {
     // Measure Core Web Vitals and send to both GA4 and our database
     onCLS(sendToAnalytics)
-    onFID(sendToAnalytics)
+    onINP(sendToAnalytics) // INP replaced FID as the official Core Web Vital
     onFCP(sendToAnalytics)
     onLCP(sendToAnalytics)
     onTTFB(sendToAnalytics)
