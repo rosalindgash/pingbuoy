@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         plan: targetPlan,
-        include_page_speed: true, // Page speed monitoring for all users
         include_ssl_check: targetPlan === 'pro' || targetPlan === 'all' // SSL only for Pro
       })
     })

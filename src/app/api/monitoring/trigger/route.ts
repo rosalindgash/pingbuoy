@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { pageSpeedService } from '@/lib/pagespeed'
 
 export async function POST(request: NextRequest) {
   try {
