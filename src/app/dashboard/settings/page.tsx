@@ -7,8 +7,7 @@ import { supabase } from '@/lib/supabase'
 import AccountInformation from '@/components/dashboard/AccountInformation'
 import BillingSection from '@/components/dashboard/BillingSection'
 import MFASettings from '@/components/auth/MFASettings'
-import SiteLogoLink from '@/components/dashboard/SiteLogoLink'
-import { Bell, ArrowLeft, Shield, Globe } from 'lucide-react'
+import { Bell, ArrowLeft, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -20,17 +19,10 @@ interface UserProfile {
   stripe_customer_id?: string
 }
 
-interface Site {
-  id: string
-  name: string
-  url: string
-  logo_url: string | null
-}
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(true)
   const [notificationSettings, setNotificationSettings] = useState({
     uptime_alerts: true,
@@ -46,7 +38,8 @@ export default function SettingsPage() {
         return
       }
       setUser(user)
-      await Promise.all([fetchProfile(user.id), fetchSites(user.id)])
+      await fetchProfile(user.id)
+      setLoading(false)
     }
     
     checkUser()
@@ -66,22 +59,6 @@ export default function SettingsPage() {
     }
   }
 
-  const fetchSites = async (userId: string) => {
-    try {
-      const { data: sitesData } = await supabase
-        .from('sites')
-        .select('id, name, url, logo_url')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('name')
-
-      setSites(sitesData || [])
-    } catch (error) {
-      console.error('Error fetching sites:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleNotificationChange = (setting: string, enabled: boolean) => {
     setNotificationSettings(prev => ({
@@ -91,12 +68,6 @@ export default function SettingsPage() {
     // In a real app, you'd save this to the database
   }
 
-  const handleLogoUpdate = async (siteId: string, logoUrl: string | null) => {
-    // Update the local state
-    setSites(prev => prev.map(site =>
-      site.id === siteId ? { ...site, logo_url: logoUrl } : site
-    ))
-  }
 
   if (loading) {
     return (
@@ -232,32 +203,6 @@ export default function SettingsPage() {
 
         </div>
 
-        {/* Website Logos Section - Only for Pro/Founder users */}
-        {profile && (profile.plan === 'pro' || profile.plan === 'founder') && sites.length > 0 && (
-          <div className="mt-8">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center space-x-3 mb-6">
-                <Globe className="w-5 h-5 text-gray-400" />
-                <h2 className="text-lg font-medium text-gray-900">Website Logos</h2>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
-                Add custom logos to your status pages. Logos will appear in the header of your public status pages.
-              </p>
-              <div className="space-y-6">
-                {sites.map((site) => (
-                  <SiteLogoLink
-                    key={site.id}
-                    siteId={site.id}
-                    siteName={site.name}
-                    currentLogoUrl={site.logo_url}
-                    userPlan={profile.plan}
-                    onLogoUpdate={(logoUrl) => handleLogoUpdate(site.id, logoUrl)}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Danger Zone */}
         <div className="mt-8">

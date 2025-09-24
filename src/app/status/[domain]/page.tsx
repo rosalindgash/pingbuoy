@@ -187,7 +187,7 @@ export default function StatusPage() {
           <div className="px-6 py-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* Site icon - logo functionality will be added after migration */}
+                {/* Site icon */}
                 <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Globe className="w-8 h-8 text-blue-600" />
                 </div>
