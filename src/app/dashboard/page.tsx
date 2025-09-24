@@ -10,7 +10,6 @@ import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
 import BasicMonitor from '@/components/dashboard/BasicMonitor'
 import { getSiteUptimeStats } from '@/lib/uptime-client'
-import MonitoringTriggers from '@/components/monitoring/MonitoringTriggers'
 
 interface Site {
   id: string
@@ -247,31 +246,55 @@ export default function DashboardPage() {
     setCheckingSites(prev => ({ ...prev, [siteId]: true }))
 
     try {
-      const response = await fetch(`/api/sites/${siteId}/ping`, {
-        method: 'POST'
-      })
+      // Run all monitoring types in parallel for comprehensive check
+      const [uptimeResponse, speedResponse, deadlinksResponse] = await Promise.all([
+        fetch('/api/monitoring/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'uptime', siteId })
+        }),
+        fetch('/api/monitoring/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'pagespeed', siteId })
+        }),
+        fetch('/api/monitoring/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'deadlinks', siteId })
+        })
+      ])
 
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Manual check result:', result)
+      // Process uptime result (main status update)
+      if (uptimeResponse.ok) {
+        const uptimeResult = await uptimeResponse.json()
+        console.log('Manual uptime check result:', uptimeResult)
 
         // Update the site status in our local state
         setSites(prev => prev.map(site =>
           site.id === siteId
-            ? { ...site, status: result.status, last_checked: result.checkedAt }
+            ? { ...site, status: uptimeResult.result.status, last_checked: new Date().toISOString() }
             : site
         ))
-        // Refresh uptime stats for this site
-        fetchUptimeStats(siteId)
-
-        // Also refresh sites data to get updated last_checked from database
-        await fetchSites(user?.id)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Manual check failed:', response.status, errorData)
       }
+
+      // Log other results
+      if (speedResponse.ok) {
+        const speedResult = await speedResponse.json()
+        console.log('Manual speed check result:', speedResult)
+      }
+
+      if (deadlinksResponse.ok) {
+        const deadlinksResult = await deadlinksResponse.json()
+        console.log('Manual deadlinks check result:', deadlinksResult)
+      }
+
+      // Refresh uptime stats and site data to show updated metrics
+      fetchUptimeStats(siteId)
+      await fetchSites(user?.id)
+
     } catch (error) {
-      console.error('Error checking site:', error)
+      console.error('Error during comprehensive site check:', error)
     } finally {
       setCheckingSites(prev => ({ ...prev, [siteId]: false }))
     }
@@ -281,28 +304,15 @@ export default function DashboardPage() {
     setCheckingAll(true)
 
     try {
-      // Check all sites in parallel
+      // Run comprehensive checks for all sites
       const checkPromises = sites.map(site =>
-        fetch(`/api/sites/${site.id}/ping`, { method: 'POST' })
-          .then(response => response.ok ? response.json() : null)
-          .then(result => ({ siteId: site.id, result }))
-          .catch(() => ({ siteId: site.id, result: null }))
+        handleManualCheck(site.id)
       )
 
-      const results = await Promise.all(checkPromises)
+      await Promise.all(checkPromises)
 
-      // Update all site statuses
-      setSites(prev => prev.map(site => {
-        const checkResult = results.find(r => r.siteId === site.id)
-        if (checkResult?.result) {
-          return {
-            ...site,
-            status: checkResult.result.status,
-            last_checked: checkResult.result.checkedAt
-          }
-        }
-        return site
-      }))
+      // Refresh all site data after comprehensive checks
+      await fetchSites(user?.id)
 
       // Refresh uptime stats for all sites
       sites.forEach(site => fetchUptimeStats(site.id))
@@ -527,16 +537,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Manual Monitoring Triggers - Show only when there are sites */}
-          {sites.length > 0 && (
-            <div className="mb-8">
-              <MonitoringTriggers
-                siteId={sites[0].id}
-                siteName={sites[0].name}
-                siteUrl={sites[0].url}
-              />
-            </div>
-          )}
 
           {/* Sites List */}
           <div className="bg-white shadow rounded-lg">
