@@ -13,7 +13,6 @@ interface Site {
   url: string
   status: 'up' | 'down' | 'unknown'
   last_checked: string | null
-  logo_url: string | null
   user_id: string
 }
 
@@ -42,9 +41,9 @@ interface HourlyData {
   up: number
 }
 
-export default function SiteStatusPage() {
+export default function StatusPage() {
   const params = useParams()
-  const siteId = params.siteId as string
+  const domain = params.domain as string
 
   const [site, setSite] = useState<Site | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -55,40 +54,62 @@ export default function SiteStatusPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (siteId) {
+    if (domain) {
       fetchSiteData()
     }
-  }, [siteId])
+  }, [domain])
+
+  const extractDomainFromUrl = (url: string) => {
+    try {
+      // Remove protocol and path, keep only domain
+      return new URL(url).hostname.replace('www.', '')
+    } catch {
+      return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+    }
+  }
 
   const fetchSiteData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Fetch site data with user info
-      const { data: siteData, error: siteError } = await supabase
+      // Decode the domain parameter in case it's URL encoded
+      const decodedDomain = decodeURIComponent(domain)
+
+      // Find site by matching domain extracted from URL
+      const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
         .select(`
-          id, name, url, status, last_checked, logo_url, user_id,
+          id, name, url, status, last_checked, user_id,
           users!inner(plan, email)
         `)
-        .eq('id', siteId)
         .eq('is_active', true)
-        .single()
 
-      if (siteError || !siteData) {
+      if (sitesError) {
+        console.error('Database error:', sitesError)
+        setError('Error loading site data')
+        return
+      }
+
+      // Find the site with matching domain
+      const matchingSite = sitesData?.find(site => {
+        const siteDomain = extractDomainFromUrl(site.url)
+        return siteDomain === decodedDomain
+      })
+
+      if (!matchingSite) {
         setError('Site not found or is not public')
         return
       }
 
-      setSite(siteData)
-      setUser(siteData.users)
+      setSite(matchingSite)
+      setUser(matchingSite.users)
 
       // Fetch monitoring data
       const [uptimeData, speedData, hourlyDataResult] = await Promise.all([
-        getSiteUptimeStats(siteId, 30),
-        getSiteLatestPageSpeed(siteId),
-        getSiteHourlyUptimeData(siteId, 24)
+        getSiteUptimeStats(matchingSite.id, 30),
+        getSiteLatestPageSpeed(matchingSite.id),
+        getSiteHourlyUptimeData(matchingSite.id, 24)
       ])
 
       setUptimeStats(uptimeData)
@@ -151,6 +172,7 @@ export default function SiteStatusPage() {
             <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Site Not Found</h1>
             <p className="text-gray-600">{error || 'The requested status page could not be found.'}</p>
+            <p className="text-gray-500 text-sm mt-2">Looking for: {domain}</p>
           </div>
         </div>
       </div>
@@ -165,21 +187,10 @@ export default function SiteStatusPage() {
           <div className="px-6 py-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* Logo for Pro users or site icon */}
-                {user?.plan !== 'free' && site.logo_url ? (
-                  <div className="relative w-16 h-16 flex-shrink-0">
-                    <Image
-                      src={site.logo_url}
-                      alt={`${site.name} logo`}
-                      fill
-                      className="object-contain rounded-lg"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Globe className="w-8 h-8 text-blue-600" />
-                  </div>
-                )}
+                {/* Site icon - logo functionality will be added after migration */}
+                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-8 h-8 text-blue-600" />
+                </div>
 
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{site.name}</h1>

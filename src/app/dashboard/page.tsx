@@ -528,12 +528,12 @@ export default function DashboardPage() {
                               </div>
                               <p className="text-sm text-gray-500 truncate">{site.url}</p>
                               <a
-                                href={`/site/${site.id}`}
+                                href={`/status/${site.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center mt-1"
                               >
-                                <span className="truncate">{typeof window !== 'undefined' ? window.location.origin : ''}/site/{site.id}</span>
+                                <span className="truncate">{typeof window !== 'undefined' ? window.location.origin : ''}/status/{site.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}</span>
                                 <svg className="w-3 h-3 ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                 </svg>
