@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteHourlyUptimeData, getSiteLatestDeadLinks } from '@/lib/uptime-client'
 import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw, Link, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
@@ -91,6 +91,12 @@ export default function StatusPage() {
       setLoading(true)
       setError(null)
 
+      // Create anon supabase client for public access
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
       // Decode the domain parameter in case it's URL encoded
       const decodedDomain = decodeURIComponent(domain)
 
@@ -99,7 +105,7 @@ export default function StatusPage() {
         `https://${decodedDomain}`,
         `http://${decodedDomain}`,
         `https://www.${decodedDomain}`,
-        `http://www.${decodedDomain}`,
+        `http://${decodedDomain}`,
         `https://${decodedDomain}/`,
         `http://${decodedDomain}/`,
         `https://www.${decodedDomain}/`,

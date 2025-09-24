@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const domain = searchParams.get('domain') || 'rosalindgash.org'
 
-    const supabase = await createServerSupabaseClient()
+    // Use anon client for debugging
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     const decodedDomain = decodeURIComponent(domain)
 
     // Build precise URL variations to match against
