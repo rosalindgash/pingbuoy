@@ -55,8 +55,6 @@ export default function DashboardPage() {
   const getNavigation = () => {
     const baseNavigation = [
       { name: 'Dashboard', href: '/dashboard', icon: Globe },
-      { name: 'Uptime', href: '/dashboard/uptime', icon: TrendingUp },
-      { name: 'Dead Links', href: '/dashboard/dead-links', icon: AlertTriangle },
     ]
 
     // Add integrations for Pro users
@@ -481,7 +479,10 @@ export default function DashboardPage() {
           {/* Sites List */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Your Websites ({sites.length})</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">Your Websites ({sites.length})</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Click on a website's status page URL to view its detailed monitoring status and share it with others.
+              </p>
               
               {sites.length === 0 ? (
                 <div className="text-center py-12">
@@ -526,6 +527,17 @@ export default function DashboardPage() {
                                 </span>
                               </div>
                               <p className="text-sm text-gray-500 truncate">{site.url}</p>
+                              <a
+                                href={`/site/${site.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center mt-1"
+                              >
+                                <span className="truncate">{typeof window !== 'undefined' ? window.location.origin : ''}/site/{site.id}</span>
+                                <svg className="w-3 h-3 ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
                             </div>
                           </div>
 

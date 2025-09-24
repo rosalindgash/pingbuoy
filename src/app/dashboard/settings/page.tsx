@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import AccountInformation from '@/components/dashboard/AccountInformation'
 import BillingSection from '@/components/dashboard/BillingSection'
-import StatusPageSettings from '@/components/dashboard/StatusPageSettings'
 import MFASettings from '@/components/auth/MFASettings'
 import { Bell, ArrowLeft, Shield } from 'lucide-react'
 import Link from 'next/link'
@@ -201,8 +200,6 @@ export default function SettingsPage() {
             <MFASettings />
           </div>
 
-          {/* Status Page Settings */}
-          <StatusPageSettings userEmail={profile.email} />
         </div>
 
         {/* Danger Zone */}
