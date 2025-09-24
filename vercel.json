@@ -1,0 +1,25 @@
+{
+  "functions": {
+    "src/app/api/cron/*.ts": {
+      "maxDuration": 300
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/check-uptime",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/check-page-speed",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/scan-dead-links",
+      "schedule": "0 2 */3 * *"
+    },
+    {
+      "path": "/api/cron/cleanup-data",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}

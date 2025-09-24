@@ -32,103 +32,63 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'uptime':
-        // Manual uptime check
-        const uptimeStart = Date.now()
-        try {
-          const response = await fetch(site.url, {
-            method: 'HEAD',
-            signal: AbortSignal.timeout(15000)
+        // Manual uptime check using the same logic as cron job
+        result = await checkWebsiteUptime(site)
+
+        // Log the check
+        await supabase.from('uptime_logs').insert({
+          site_id: site.id,
+          status: result.status,
+          response_time: result.responseTime,
+          status_code: result.statusCode,
+          error_message: result.error,
+          checked_at: new Date().toISOString()
+        })
+
+        // Update site status
+        await supabase
+          .from('sites')
+          .update({
+            status: result.status,
+            last_checked: new Date().toISOString()
           })
-
-          const responseTime = Date.now() - uptimeStart
-          const isUp = response.status >= 200 && response.status < 400
-
-          // Log the check
-          await supabase
-            .from('uptime_logs')
-            .insert({
-              site_id: site.id,
-              status: isUp ? 'up' : 'down',
-              response_time: responseTime,
-              status_code: response.status,
-            })
-
-          // Update site status
-          await supabase
-            .from('sites')
-            .update({
-              status: isUp ? 'up' : 'down',
-              last_checked: new Date().toISOString()
-            })
-            .eq('id', site.id)
-
-          result = {
-            type: 'uptime',
-            status: isUp ? 'up' : 'down',
-            responseTime,
-            statusCode: response.status
-          }
-        } catch (error) {
-          // Log failed check
-          await supabase
-            .from('uptime_logs')
-            .insert({
-              site_id: site.id,
-              status: 'down',
-              response_time: null,
-              status_code: null,
-            })
-
-          await supabase
-            .from('sites')
-            .update({
-              status: 'down',
-              last_checked: new Date().toISOString()
-            })
-            .eq('id', site.id)
-
-          result = {
-            type: 'uptime',
-            status: 'down',
-            error: error instanceof Error ? error.message : 'Unknown error'
-          }
-        }
+          .eq('id', site.id)
         break
 
-      case 'performance':
-        // Performance monitoring is not available for users - PageSpeed Insights removed
-        result = {
-          type: 'performance',
-          error: 'Performance monitoring is not available for user sites'
-        }
+      case 'pagespeed':
+        // Manual page speed test using simple timing
+        result = await checkPageSpeed(site)
+
+        // Log the speed test
+        await supabase.from('uptime_logs').insert({
+          site_id: site.id,
+          status: 'speed',
+          response_time: result.loadTime,
+          status_code: result.performanceScore,
+          error_message: result.pageSize ? `${result.pageSize} bytes` : null,
+          checked_at: new Date().toISOString()
+        })
         break
 
       case 'deadlinks':
-        // Manual dead link scan
-        try {
-          const scanResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/dead-link-scanner`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ siteId: site.id })
-          })
+        // Manual dead link scan using the same logic as cron job
+        const scanResult = await scanForDeadLinks(site)
 
-          if (!scanResponse.ok) {
-            throw new Error(`Scan failed: ${scanResponse.status}`)
-          }
+        // Log the scan
+        await supabase.from('uptime_logs').insert({
+          site_id: site.id,
+          status: 'scan',
+          response_time: scanResult.totalLinks,
+          status_code: scanResult.brokenLinks.length,
+          error_message: JSON.stringify(scanResult.brokenLinks.slice(0, 10)),
+          checked_at: new Date().toISOString()
+        })
 
-          const scanResult = await scanResponse.json()
-          result = {
-            type: 'deadlinks',
-            ...scanResult
-          }
-        } catch (error) {
-          result = {
-            type: 'deadlinks',
-            error: error instanceof Error ? error.message : 'Scan failed'
-          }
+        result = {
+          type: 'deadlinks',
+          totalLinks: scanResult.totalLinks,
+          brokenLinks: scanResult.brokenLinks.length,
+          brokenLinksList: scanResult.brokenLinks
         }
         break
 
@@ -152,5 +112,165 @@ export async function POST(request: NextRequest) {
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+// Custom uptime checking function (same as cron job)
+async function checkWebsiteUptime(website: any) {
+  const startTime = Date.now()
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30000)
+
+    const response = await fetch(website.url, {
+      method: 'HEAD',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'PingBuoy Monitor/1.0 (+https://pingbuoy.com)'
+      }
+    })
+
+    clearTimeout(timeout)
+    const responseTime = Date.now() - startTime
+    const isUp = response.status < 400
+
+    return {
+      type: 'uptime',
+      status: isUp ? 'up' : 'down',
+      responseTime,
+      statusCode: response.status
+    }
+
+  } catch (error) {
+    const responseTime = Date.now() - startTime
+
+    return {
+      type: 'uptime',
+      status: 'down',
+      responseTime,
+      statusCode: null,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+// Simple page speed test (same as cron job)
+async function checkPageSpeed(website: any) {
+  const startTime = Date.now()
+
+  try {
+    const response = await fetch(website.url, {
+      method: 'GET',
+      signal: AbortSignal.timeout(60000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; PingBuoy/1.0; +https://pingbuoy.com)'
+      }
+    })
+
+    const loadTime = Date.now() - startTime
+    const contentLength = response.headers.get('content-length')
+    const pageSize = contentLength ? parseInt(contentLength) : 0
+
+    // Simple performance score based on load time
+    let performanceScore = 100
+    if (loadTime > 1000) performanceScore = 90
+    if (loadTime > 2000) performanceScore = 75
+    if (loadTime > 3000) performanceScore = 60
+    if (loadTime > 5000) performanceScore = 40
+    if (loadTime > 10000) performanceScore = 20
+
+    return {
+      type: 'pagespeed',
+      loadTime,
+      pageSize,
+      performanceScore,
+      statusCode: response.status
+    }
+
+  } catch (error) {
+    const loadTime = Date.now() - startTime
+
+    return {
+      type: 'pagespeed',
+      loadTime: loadTime > 60000 ? 60000 : loadTime,
+      pageSize: 0,
+      performanceScore: 0,
+      statusCode: null,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+// Dead link scanner (same as cron job)
+async function scanForDeadLinks(website: any) {
+  const foundLinks = new Set<string>()
+  const brokenLinks: Array<{ url: string; status: number | null; error: string }> = []
+
+  try {
+    const response = await fetch(website.url, {
+      method: 'GET',
+      signal: AbortSignal.timeout(30000),
+      headers: {
+        'User-Agent': 'PingBuoy LinkBot/1.0 (+https://pingbuoy.com)'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${website.url}: ${response.status}`)
+    }
+
+    const html = await response.text()
+
+    // Simple regex to find links
+    const linkPattern = /href=["'](https?:\/\/[^"']+)["']/gi
+    let match
+
+    while ((match = linkPattern.exec(html)) !== null && foundLinks.size < 50) {
+      const url = match[1]
+      if (!foundLinks.has(url)) {
+        foundLinks.add(url)
+      }
+    }
+
+    // Check each link
+    for (const link of foundLinks) {
+      try {
+        const linkResponse = await fetch(link, {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(10000),
+          headers: {
+            'User-Agent': 'PingBuoy LinkBot/1.0 (+https://pingbuoy.com)'
+          }
+        })
+
+        if (linkResponse.status >= 400) {
+          brokenLinks.push({
+            url: link,
+            status: linkResponse.status,
+            error: `HTTP ${linkResponse.status}`
+          })
+        }
+
+      } catch (error) {
+        brokenLinks.push({
+          url: link,
+          status: null,
+          error: error instanceof Error ? error.message : 'Connection failed'
+        })
+      }
+
+      // Small delay between link checks
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    return {
+      totalLinks: foundLinks.size,
+      brokenLinks: brokenLinks.slice(0, 20)
+    }
+
+  } catch (error) {
+    console.error(`Dead link scan failed for ${website.url}:`, error)
+    return { totalLinks: 0, brokenLinks: [] }
   }
 }

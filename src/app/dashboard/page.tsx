@@ -601,6 +601,13 @@ export default function DashboardPage() {
                                 {statsLoading ? '...' : stats ? stats.total : 'N/A'}
                               </div>
                             </div>
+                            {/* Page Speed - Available for all users */}
+                            <div className="text-center">
+                              <div className="text-xs text-gray-500 mb-1">Speed Score</div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                N/A
+                              </div>
+                            </div>
                             {/* Pro feature: SSL Status */}
                             {(profile?.plan === 'pro' || profile?.plan === 'founder') && site.url.startsWith('https') && (
                               <div className="text-center">
@@ -650,7 +657,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Mobile stats - show on small screens */}
-                        <div className="md:hidden mt-3 grid grid-cols-3 gap-3 text-center">
+                        <div className="md:hidden mt-3 grid grid-cols-4 gap-3 text-center">
                           <div>
                             <div className="text-xs text-gray-500 mb-1">Uptime</div>
                             <div className="text-sm font-semibold text-gray-900">
@@ -661,6 +668,12 @@ export default function DashboardPage() {
                             <div className="text-xs text-gray-500 mb-1">Checks</div>
                             <div className="text-sm font-semibold text-gray-900">
                               {statsLoading ? '...' : stats ? stats.total : 'N/A'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Speed</div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              N/A
                             </div>
                           </div>
                           <div>

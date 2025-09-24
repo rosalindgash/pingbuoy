@@ -14,7 +14,7 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
   const [results, setResults] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const triggerMonitoring = async (action: 'uptime' | 'performance' | 'deadlinks') => {
+  const triggerMonitoring = async (action: 'uptime' | 'pagespeed' | 'deadlinks') => {
     setLoading(action)
     setError(null)
     setResults(null)
@@ -48,6 +48,7 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
   const getActionLabel = (action: string) => {
     switch (action) {
       case 'uptime': return 'Check Uptime'
+      case 'pagespeed': return 'Test Page Speed'
       case 'deadlinks': return 'Scan Dead Links'
       default: return action
     }
@@ -56,6 +57,7 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'uptime': return <Activity className="h-4 w-4" />
+      case 'pagespeed': return <Gauge className="h-4 w-4" />
       case 'deadlinks': return <Link className="h-4 w-4" />
       default: return <Play className="h-4 w-4" />
     }
@@ -68,8 +70,8 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
         Trigger immediate monitoring checks for <strong>{siteName}</strong>
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {(['uptime', 'deadlinks'] as const).map((action) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {(['uptime', 'pagespeed', 'deadlinks'] as const).map((action) => (
           <button
             key={action}
             onClick={() => triggerMonitoring(action)}
@@ -114,6 +116,15 @@ export default function MonitoringTriggers({ siteId, siteName, siteUrl }: Monito
             </div>
           )}
 
+          {results.result.type === 'pagespeed' && (
+            <div className="text-sm text-green-700">
+              <p>Load Time: <span className="font-medium">{(results.result.loadTime / 1000).toFixed(1)}s</span></p>
+              <p>Performance Score: <span className="font-medium">{results.result.performanceScore}/100</span></p>
+              {results.result.pageSize && (
+                <p>Page Size: <span className="font-medium">{Math.round(results.result.pageSize / 1024)} KB</span></p>
+              )}
+            </div>
+          )}
 
           {results.result.type === 'deadlinks' && (
             <div className="text-sm text-green-700">
