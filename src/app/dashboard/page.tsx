@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
 import BasicMonitor from '@/components/dashboard/BasicMonitor'
-import { getSiteUptimeStats } from '@/lib/uptime-client'
+import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteLatestDeadLinks } from '@/lib/uptime-client'
 
 interface Site {
   id: string
@@ -38,6 +38,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [uptimeStats, setUptimeStats] = useState<Record<string, {uptime: number, total: number, up: number}>>({})
   const [uptimeLoading, setUptimeLoading] = useState<Record<string, boolean>>({})
+  const [pageSpeedStats, setPageSpeedStats] = useState<Record<string, {score: number, loadTime: number, lastChecked: string | null}>>({})
+  const [deadLinksStats, setDeadLinksStats] = useState<Record<string, {totalLinks: number, brokenLinks: number, lastScanned: string | null}>>({})
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showAddSite, setShowAddSite] = useState(false)
   const [showEditSite, setShowEditSite] = useState(false)
@@ -115,17 +117,19 @@ export default function DashboardPage() {
       .order('created_at', { ascending: false })
     setSites(sitesData || [])
     
-    // Fetch uptime stats for each site
+    // Fetch all stats for each site
     if (sitesData) {
       for (const site of sitesData) {
         fetchUptimeStats(site.id)
+        fetchPageSpeedStats(site.id)
+        fetchDeadLinksStats(site.id)
       }
     }
   }
 
   const fetchUptimeStats = async (siteId: string) => {
     setUptimeLoading(prev => ({ ...prev, [siteId]: true }))
-    
+
     try {
       const stats = await getSiteUptimeStats(siteId, 30) // Last 30 days
       setUptimeStats(prev => ({ ...prev, [siteId]: stats }))
@@ -133,6 +137,24 @@ export default function DashboardPage() {
       console.error('Error fetching uptime stats:', error)
     } finally {
       setUptimeLoading(prev => ({ ...prev, [siteId]: false }))
+    }
+  }
+
+  const fetchPageSpeedStats = async (siteId: string) => {
+    try {
+      const stats = await getSiteLatestPageSpeed(siteId)
+      setPageSpeedStats(prev => ({ ...prev, [siteId]: stats }))
+    } catch (error) {
+      console.error('Error fetching page speed stats:', error)
+    }
+  }
+
+  const fetchDeadLinksStats = async (siteId: string) => {
+    try {
+      const stats = await getSiteLatestDeadLinks(siteId)
+      setDeadLinksStats(prev => ({ ...prev, [siteId]: stats }))
+    } catch (error) {
+      console.error('Error fetching dead links stats:', error)
     }
   }
 
@@ -165,8 +187,10 @@ export default function DashboardPage() {
         setSites(prev => [data[0], ...prev])
         setSiteForm({ name: '', url: '' })
         setShowAddSite(false)
-        // Fetch uptime stats for the new site
+        // Fetch all stats for the new site
         fetchUptimeStats(data[0].id)
+        fetchPageSpeedStats(data[0].id)
+        fetchDeadLinksStats(data[0].id)
       }
     } catch (error) {
       console.error('Error adding site:', error)
@@ -289,8 +313,10 @@ export default function DashboardPage() {
         console.log('Manual deadlinks check result:', deadlinksResult)
       }
 
-      // Refresh uptime stats and site data to show updated metrics
+      // Refresh all stats and site data to show updated metrics
       fetchUptimeStats(siteId)
+      fetchPageSpeedStats(siteId)
+      fetchDeadLinksStats(siteId)
       await fetchSites(user?.id)
 
     } catch (error) {
@@ -314,8 +340,12 @@ export default function DashboardPage() {
       // Refresh all site data after comprehensive checks
       await fetchSites(user?.id)
 
-      // Refresh uptime stats for all sites
-      sites.forEach(site => fetchUptimeStats(site.id))
+      // Refresh all stats for all sites
+      sites.forEach(site => {
+        fetchUptimeStats(site.id)
+        fetchPageSpeedStats(site.id)
+        fetchDeadLinksStats(site.id)
+      })
 
     } catch (error) {
       console.error('Error checking all sites:', error)
@@ -563,6 +593,8 @@ export default function DashboardPage() {
                   {sites.map((site) => {
                     const stats = uptimeStats[site.id]
                     const statsLoading = uptimeLoading[site.id]
+                    const speedStats = pageSpeedStats[site.id]
+                    const deadLinksData = deadLinksStats[site.id]
 
                     return (
                       <div key={site.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
@@ -605,7 +637,7 @@ export default function DashboardPage() {
                             <div className="text-center">
                               <div className="text-xs text-gray-500 mb-1">Speed Score</div>
                               <div className="text-sm font-semibold text-gray-900">
-                                N/A
+                                {speedStats && speedStats.score > 0 ? speedStats.score : 'N/A'}
                               </div>
                             </div>
                             {/* Pro feature: SSL Status */}
@@ -673,7 +705,7 @@ export default function DashboardPage() {
                           <div>
                             <div className="text-xs text-gray-500 mb-1">Speed</div>
                             <div className="text-sm font-semibold text-gray-900">
-                              N/A
+                              {speedStats && speedStats.score > 0 ? speedStats.score : 'N/A'}
                             </div>
                           </div>
                           <div>

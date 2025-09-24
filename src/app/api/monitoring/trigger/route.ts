@@ -59,13 +59,13 @@ export async function POST(request: NextRequest) {
         // Manual page speed test using simple timing
         result = await checkPageSpeed(site)
 
-        // Log the speed test
+        // Log the speed test using the database constraint workaround
         await supabase.from('uptime_logs').insert({
           site_id: site.id,
-          status: 'speed',
-          response_time: result.loadTime,
-          status_code: result.performanceScore,
-          error_message: result.pageSize ? `${result.pageSize} bytes` : null,
+          status: 'up', // Use 'up' to satisfy constraint
+          response_time: result.loadTime, // Load time in ms
+          status_code: 200, // Valid HTTP status code
+          error_message: `SPEED_TEST:${result.performanceScore}`, // Encode score in error message
           checked_at: new Date().toISOString()
         })
         break
