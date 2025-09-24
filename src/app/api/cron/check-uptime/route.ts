@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         id, name, url, user_id,
         users!inner(plan, email)
       `)
-      .eq('active', true)
+      .eq('is_active', true)
 
     if (!websites) {
       return NextResponse.json({ error: 'No websites found' }, { status: 404 })

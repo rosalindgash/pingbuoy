@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteHourlyUptimeData } from '@/lib/uptime-client'
-import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw } from 'lucide-react'
+import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteHourlyUptimeData, getSiteLatestDeadLinks } from '@/lib/uptime-client'
+import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw, Link, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
 
 interface Site {
@@ -33,6 +33,21 @@ interface PageSpeedStats {
   lastChecked: string | null
 }
 
+interface DeadLinksStats {
+  totalLinks: number
+  brokenLinks: number
+  lastScanned: string | null
+}
+
+interface DeadLink {
+  id: string
+  url: string
+  status_code: number | null
+  error: string | null
+  found_on_page: string
+  last_checked: string
+}
+
 interface HourlyData {
   hour: number
   percentage: number
@@ -49,6 +64,8 @@ export default function StatusPage() {
   const [user, setUser] = useState<User | null>(null)
   const [uptimeStats, setUptimeStats] = useState<UptimeStats | null>(null)
   const [pageSpeedStats, setPageSpeedStats] = useState<PageSpeedStats | null>(null)
+  const [deadLinksStats, setDeadLinksStats] = useState<DeadLinksStats | null>(null)
+  const [deadLinks, setDeadLinks] = useState<DeadLink[]>([])
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -107,21 +124,49 @@ export default function StatusPage() {
       setUser(matchingSite.users)
 
       // Fetch monitoring data
-      const [uptimeData, speedData, hourlyDataResult] = await Promise.all([
+      const [uptimeData, speedData, deadLinksData, hourlyDataResult] = await Promise.all([
         getSiteUptimeStats(matchingSite.id, 30),
         getSiteLatestPageSpeed(matchingSite.id),
+        getSiteLatestDeadLinks(matchingSite.id),
         getSiteHourlyUptimeData(matchingSite.id, 24)
       ])
 
       setUptimeStats(uptimeData)
       setPageSpeedStats(speedData)
+      setDeadLinksStats(deadLinksData)
       setHourlyData(hourlyDataResult)
+
+      // Fetch dead links list if there are any broken links
+      if (deadLinksData.brokenLinks > 0) {
+        await fetchDeadLinksList(matchingSite.id)
+      }
 
     } catch (err) {
       console.error('Error fetching site data:', err)
       setError('Failed to load site status')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchDeadLinksList = async (siteId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('dead_links')
+        .select('id, url, status_code, error, found_on_page, last_checked')
+        .eq('site_id', siteId)
+        .eq('is_fixed', false)
+        .order('last_checked', { ascending: false })
+        .limit(50) // Limit to recent 50 dead links
+
+      if (error) {
+        console.error('Error fetching dead links:', error)
+        return
+      }
+
+      setDeadLinks(data || [])
+    } catch (error) {
+      console.error('Error in fetchDeadLinksList:', error)
     }
   }
 
@@ -262,7 +307,7 @@ export default function StatusPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {/* Uptime */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
@@ -310,6 +355,22 @@ export default function StatusPage() {
               </div>
             </div>
           </div>
+
+          {/* Dead Links */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center">
+              <Link className={`w-8 h-8 ${deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? 'text-red-500' : 'text-green-500'}`} />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Link Health</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {deadLinksStats?.brokenLinks !== undefined ? `${deadLinksStats.brokenLinks} broken` : 'N/A'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {deadLinksStats?.totalLinks ? `of ${deadLinksStats.totalLinks} total links` : 'No scan data'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 24-Hour Uptime Chart */}
@@ -332,6 +393,68 @@ export default function StatusPage() {
             <span>Now</span>
           </div>
         </div>
+
+        {/* Dead Links List */}
+        {deadLinks.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500 mr-2" />
+              <h2 className="text-lg font-semibold text-gray-900">Broken Links Found</h2>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-red-700">
+                <strong>Found {deadLinks.length} broken link{deadLinks.length > 1 ? 's' : ''}</strong> that need attention.
+                Fixing these links will improve your website's user experience and SEO.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {deadLinks.map((link) => (
+                <div key={link.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <XCircle className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
+                        <span className="text-sm font-medium text-gray-900 break-all">
+                          {link.url}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div>
+                          <strong>Status:</strong> {link.status_code ? `HTTP ${link.status_code}` : 'Connection failed'}
+                        </div>
+                        {link.error && (
+                          <div>
+                            <strong>Error:</strong> {link.error}
+                          </div>
+                        )}
+                        <div>
+                          <strong>Found on:</strong>
+                          <span className="ml-1 break-all">{link.found_on_page}</span>
+                        </div>
+                        <div>
+                          <strong>Last checked:</strong> {formatLastChecked(link.last_checked)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">How to fix broken links:</h3>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Update the URL if the page has moved</li>
+                <li>• Remove the link if the content is no longer relevant</li>
+                <li>• Replace with an alternative working link</li>
+                <li>• Contact the destination website if it's temporarily down</li>
+              </ul>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center py-8">

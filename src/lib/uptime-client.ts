@@ -32,7 +32,7 @@ export async function getSiteUptimeStats(siteId: string, days = 30): Promise<{ u
     }
 
     const total = data.length
-    const up = data.filter((log: any) => log.status === 'up').length
+    const up = data.filter((log: UptimeLog) => log.status === 'up').length
     const uptime = Math.round((up / total) * 100 * 100) / 100
 
     return { uptime, total, up }

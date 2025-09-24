@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         id, name, url, user_id,
         users!inner(plan, email)
       `)
-      .eq('active', true)
+      .eq('is_active', true)
 
     if (!websites) {
       return NextResponse.json({ error: 'No websites found' }, { status: 404 })
@@ -54,12 +54,13 @@ export async function POST(request: NextRequest) {
       const speedResult = await checkPageSpeed(website)
 
       // Save speed test result using uptime_logs table with speed status
+      // Format error_message with SPEED_TEST prefix for status page compatibility
       await supabase.from('uptime_logs').insert({
         site_id: website.id,
         status: 'speed',
         response_time: speedResult.loadTime,
         status_code: speedResult.performanceScore,
-        error_message: speedResult.pageSize ? `${speedResult.pageSize} bytes` : null,
+        error_message: `SPEED_TEST:${speedResult.performanceScore}`,
         checked_at: new Date().toISOString()
       })
 
