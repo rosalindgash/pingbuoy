@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
 import BasicMonitor from '@/components/dashboard/BasicMonitor'
+import LiveTimestamp from '@/components/dashboard/LiveTimestamp'
 import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteLatestDeadLinks } from '@/lib/uptime-client'
 
 interface Site {
@@ -268,57 +269,33 @@ export default function DashboardPage() {
     setCheckingSites(prev => ({ ...prev, [siteId]: true }))
 
     try {
-      // Run all monitoring types in parallel for comprehensive check
-      const [uptimeResponse, speedResponse, deadlinksResponse] = await Promise.all([
-        fetch('/api/monitoring/trigger', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'uptime', siteId })
-        }),
-        fetch('/api/monitoring/trigger', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'pagespeed', siteId })
-        }),
-        fetch('/api/monitoring/trigger', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'deadlinks', siteId })
-        })
-      ])
+      const response = await fetch(`/api/sites/${siteId}/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
 
-      // Process uptime result (main status update)
-      if (uptimeResponse.ok) {
-        const uptimeResult = await uptimeResponse.json()
-        console.log('Manual uptime check result:', uptimeResult)
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Manual check result:', result)
 
-        // Update the site status in our local state
+        // Update the site in local state immediately
         setSites(prev => prev.map(site =>
           site.id === siteId
-            ? { ...site, status: uptimeResult.result.status, last_checked: new Date().toISOString() }
+            ? { ...site, status: result.site.status, last_checked: result.site.last_checked }
             : site
         ))
-      }
 
-      // Log other results
-      if (speedResponse.ok) {
-        const speedResult = await speedResponse.json()
-        console.log('Manual speed check result:', speedResult)
+        // Refresh stats after a brief delay
+        setTimeout(() => {
+          fetchUptimeStats(siteId)
+        }, 1000)
+      } else {
+        const errorText = await response.text()
+        console.error('Manual check failed:', response.status, errorText)
       }
-
-      if (deadlinksResponse.ok) {
-        const deadlinksResult = await deadlinksResponse.json()
-        console.log('Manual deadlinks check result:', deadlinksResult)
-      }
-
-      // Refresh all stats and site data to show updated metrics
-      fetchUptimeStats(siteId)
-      fetchPageSpeedStats(siteId)
-      fetchDeadLinksStats(siteId)
-      await fetchSites(user?.id)
 
     } catch (error) {
-      console.error('Error during comprehensive site check:', error)
+      console.error('Manual check error:', error)
     } finally {
       setCheckingSites(prev => ({ ...prev, [siteId]: false }))
     }
@@ -481,7 +458,7 @@ export default function DashboardPage() {
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">Your Websites ({sites.length})</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Click on a website's status page URL to view its detailed monitoring status and share it with others.
+                Click on a website's status page URL to view its detailed monitoring status and share it with others. Last Check times are displayed in UTC.
               </p>
               
               {sites.length === 0 ? (
@@ -546,12 +523,7 @@ export default function DashboardPage() {
                             <div className="text-center">
                               <div className="text-xs text-gray-500 mb-1">Last Check</div>
                               <div className="text-sm font-semibold text-gray-900">
-                                {site.last_checked
-                                  ? new Date(site.last_checked).toLocaleDateString('en-US', {
-                                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                    })
-                                  : 'Never'
-                                }
+                                <LiveTimestamp timestamp={site.last_checked} />
                               </div>
                             </div>
                           </div>
@@ -578,12 +550,7 @@ export default function DashboardPage() {
                           <div>
                             <div className="text-xs text-gray-500 mb-1">Last Check</div>
                             <div className="text-sm font-semibold text-gray-900">
-                              {site.last_checked
-                                ? new Date(site.last_checked).toLocaleDateString('en-US', {
-                                    month: 'short', day: 'numeric'
-                                  })
-                                : 'Never'
-                              }
+                              <LiveTimestamp timestamp={site.last_checked} />
                             </div>
                           </div>
                         </div>

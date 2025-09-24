@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteHourlyUptimeData } from '@/lib/uptime-client'
-import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 
 interface Site {
@@ -51,6 +51,7 @@ export default function StatusPage() {
   const [pageSpeedStats, setPageSpeedStats] = useState<PageSpeedStats | null>(null)
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -121,6 +122,44 @@ export default function StatusPage() {
       setError('Failed to load site status')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    if (!site || refreshing) return
+
+    setRefreshing(true)
+    try {
+      // Trigger a manual uptime check using the new API
+      const response = await fetch(`/api/sites/${site.id}/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Status page refresh result:', result)
+
+        // Update the site data immediately
+        setSite(prev => prev ? {
+          ...prev,
+          status: result.site.status,
+          last_checked: result.site.last_checked
+        } : null)
+
+        // Refresh the full data after a brief delay
+        setTimeout(() => {
+          fetchSiteData()
+        }, 1500)
+      } else {
+        console.error('Refresh failed:', response.status, await response.text())
+      }
+    } catch (error) {
+      console.error('Failed to refresh:', error)
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -200,11 +239,21 @@ export default function StatusPage() {
 
               {/* Current Status */}
               <div className="text-right">
-                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(site.status)}`}>
-                  {getStatusIcon(site.status)}
-                  <span className="ml-2 capitalize">{site.status}</span>
+                <div className="flex items-center justify-end space-x-3 mb-2">
+                  <button
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                  <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(site.status)}`}>
+                    {getStatusIcon(site.status)}
+                    <span className="ml-2 capitalize">{site.status}</span>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-500">
                   Last checked: {formatLastChecked(site.last_checked)}
                 </p>
               </div>
