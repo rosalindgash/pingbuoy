@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
       .select('id, name, url, is_active')
       .eq('is_active', true)
 
-    // Then try the specific query
+    // Then try the specific query without public_status field
     const { data: filteredSites, error: filteredError } = await supabase
       .from('sites')
-      .select('id, name, url, is_active, public_status')
+      .select('id, name, url, is_active')
       .eq('is_active', true)
       .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
 

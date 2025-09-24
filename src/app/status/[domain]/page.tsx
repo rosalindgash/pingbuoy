@@ -107,15 +107,14 @@ export default function StatusPage() {
       ]
 
       // SECURITY FIX: Query directly by domain instead of fetching all sites
-      // Also ensure only sites with public status pages are accessible
+      // Use targeted queries instead of fetching all sites
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
         .select(`
-          id, name, url, status, last_checked, user_id, public_status,
+          id, name, url, status, last_checked, user_id,
           users(plan, email)
         `)
         .eq('is_active', true)
-        .or(`public_status.eq.true,public_status.is.null`) // Handle missing field gracefully
         .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
 
       if (sitesError) {

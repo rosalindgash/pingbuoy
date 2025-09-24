@@ -24,12 +24,11 @@ export async function POST(
       `http://www.${decodedDomain}/`
     ]
 
-    // Find the site - only public status pages can be manually checked
+    // Find the site using targeted domain queries
     const { data: sites, error: siteError } = await supabase
       .from('sites')
-      .select('id, name, url, status, user_id, public_status')
+      .select('id, name, url, status, user_id')
       .eq('is_active', true)
-      .or(`public_status.eq.true,public_status.is.null`) // Handle missing field gracefully
       .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
 
     if (siteError || !sites || sites.length === 0) {
