@@ -465,16 +465,6 @@ export default function DashboardPage() {
                 <p className="text-gray-600">Monitor your websites and track their performance</p>
               </div>
               <div className="flex items-center space-x-3">
-                {sites.length > 0 && (
-                  <button
-                    onClick={handleCheckAllSites}
-                    disabled={checkingAll}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700 disabled:opacity-50"
-                  >
-                    <Activity className="w-4 h-4 mr-2" />
-                    {checkingAll ? 'Checking...' : 'Check All Sites'}
-                  </button>
-                )}
                 <button
                   onClick={() => setShowAddSite(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
@@ -486,92 +476,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Globe className="w-8 h-8 text-blue-500" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Sites</dt>
-                      <dd className="text-lg font-medium text-gray-900">{sites.length}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
-                        {sites.filter(site => site.status === 'up').length}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Online</dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {sites.filter(site => site.status === 'up').length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
-                        {sites.filter(site => site.status === 'down').length}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Offline</dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {sites.filter(site => site.status === 'down').length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Activity className="w-8 h-8 text-blue-500" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Active Sites</dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {sites.filter(site => site.is_active).length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
 
           {/* Sites List */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Your Websites</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Your Websites ({sites.length})</h3>
               
               {sites.length === 0 ? (
                 <div className="text-center py-12">
@@ -619,36 +529,8 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          {/* Center: Compact stats */}
+                          {/* Center: Last Check only */}
                           <div className="hidden md:flex items-center space-x-4 mx-6">
-                            <div className="text-center">
-                              <div className="text-xs text-gray-500 mb-1">Uptime</div>
-                              <div className="text-sm font-semibold text-gray-900">
-                                {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-xs text-gray-500 mb-1">Checks</div>
-                              <div className="text-sm font-semibold text-gray-900">
-                                {statsLoading ? '...' : stats ? stats.total : 'N/A'}
-                              </div>
-                            </div>
-                            {/* Page Speed - Available for all users */}
-                            <div className="text-center">
-                              <div className="text-xs text-gray-500 mb-1">Speed Score</div>
-                              <div className="text-sm font-semibold text-gray-900">
-                                {speedStats && speedStats.score > 0 ? speedStats.score : 'N/A'}
-                              </div>
-                            </div>
-                            {/* Pro feature: SSL Status */}
-                            {(profile?.plan === 'pro' || profile?.plan === 'founder') && site.url.startsWith('https') && (
-                              <div className="text-center">
-                                <div className="text-xs text-gray-500 mb-1">SSL</div>
-                                <div className="text-sm font-semibold text-green-600">
-                                  Valid
-                                </div>
-                              </div>
-                            )}
                             <div className="text-center">
                               <div className="text-xs text-gray-500 mb-1">Last Check</div>
                               <div className="text-sm font-semibold text-gray-900">
@@ -665,15 +547,6 @@ export default function DashboardPage() {
                           {/* Right: Actions */}
                           <div className="flex items-center space-x-2 flex-shrink-0">
                             <button
-                              onClick={() => handleManualCheck(site.id)}
-                              disabled={checkingSites[site.id]}
-                              className="text-green-600 hover:text-green-800 text-sm px-2 py-1 rounded hover:bg-green-50 disabled:opacity-50 flex items-center"
-                              title="Run manual check"
-                            >
-                              <Activity className="w-3 h-3 mr-1" />
-                              {checkingSites[site.id] ? 'Checking...' : 'Check'}
-                            </button>
-                            <button
                               onClick={() => handleEditSite(site)}
                               className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50"
                             >
@@ -689,25 +562,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Mobile stats - show on small screens */}
-                        <div className="md:hidden mt-3 grid grid-cols-4 gap-3 text-center">
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">Uptime</div>
-                            <div className="text-sm font-semibold text-gray-900">
-                              {statsLoading ? '...' : stats ? `${stats.uptime}%` : 'N/A'}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">Checks</div>
-                            <div className="text-sm font-semibold text-gray-900">
-                              {statsLoading ? '...' : stats ? stats.total : 'N/A'}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">Speed</div>
-                            <div className="text-sm font-semibold text-gray-900">
-                              {speedStats && speedStats.score > 0 ? speedStats.score : 'N/A'}
-                            </div>
-                          </div>
+                        <div className="md:hidden mt-3 text-center">
                           <div>
                             <div className="text-xs text-gray-500 mb-1">Last Check</div>
                             <div className="text-sm font-semibold text-gray-900">
