@@ -94,14 +94,25 @@ export default function StatusPage() {
       // Decode the domain parameter in case it's URL encoded
       const decodedDomain = decodeURIComponent(domain)
 
-      // Find site by matching domain extracted from URL
+      // Build possible URL variations to match against
+      const possibleUrls = [
+        `https://${decodedDomain}`,
+        `http://${decodedDomain}`,
+        `https://www.${decodedDomain}`,
+        `http://www.${decodedDomain}`,
+        decodedDomain,
+        `www.${decodedDomain}`
+      ]
+
+      // SECURITY FIX: Query directly by domain instead of fetching all sites
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
         .select(`
           id, name, url, status, last_checked, user_id,
-          users!inner(plan, email)
+          users(plan, email)
         `)
         .eq('is_active', true)
+        .or(possibleUrls.map(url => `url.ilike.%${url}%`).join(','))
 
       if (sitesError) {
         console.error('Database error:', sitesError)
@@ -109,7 +120,7 @@ export default function StatusPage() {
         return
       }
 
-      // Find the site with matching domain
+      // Find the best matching site
       const matchingSite = sitesData?.find(site => {
         const siteDomain = extractDomainFromUrl(site.url)
         return siteDomain === decodedDomain
