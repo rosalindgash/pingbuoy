@@ -1,30 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { siteId: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: any) {
-            // Required for SSR client
-          },
-          remove(name: string, options: any) {
-            // Required for SSR client
-          },
-        },
-      }
-    )
+    const supabase = await createServerSupabaseClient()
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -47,37 +29,20 @@ export async function POST(
       return NextResponse.json({ error: 'Site not found' }, { status: 404 })
     }
 
-    // Perform a simple ping check
-    const startTime = Date.now()
-    let status: 'up' | 'down' = 'down'
-    let responseTime = 0
-
-    try {
-      const response = await fetch(site.url, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'PingBuoy-Monitor/1.0'
-        },
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      })
-
-      responseTime = Date.now() - startTime
-      status = response.ok ? 'up' : 'down'
-    } catch (error) {
-      responseTime = Date.now() - startTime
-      status = 'down'
-    }
+    // Perform uptime check using the same logic as the new cron system
+    const result = await checkWebsiteUptime(site)
 
     const checkedAt = new Date().toISOString()
 
-    // Log the check in uptime_logs table
+    // Log the check in uptime_logs table with consistent structure
     await supabase
       .from('uptime_logs')
       .insert({
         site_id: siteId,
-        status,
-        response_time: responseTime,
-        status_code: status === 'up' ? 200 : 0,
+        status: result.status,
+        response_time: result.responseTime,
+        status_code: result.statusCode,
+        error_message: result.error || null,
         checked_at: checkedAt
       })
 
@@ -85,14 +50,15 @@ export async function POST(
     await supabase
       .from('sites')
       .update({
-        status,
+        status: result.status,
         last_checked: checkedAt
       })
       .eq('id', siteId)
 
     return NextResponse.json({
-      status,
-      responseTime,
+      status: result.status,
+      responseTime: result.responseTime,
+      statusCode: result.statusCode,
       checkedAt,
       siteId
     })
@@ -103,5 +69,43 @@ export async function POST(
       { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+// Use the same uptime checking function as the cron job for consistency
+async function checkWebsiteUptime(website: any) {
+  const startTime = Date.now()
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+    const response = await fetch(website.url, {
+      method: 'HEAD', // Faster than GET
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'PingBuoy Monitor/1.0 (+https://pingbuoy.com)'
+      }
+    })
+
+    clearTimeout(timeout)
+    const responseTime = Date.now() - startTime
+    const isUp = response.status < 400 // 200-399 considered "up"
+
+    return {
+      status: isUp ? 'up' : 'down',
+      responseTime,
+      statusCode: response.status
+    }
+
+  } catch (error) {
+    const responseTime = Date.now() - startTime
+
+    return {
+      status: 'down',
+      responseTime,
+      statusCode: null,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
   }
 }
