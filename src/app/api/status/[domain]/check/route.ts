@@ -29,7 +29,7 @@ export async function POST(
       .from('sites')
       .select('id, name, url, status, user_id, public_status')
       .eq('is_active', true)
-      .eq('public_status', true)
+      .or(`public_status.eq.true,public_status.is.null`) // Handle missing field gracefully
       .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
 
     if (siteError || !sites || sites.length === 0) {

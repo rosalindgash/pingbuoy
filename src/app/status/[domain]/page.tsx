@@ -115,7 +115,7 @@ export default function StatusPage() {
           users(plan, email)
         `)
         .eq('is_active', true)
-        .eq('public_status', true)
+        .or(`public_status.eq.true,public_status.is.null`) // Handle missing field gracefully
         .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
 
       if (sitesError) {
