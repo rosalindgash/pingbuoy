@@ -176,7 +176,8 @@ export default function DashboardPage() {
           name: siteForm.name.trim(),
           url: url,
           status: 'unknown',
-          is_active: true
+          is_active: true,
+          public_status: true  // Default to public for status page access
         }])
         .select()
 

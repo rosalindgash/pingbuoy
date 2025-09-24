@@ -94,25 +94,29 @@ export default function StatusPage() {
       // Decode the domain parameter in case it's URL encoded
       const decodedDomain = decodeURIComponent(domain)
 
-      // Build possible URL variations to match against
+      // Build precise URL variations to match against
       const possibleUrls = [
         `https://${decodedDomain}`,
         `http://${decodedDomain}`,
         `https://www.${decodedDomain}`,
         `http://www.${decodedDomain}`,
-        decodedDomain,
-        `www.${decodedDomain}`
+        `https://${decodedDomain}/`,
+        `http://${decodedDomain}/`,
+        `https://www.${decodedDomain}/`,
+        `http://www.${decodedDomain}/`
       ]
 
       // SECURITY FIX: Query directly by domain instead of fetching all sites
+      // Also ensure only sites with public status pages are accessible
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
         .select(`
-          id, name, url, status, last_checked, user_id,
+          id, name, url, status, last_checked, user_id, public_status,
           users(plan, email)
         `)
         .eq('is_active', true)
-        .or(possibleUrls.map(url => `url.ilike.%${url}%`).join(','))
+        .eq('public_status', true)
+        .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
 
       if (sitesError) {
         console.error('Database error:', sitesError)
@@ -186,8 +190,8 @@ export default function StatusPage() {
 
     setRefreshing(true)
     try {
-      // Trigger a manual uptime check using the new API
-      const response = await fetch(`/api/sites/${site.id}/check`, {
+      // Trigger a manual uptime check using the public status API
+      const response = await fetch(`/api/status/${domain}/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,6 +213,11 @@ export default function StatusPage() {
         setTimeout(() => {
           fetchSiteData()
         }, 1500)
+      } else if (response.status === 429) {
+        // Rate limited
+        const errorData = await response.json()
+        console.log('Rate limited:', errorData)
+        // Show user-friendly message without setting error state
       } else {
         console.error('Refresh failed:', response.status, await response.text())
       }
