@@ -308,4 +308,4 @@ serve(withSecureCORS(async (req) => {
       }
     )
   }
-})
+}))
