@@ -4,12 +4,13 @@ This document explains how the automatic uptime monitoring system works with tie
 
 ## How It Works
 
-### 1. Automatic Monitoring (Tiered by Plan)
-- **Free Users**: GitHub Actions workflow runs every 5 minutes
-- **Pro/Founder Users**: GitHub Actions workflow runs every 1 minute
-- Calls `/api/cron/uptime` endpoint with plan-specific parameters
-- Endpoint triggers Supabase Edge Function `uptime-monitor`
-- Edge function checks sites based on user plan and logs results
+### 1. Automatic Monitoring (Supabase Scheduled Functions)
+- **All Users**: Supabase scheduled functions run every 5 minutes
+- Uses `pg_cron` to call `uptime-monitor` Edge Function directly
+- Edge function checks all active sites and applies plan-specific intervals
+- **Free Users**: Sites checked every 5 minutes (as per plan logic)
+- **Pro/Founder Users**: Sites checked every 1 minute (as per plan logic)
+- No external dependencies (GitHub Actions, Vercel crons) required
 
 ### 2. Manual Monitoring
 - **All Users**: Individual site checks via "Check" button in dashboard
@@ -25,23 +26,39 @@ This document explains how the automatic uptime monitoring system works with tie
 - **Pro features**: SSL certificate status and expiry tracking
 - Displays recent check results
 
+## Architecture Overview
+
+```
+Supabase pg_cron → Edge Function → Database → Dashboard
+```
+
+### Monitoring Flow
+1. **Scheduled Function**: `pg_cron` calls `uptime-monitor` every 5 minutes
+2. **Edge Function**: Checks all active sites with plan-aware frequency
+3. **Database**: Stores results in `uptime_logs` table
+4. **Dashboard**: Displays real-time status from database
+
 ## Required Environment Variables
 
-### For Deployment (Production)
-Add these secrets to your hosting platform:
+### For Supabase Setup
+Configure these in your Supabase project:
 
+**Database Configuration:**
+```sql
+-- Set service role key for scheduled functions
+ALTER DATABASE postgres SET app.supabase.service_role_key = 'your-service-role-key';
 ```
-CRON_SECRET=your-secure-random-string
+
+**Edge Function Environment Variables** (in Supabase Dashboard):
+```
+SERVICE_JWT_SECRET=your-secure-jwt-secret (for Core Web Vitals)
+ALLOWED_WEB_VITALS_DOMAINS=pingbuoy.com,www.pingbuoy.com
+```
+
+**Next.js Environment Variables** (.env.local):
+```
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-key
-GOOGLE_PAGESPEED_API_KEY=your-google-api-key (for Pro page speed features)
-```
-
-### For GitHub Actions
-Add these secrets to your GitHub repository:
-
-```
-APP_URL=https://your-app-domain.com
-CRON_SECRET=same-as-above
+NEXT_PUBLIC_SERVICE_JWT_SECRET=your-secure-jwt-secret
 ```
 
 ## Database Tables

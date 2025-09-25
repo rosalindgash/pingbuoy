@@ -40,6 +40,7 @@ export default function CoreVitalsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [vitalsData, setVitalsData] = useState<CoreWebVitalsData[]>([])
+  const [vitalsSummary, setVitalsSummary] = useState<any>(null)
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -120,19 +121,23 @@ export default function CoreVitalsPage() {
 
   const fetchData = async () => {
     try {
-      // Fetch Core Web Vitals for PingBuoy's own sites
-      // Group by URL and get latest metrics for each
-      const { data: vitals } = await supabase
-        .from('core_web_vitals')
-        .select('*')
-        .order('checked_at', { ascending: false })
-        .limit(100)
+      // Fetch Core Web Vitals data via Vercel API route (service role on server)
+      const response = await fetch('/api/metrics/core-web-vitals?limit=100&hours_back=24')
 
-      if (vitals) {
-        setVitalsData(vitals)
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
       }
 
-      // Check system health
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        setVitalsData(result.data)
+        setVitalsSummary(result.summary)
+      } else {
+        console.error('API returned unsuccessful result:', result)
+      }
+
+      // Check system health (this still uses direct Supabase for system checks)
       const healthCheck = await checkSystemHealth()
       setSystemHealth(healthCheck)
 
@@ -357,6 +362,67 @@ export default function CoreVitalsPage() {
                 </button>
               </div>
 
+              {/* Metrics Summary */}
+              {vitalsSummary && (
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                  <div className="bg-white rounded-lg shadow p-4">
+                    <div className="flex items-center">
+                      <div className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(getMetricStatus('lcp', vitalsSummary.avg_lcp))}`}>
+                        LCP
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-semibold text-gray-900">{formatMetric(vitalsSummary.avg_lcp, 'ms')}</p>
+                      <p className="text-sm text-gray-500">24h average</p>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4">
+                    <div className="flex items-center">
+                      <div className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(getMetricStatus('fid', vitalsSummary.avg_fid))}`}>
+                        INP
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-semibold text-gray-900">{formatMetric(vitalsSummary.avg_fid, 'ms')}</p>
+                      <p className="text-sm text-gray-500">24h average</p>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4">
+                    <div className="flex items-center">
+                      <div className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(getMetricStatus('cls', vitalsSummary.avg_cls))}`}>
+                        CLS
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-semibold text-gray-900">{vitalsSummary.avg_cls !== null ? vitalsSummary.avg_cls.toFixed(3) : 'N/A'}</p>
+                      <p className="text-sm text-gray-500">24h average</p>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4">
+                    <div className="flex items-center">
+                      <div className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(getMetricStatus('fcp', vitalsSummary.avg_fcp))}`}>
+                        FCP
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-semibold text-gray-900">{formatMetric(vitalsSummary.avg_fcp, 'ms')}</p>
+                      <p className="text-sm text-gray-500">24h average</p>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4">
+                    <div className="flex items-center">
+                      <div className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(getMetricStatus('ttfb', vitalsSummary.avg_ttfb))}`}>
+                        TTFB
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-semibold text-gray-900">{formatMetric(vitalsSummary.avg_ttfb, 'ms')}</p>
+                      <p className="text-sm text-gray-500">24h average</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* System Health */}
               {systemHealth && (
                 <div className="bg-white rounded-lg shadow mb-8 p-6">
@@ -376,6 +442,9 @@ export default function CoreVitalsPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Last checked: {new Date(systemHealth.last_check).toLocaleString()}</p>
+                  {vitalsSummary && (
+                    <p className="text-xs text-gray-500 mt-1">Showing {vitalsSummary.total_records} records from last {vitalsSummary.time_range_hours} hours</p>
+                  )}
                 </div>
               )}
 

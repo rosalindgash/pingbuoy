@@ -64,3 +64,31 @@ export const createClient = async (): Promise<SupabaseClient<Database>> => {
 
 // Legacy export for backward compatibility
 export const createServerSupabaseClient = createClient
+
+// Service role client for server-side operations that require elevated permissions
+export const createServiceRoleClient = (): SupabaseClient<Database> => {
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseServiceRoleKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
+  }
+
+  return createServerClient<Database>(
+    supabaseUrl,
+    supabaseServiceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      // No cookies needed for service role
+      cookies: {
+        getAll() { return [] },
+        setAll() {},
+        get() { return undefined },
+        set() {},
+        remove() {}
+      }
+    }
+  )
+}
