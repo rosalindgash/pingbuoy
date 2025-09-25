@@ -89,7 +89,7 @@ export class CloudSecurityValidator {
     const requiredVars = [
       'NEXT_PUBLIC_SUPABASE_URL',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-      'SERVICE_JWT_SECRET',
+      'NEXT_PUBLIC_SERVICE_JWT_SECRET',
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET'
     ]

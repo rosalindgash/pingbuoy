@@ -65,9 +65,9 @@ class ServiceAuthenticator {
   private supabaseAnonKey: string
 
   constructor() {
-    const secretKey = process.env.SERVICE_JWT_SECRET
+    const secretKey = process.env.NEXT_PUBLIC_SERVICE_JWT_SECRET
     if (!secretKey) {
-      throw new Error('SERVICE_JWT_SECRET environment variable is required')
+      throw new Error('NEXT_PUBLIC_SERVICE_JWT_SECRET environment variable is required')
     }
 
     this.secret = new TextEncoder().encode(secretKey)
