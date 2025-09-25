@@ -4,6 +4,4 @@
       "maxDuration": 30
     }
   }
-  // NOTE: All monitoring jobs now run in Supabase Edge Functions via scheduled functions
-  // No Vercel crons needed - everything runs on Supabase infrastructure
 }
