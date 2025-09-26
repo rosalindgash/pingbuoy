@@ -1,14 +1,7 @@
-console.log('Starting imports...')
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
-console.log('Basic imports loaded, loading shared modules...')
-
 import { withMonitoringAuth, sendNotificationEmail } from '../_shared/service-auth.ts'
 import { withSecureCORS } from '../_shared/cors-config.ts'
 import { createLogger, ErrorCodes } from '../_shared/logger.ts'
-
-console.log('All imports completed successfully')
 
 // SSRF Defense Configuration for uptime monitoring
 interface SSRFDefenseConfig {
@@ -200,12 +193,9 @@ async function safeFetch(url: string, options: RequestInit = {}): Promise<Respon
 // CORS headers now handled by secure CORS configuration
 
 serve(withSecureCORS(async (req) => {
-  console.log('Handler function called')
-  
   const logger = createLogger('uptime-monitor')
   const startTime = Date.now()
 
-  console.log('Uptime monitor function started')
   logger.requestStart(req.method)
 
   try {
@@ -226,215 +216,215 @@ serve(withSecureCORS(async (req) => {
 
       logger.info('Monitoring check started', { sitesCount: sites.length })
 
-      const checkResults = []
+    const results = []
 
-      for (const site of sites) {
-        try {
-          const checkStartTime = Date.now()
+    for (const site of sites) {
+      try {
+        const checkStartTime = Date.now()
 
-          // Check site status with SSRF protection
-          const response = await safeFetch(site.url, {
-            method: 'HEAD'
-          })
+        // Check site status with SSRF protection
+        const response = await safeFetch(site.url, {
+          method: 'HEAD'
+        })
 
-          const endTime = Date.now()
-          const responseTime = endTime - checkStartTime
-          const isUp = response.status >= 200 && response.status < 400
+        const endTime = Date.now()
+        const responseTime = endTime - checkStartTime
+        const isUp = response.status >= 200 && response.status < 400
 
-          logger.monitoringResult(site.id, isUp ? 'up' : 'down', response.status, responseTime)
-          
-          // Log the check
-          const { error: logError } = await supabaseClient
-            .from('uptime_logs')
-            .insert({
-              site_id: site.id,
-              status: isUp ? 'up' : 'down',
-              response_time: responseTime,
-              status_code: response.status,
-            })
-
-          if (logError) {
-            logger.error('Failed to log uptime check', {
-              siteId: site.id,
-              errorCode: ErrorCodes.DB_QUERY_ERROR,
-              error: logError.code || 'UNKNOWN'
-            })
-          }
-
-          // Update site status
-          await supabaseClient
-            .from('sites')
-            .update({ 
-              status: isUp ? 'up' : 'down',
-              last_checked: new Date().toISOString()
-            })
-            .eq('id', site.id)
-
-          // Check if we need to send an alert
-          if (!isUp) {
-            // Get the last alert for this site
-            const { data: lastAlert } = await supabaseClient
-              .from('alerts')
-              .select('*')
-              .eq('site_id', site.id)
-              .eq('type', 'uptime')
-              .eq('resolved', false)
-              .order('sent_at', { ascending: false })
-              .limit(1)
-              .single()
-
-            // Only send alert if there's no unresolved alert (to avoid spam)
-            if (!lastAlert) {
-              const { error: alertError } = await supabaseClient
-                .from('alerts')
-                .insert({
-                  site_id: site.id,
-                  type: 'uptime',
-                  message: `Website ${site.name} (${site.url}) is down. Status code: ${response.status}`,
-                })
-
-              if (alertError) {
-                logger.error('Failed to create alert', {
-                  siteId: site.id,
-                  errorCode: ErrorCodes.DB_QUERY_ERROR,
-                  error: alertError.code || 'UNKNOWN'
-                })
-              } else {
-                logger.alertCreated(site.id, 'uptime', 'auto-generated')
-              }
-
-              // Send email notification
-              try {
-                const { data: userData } = await supabaseClient
-                  .from('users')
-                  .select('email')
-                  .eq('id', site.user_id)
-                  .single()
-
-                if (userData?.email) {
-                  await sendNotificationEmail('uptime_alert', {
-                    userEmail: userData.email,
-                    siteName: site.name,
-                    siteUrl: site.url,
-                    statusCode: response.status
-                  })
-                  logger.emailResult('uptime_alert', true)
-                }
-              } catch (emailError) {
-                logger.error('Failed to send email notification', {
-                  siteId: site.id,
-                  errorCode: ErrorCodes.EMAIL_SEND_FAILED,
-                  template: 'uptime_alert'
-                })
-              }
-            }
-          } else {
-            // Site is up, check if we need to send recovery notification
-            const { data: unresolvedAlerts } = await supabaseClient
-              .from('alerts')
-              .select('*')
-              .eq('site_id', site.id)
-              .eq('type', 'uptime')
-              .eq('resolved', false)
-
-            if (unresolvedAlerts && unresolvedAlerts.length > 0) {
-              // Calculate downtime
-              const oldestAlert = unresolvedAlerts[unresolvedAlerts.length - 1]
-              const downtime = new Date().getTime() - new Date(oldestAlert.sent_at).getTime()
-              const downtimeMinutes = Math.round(downtime / (1000 * 60))
-              const downtimeText = downtimeMinutes < 60 ? 
-                `${downtimeMinutes} minutes` : 
-                `${Math.round(downtimeMinutes / 60)} hours`
-
-              // Send recovery notification
-              try {
-                const { data: userData } = await supabaseClient
-                  .from('users')
-                  .select('email')
-                  .eq('id', site.user_id)
-                  .single()
-
-                if (userData?.email) {
-                  await sendNotificationEmail('uptime_recovered', {
-                    userEmail: userData.email,
-                    siteName: site.name,
-                    siteUrl: site.url,
-                    downtime: downtimeText
-                  })
-                  logger.emailResult('uptime_recovered', true)
-                }
-              } catch (emailError) {
-                logger.error('Failed to send recovery email', {
-                  siteId: site.id,
-                  errorCode: ErrorCodes.EMAIL_SEND_FAILED,
-                  template: 'uptime_recovered'
-                })
-              }
-            }
-
-            // Resolve any open alerts
-            await supabaseClient
-              .from('alerts')
-              .update({ resolved: true })
-              .eq('site_id', site.id)
-              .eq('type', 'uptime')
-              .eq('resolved', false)
-          }
-
-          checkResults.push({
+        logger.monitoringResult(site.id, isUp ? 'up' : 'down', response.status, responseTime)
+        
+        // Log the check
+        const { error: logError } = await supabaseClient
+          .from('uptime_logs')
+          .insert({
             site_id: site.id,
             status: isUp ? 'up' : 'down',
             response_time: responseTime,
-            status_code: response.status
+            status_code: response.status,
           })
 
-        } catch (error) {
-          logger.error('Site monitoring check failed', {
+        if (logError) {
+          logger.error('Failed to log uptime check', {
             siteId: site.id,
-            errorCode: error.message.includes('SSRF') ? ErrorCodes.SSRF_BLOCKED :
-                      error.message.includes('timeout') ? ErrorCodes.TIMEOUT_ERROR :
-                      ErrorCodes.NETWORK_ERROR
-          })
-
-          // Log the failed check
-          const { error: logError } = await supabaseClient
-            .from('uptime_logs')
-            .insert({
-              site_id: site.id,
-              status: 'down',
-              response_time: null,
-              status_code: null,
-            })
-
-          if (logError) {
-            logger.error('Failed to log monitoring check', {
-              siteId: site.id,
-              errorCode: ErrorCodes.DB_QUERY_ERROR,
-              error: logError.code || 'UNKNOWN'
-            })
-          }
-
-          // Update site status to down
-          await supabaseClient
-            .from('sites')
-            .update({ 
-              status: 'down',
-              last_checked: new Date().toISOString()
-            })
-            .eq('id', site.id)
-
-          checkResults.push({
-            site_id: site.id,
-            status: 'down',
-            error: 'MONITORING_FAILED'
+            errorCode: ErrorCodes.DB_QUERY_ERROR,
+            error: logError.code || 'UNKNOWN'
           })
         }
+
+        // Update site status
+        await supabaseClient
+          .from('sites')
+          .update({ 
+            status: isUp ? 'up' : 'down',
+            last_checked: new Date().toISOString()
+          })
+          .eq('id', site.id)
+
+        // Check if we need to send an alert
+        if (!isUp) {
+          // Get the last alert for this site
+          const { data: lastAlert } = await supabaseClient
+            .from('alerts')
+            .select('*')
+            .eq('site_id', site.id)
+            .eq('type', 'uptime')
+            .eq('resolved', false)
+            .order('sent_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          // Only send alert if there's no unresolved alert (to avoid spam)
+          if (!lastAlert) {
+            const { error: alertError } = await supabaseClient
+              .from('alerts')
+              .insert({
+                site_id: site.id,
+                type: 'uptime',
+                message: `Website ${site.name} (${site.url}) is down. Status code: ${response.status}`,
+              })
+
+            if (alertError) {
+              logger.error('Failed to create alert', {
+                siteId: site.id,
+                errorCode: ErrorCodes.DB_QUERY_ERROR,
+                error: alertError.code || 'UNKNOWN'
+              })
+            } else {
+              logger.alertCreated(site.id, 'uptime', 'auto-generated')
+            }
+
+            // Send email notification
+            try {
+              const { data: userData } = await supabaseClient
+                .from('users')
+                .select('email')
+                .eq('id', site.user_id)
+                .single()
+
+              if (userData?.email) {
+                await sendNotificationEmail('uptime_alert', {
+                  userEmail: userData.email,
+                  siteName: site.name,
+                  siteUrl: site.url,
+                  statusCode: response.status
+                })
+                logger.emailResult('uptime_alert', true)
+              }
+            } catch (emailError) {
+              logger.error('Failed to send email notification', {
+                siteId: site.id,
+                errorCode: ErrorCodes.EMAIL_SEND_FAILED,
+                template: 'uptime_alert'
+              })
+            }
+          }
+        } else {
+          // Site is up, check if we need to send recovery notification
+          const { data: unresolvedAlerts } = await supabaseClient
+            .from('alerts')
+            .select('*')
+            .eq('site_id', site.id)
+            .eq('type', 'uptime')
+            .eq('resolved', false)
+
+          if (unresolvedAlerts && unresolvedAlerts.length > 0) {
+            // Calculate downtime
+            const oldestAlert = unresolvedAlerts[unresolvedAlerts.length - 1]
+            const downtime = new Date().getTime() - new Date(oldestAlert.sent_at).getTime()
+            const downtimeMinutes = Math.round(downtime / (1000 * 60))
+            const downtimeText = downtimeMinutes < 60 ? 
+              `${downtimeMinutes} minutes` : 
+              `${Math.round(downtimeMinutes / 60)} hours`
+
+            // Send recovery notification
+            try {
+              const { data: userData } = await supabaseClient
+                .from('users')
+                .select('email')
+                .eq('id', site.user_id)
+                .single()
+
+              if (userData?.email) {
+                await sendNotificationEmail('uptime_recovered', {
+                  userEmail: userData.email,
+                  siteName: site.name,
+                  siteUrl: site.url,
+                  downtime: downtimeText
+                })
+                logger.emailResult('uptime_recovered', true)
+              }
+            } catch (emailError) {
+              logger.error('Failed to send recovery email', {
+                siteId: site.id,
+                errorCode: ErrorCodes.EMAIL_SEND_FAILED,
+                template: 'uptime_recovered'
+              })
+            }
+          }
+
+          // Resolve any open alerts
+          await supabaseClient
+            .from('alerts')
+            .update({ resolved: true })
+            .eq('site_id', site.id)
+            .eq('type', 'uptime')
+            .eq('resolved', false)
+        }
+
+        results.push({
+          site_id: site.id,
+          status: isUp ? 'up' : 'down',
+          response_time: responseTime,
+          status_code: response.status
+        })
+
+      } catch (error) {
+        logger.error('Site monitoring check failed', {
+          siteId: site.id,
+          errorCode: error.message.includes('SSRF') ? ErrorCodes.SSRF_BLOCKED :
+                    error.message.includes('timeout') ? ErrorCodes.TIMEOUT_ERROR :
+                    ErrorCodes.NETWORK_ERROR
+        })
+
+        // Log the failed check
+        const { error: logError } = await supabaseClient
+          .from('uptime_logs')
+          .insert({
+            site_id: site.id,
+            status: 'down',
+            response_time: null,
+            status_code: null,
+          })
+
+        if (logError) {
+          logger.error('Failed to log monitoring check', {
+            siteId: site.id,
+            errorCode: ErrorCodes.DB_QUERY_ERROR,
+            error: logError.code || 'UNKNOWN'
+          })
+        }
+
+        // Update site status to down
+        await supabaseClient
+          .from('sites')
+          .update({ 
+            status: 'down',
+            last_checked: new Date().toISOString()
+          })
+          .eq('id', site.id)
+
+        results.push({
+          site_id: site.id,
+          status: 'down',
+          error: 'MONITORING_FAILED'
+        })
       }
+    }
 
       return {
         success: true,
         checked: sites.length,
-        results: checkResults
+        results
       }
     })
 

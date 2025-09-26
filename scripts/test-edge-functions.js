@@ -5,6 +5,9 @@
  * Tests all monitoring functions to ensure they work correctly
  */
 
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
 const functions = [
   'uptime-monitor',
   'page-speed-monitor',
@@ -14,7 +17,7 @@ const functions = [
 ];
 
 async function testFunction(functionName, payload = {}) {
-  const projectRef = process.env.SUPABASE_PROJECT_REF;
+  const projectRef = process.env.SUPABASE_PROJECT_REF || process.env.PROJECT_REF;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!projectRef || !serviceRoleKey) {
@@ -83,7 +86,7 @@ async function testCoreWebVitals() {
 }
 
 async function testFunctionWithAuth(functionName, payload, authToken) {
-  const projectRef = process.env.SUPABASE_PROJECT_REF;
+  const projectRef = process.env.SUPABASE_PROJECT_REF || process.env.PROJECT_REF;
 
   if (!projectRef) {
     console.error('❌ Missing SUPABASE_PROJECT_REF');
