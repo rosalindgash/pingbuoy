@@ -122,6 +122,44 @@ export async function getSiteLatestDeadLinks(siteId: string): Promise<{ totalLin
   }
 }
 
+// Get user monitoring frequency information
+export async function getUserMonitoringInfo(): Promise<{ plan: string; frequency_display: string; monitoring_frequency: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_monitoring_info')
+      .select('plan, frequency_display, monitoring_frequency')
+      .single()
+
+    if (error) {
+      console.error('Error fetching user monitoring info:', error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error in getUserMonitoringInfo:', error)
+    return null
+  }
+}
+
+// Get next check time for a site
+export async function getNextCheckTime(siteId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_next_check_time', { site_uuid: siteId })
+
+    if (error) {
+      console.error('Error fetching next check time:', error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error in getNextCheckTime:', error)
+    return null
+  }
+}
+
 export async function getSiteHourlyUptimeData(siteId: string, hours = 24): Promise<Array<{
   hour: number
   percentage: number

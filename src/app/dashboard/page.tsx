@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation'
 import UptimeChartClient from '@/components/dashboard/UptimeChartClient'
 import BasicMonitor from '@/components/dashboard/BasicMonitor'
 import LiveTimestamp from '@/components/dashboard/LiveTimestamp'
+import MonitoringFrequency from '@/components/dashboard/MonitoringFrequency'
 import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteLatestDeadLinks } from '@/lib/uptime-client'
 
 interface Site {
@@ -439,6 +440,11 @@ export default function DashboardPage() {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                 <p className="text-gray-600">Monitor your websites and track their performance</p>
+                {profile && (
+                  <div className="mt-3">
+                    <MonitoringFrequency userPlan={profile.plan} />
+                  </div>
+                )}
               </div>
               <div className="flex items-center space-x-3">
                 <button
@@ -519,12 +525,18 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          {/* Center: Last Check only */}
-                          <div className="hidden md:flex items-center space-x-4 mx-6">
+                          {/* Center: Last Check and Next Check */}
+                          <div className="hidden md:flex items-center space-x-6 mx-6">
                             <div className="text-center">
                               <div className="text-xs text-gray-500 mb-1">Last Check</div>
                               <div className="text-sm font-semibold text-gray-900">
                                 <LiveTimestamp timestamp={site.last_checked} />
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-xs text-gray-500 mb-1">Monitoring</div>
+                              <div className="text-sm">
+                                <MonitoringFrequency userPlan={profile?.plan || 'free'} siteId={site.id} />
                               </div>
                             </div>
                           </div>
@@ -547,11 +559,17 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Mobile stats - show on small screens */}
-                        <div className="md:hidden mt-3 text-center">
+                        <div className="md:hidden mt-3 grid grid-cols-2 gap-4 text-center">
                           <div>
                             <div className="text-xs text-gray-500 mb-1">Last Check</div>
                             <div className="text-sm font-semibold text-gray-900">
                               <LiveTimestamp timestamp={site.last_checked} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Monitoring</div>
+                            <div className="text-sm">
+                              <MonitoringFrequency userPlan={profile?.plan || 'free'} siteId={site.id} />
                             </div>
                           </div>
                         </div>
@@ -571,11 +589,15 @@ export default function DashboardPage() {
                   <Puzzle className="h-8 w-8 text-white" />
                 </div>
                 <div className="ml-4 flex-1">
-                  <h3 className="text-xl font-bold mb-2">Unlock Pro Integrations</h3>
+                  <h3 className="text-xl font-bold mb-2">Upgrade to Pro Monitoring</h3>
                   <p className="text-blue-100 mb-4">
-                    Get instant alerts through Slack, Discord, and custom webhooks. Monitor up to 25 websites with advanced features.
+                    Get 1-minute monitoring checks, instant alerts, and advanced integrations. Monitor up to 25 websites with Pro features.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                      <span className="text-sm">1-minute monitoring checks</span>
+                    </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
                       <span className="text-sm">Slack notifications</span>
@@ -591,6 +613,10 @@ export default function DashboardPage() {
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
                       <span className="text-sm">25 websites</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                      <span className="text-sm">Real-time status updates</span>
                     </div>
                   </div>
                   <Link href="/pricing">

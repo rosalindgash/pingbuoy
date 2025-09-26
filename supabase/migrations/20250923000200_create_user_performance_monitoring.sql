@@ -64,7 +64,7 @@ create policy "Service role can insert performance logs" on user_performance_log
 
 -- Create policy to allow authenticated users to insert performance data for their sites
 create policy "Users can insert performance logs for their sites" on user_performance_logs
-  for insert using (
+  for insert with check (
     site_id in (
       select id from sites where user_id = auth.uid()
     )

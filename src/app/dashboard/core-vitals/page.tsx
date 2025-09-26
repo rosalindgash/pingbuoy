@@ -7,6 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import MonitoringFrequency from '@/components/dashboard/MonitoringFrequency'
 
 interface CoreWebVitalsData {
   id: string
@@ -162,10 +163,11 @@ export default function CoreVitalsPage() {
       const apiResponsive = true // In production, you'd test your API endpoints
 
       // Check if monitoring is active (recent uptime logs)
+      // Pro/Founder users should have logs within 2 minutes, Free users within 6 minutes
       const { data: recentLogs } = await supabase
         .from('uptime_logs')
         .select('checked_at')
-        .gte('checked_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()) // Last 10 minutes
+        .gte('checked_at', new Date(Date.now() - 6 * 60 * 1000).toISOString()) // Last 6 minutes (covers both tiers)
         .limit(1)
 
       const monitoringActive = (recentLogs && recentLogs.length > 0)
@@ -351,6 +353,11 @@ export default function CoreVitalsPage() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">PingBuoy Core Web Vitals</h1>
                   <p className="text-sm text-gray-500">Internal performance monitoring dashboard</p>
+                  {profile && (
+                    <div className="mt-3">
+                      <MonitoringFrequency userPlan={profile.plan} />
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={handleRefresh}
