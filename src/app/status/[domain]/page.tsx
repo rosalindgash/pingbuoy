@@ -362,9 +362,6 @@ export default function StatusPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Performance Score</p>
                 <p className="text-2xl font-bold text-gray-900">N/A</p>
-                <p className="text-xs text-gray-500">
-                  Feature not available in monitoring
-                </p>
               </div>
             </div>
           </div>
@@ -376,11 +373,11 @@ export default function StatusPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {pageSpeedStats?.loadTime && pageSpeedStats.loadTime > 0 ? `${pageSpeedStats.loadTime}ms` : 'N/A'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {pageSpeedStats?.lastChecked ? `Last updated ${formatLastChecked(pageSpeedStats.lastChecked)}` : 'No recent data'}
-                </p>
+				  {pageSpeedStats?.loadTime && pageSpeedStats.loadTime > 0 ? `${pageSpeedStats.loadTime}ms` : 'N/A'}
+				</p>
+				<p className="text-xs text-gray-500">
+				  {pageSpeedStats?.lastChecked ? `Avg response time` : 'No recent data'}
+				</p>
               </div>
             </div>
           </div>
@@ -394,10 +391,7 @@ export default function StatusPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? `${deadLinksStats.brokenLinks} broken` : 'No issues'}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {deadLinksStats?.lastScanned ? `Last scan ${formatLastChecked(deadLinksStats.lastScanned)}` : 'No automatic scanning'}
-                </p>
-              </div>
+                </div>
             </div>
           </div>
         </div>
