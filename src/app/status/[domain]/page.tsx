@@ -171,11 +171,17 @@ export default function StatusPage() {
 
   const fetchDeadLinksList = async (siteId: string) => {
     try {
+      // Create anon supabase client for public access
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
       const { data, error } = await supabase
         .from('dead_links')
         .select('id, url, status_code, error, found_on_page, last_checked')
         .eq('site_id', siteId)
-        .eq('is_fixed', false)
+        .eq('fixed', false) // Column is 'fixed', not 'is_fixed'
         .order('last_checked', { ascending: false })
         .limit(50) // Limit to recent 50 dead links
 
@@ -352,14 +358,12 @@ export default function StatusPage() {
           {/* Page Speed */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
-              <Gauge className="w-8 h-8 text-blue-500" />
+              <Gauge className="w-8 h-8 text-gray-400" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Performance Score</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {pageSpeedStats?.score ? `${pageSpeedStats.score}/100` : 'N/A'}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">N/A</p>
                 <p className="text-xs text-gray-500">
-                  {pageSpeedStats?.loadTime ? `${pageSpeedStats.loadTime}ms load time` : 'No data available'}
+                  Feature not available in monitoring
                 </p>
               </div>
             </div>
@@ -372,10 +376,10 @@ export default function StatusPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {pageSpeedStats?.loadTime ? `${pageSpeedStats.loadTime}ms` : 'N/A'}
+                  {pageSpeedStats?.loadTime && pageSpeedStats.loadTime > 0 ? `${pageSpeedStats.loadTime}ms` : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {pageSpeedStats?.lastChecked ? formatLastChecked(pageSpeedStats.lastChecked) : 'No recent tests'}
+                  {pageSpeedStats?.lastChecked ? `Last updated ${formatLastChecked(pageSpeedStats.lastChecked)}` : 'No recent data'}
                 </p>
               </div>
             </div>
@@ -384,14 +388,14 @@ export default function StatusPage() {
           {/* Dead Links */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
-              <Link className={`w-8 h-8 ${deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? 'text-red-500' : 'text-green-500'}`} />
+              <Link className={`w-8 h-8 ${deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? 'text-red-500' : 'text-gray-400'}`} />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Link Health</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {deadLinksStats?.brokenLinks !== undefined ? `${deadLinksStats.brokenLinks} broken` : 'N/A'}
+                  {deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? `${deadLinksStats.brokenLinks} broken` : 'No issues'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {deadLinksStats?.totalLinks ? `of ${deadLinksStats.totalLinks} total links` : 'No scan data'}
+                  {deadLinksStats?.lastScanned ? `Last scan ${formatLastChecked(deadLinksStats.lastScanned)}` : 'No automatic scanning'}
                 </p>
               </div>
             </div>

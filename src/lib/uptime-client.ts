@@ -64,30 +64,32 @@ export async function getSiteRecentLogs(siteId: string, limit = 100): Promise<Up
   }
 }
 
-// New function to get latest page speed score
+// Get average response time from recent uptime checks (no page speed scores in new system)
 export async function getSiteLatestPageSpeed(siteId: string): Promise<{ score: number; loadTime: number; lastChecked: string | null }> {
   try {
+    // Get recent successful uptime checks to calculate average response time
     const { data, error } = await supabase
       .from('uptime_logs')
-      .select('error_message, response_time, checked_at')
+      .select('response_time, checked_at')
       .eq('site_id', siteId)
-      .like('error_message', 'SPEED_TEST:%') // Speed test results marked with SPEED_TEST prefix
+      .eq('status', 'up') // Only successful checks have valid response times
+      .not('response_time', 'is', null)
       .order('checked_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(10) // Last 10 successful checks
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       return { score: 0, loadTime: 0, lastChecked: null }
     }
 
-    // Extract performance score from error_message field (format: SPEED_TEST:85)
-    const scoreMatch = data.error_message?.match(/SPEED_TEST:(\d+)/)
-    const score = scoreMatch ? parseInt(scoreMatch[1]) : 0
+    // Calculate average response time from recent checks
+    const avgResponseTime = Math.round(
+      data.reduce((sum, log) => sum + (log.response_time || 0), 0) / data.length
+    )
 
     return {
-      score: score, // Performance score extracted from error_message
-      loadTime: data.response_time || 0, // Load time in ms from response_time field
-      lastChecked: data.checked_at
+      score: 0, // No page speed scores in tiered monitoring system
+      loadTime: avgResponseTime,
+      lastChecked: data[0].checked_at
     }
   } catch (error) {
     console.error('Error in getSiteLatestPageSpeed:', error)
@@ -95,26 +97,29 @@ export async function getSiteLatestPageSpeed(siteId: string): Promise<{ score: n
   }
 }
 
-// New function to get latest dead link scan
+// Dead link scanning not available in tiered monitoring system
 export async function getSiteLatestDeadLinks(siteId: string): Promise<{ totalLinks: number; brokenLinks: number; lastScanned: string | null }> {
   try {
+    // Check if there are any dead links in the dead_links table (from previous scans)
     const { data, error } = await supabase
-      .from('uptime_logs')
-      .select('status_code, response_time, checked_at')
+      .from('dead_links')
+      .select('id, found_at')
       .eq('site_id', siteId)
-      .eq('status', 'scan') // Only dead link scan results
-      .order('checked_at', { ascending: false })
-      .limit(1)
-      .single()
+      .eq('fixed', false)
+      .order('found_at', { ascending: false })
 
-    if (error || !data) {
+    if (error) {
+      console.error('Error fetching dead links:', error)
       return { totalLinks: 0, brokenLinks: 0, lastScanned: null }
     }
 
+    const brokenLinks = data?.length || 0
+    const lastScanned = data?.[0]?.found_at || null
+
     return {
-      totalLinks: data.response_time || 0, // Total links stored in response_time field
-      brokenLinks: data.status_code || 0, // Broken links count stored in status_code field
-      lastScanned: data.checked_at
+      totalLinks: brokenLinks > 0 ? brokenLinks : 0, // We only know broken links, not total
+      brokenLinks: brokenLinks,
+      lastScanned: lastScanned
     }
   } catch (error) {
     console.error('Error in getSiteLatestDeadLinks:', error)
