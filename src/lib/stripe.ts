@@ -28,32 +28,31 @@ export const PLANS = {
   FREE: {
     name: 'Free',
     price: 0,
-    sites: 3,
-    uptimeChecks: '5 min intervals',
+    sites: 2,
+    uptimeChecks: '10 min intervals',
     features: [
-      'Monitor up to 3 websites',
-      'Uptime monitoring (5-min checks)',
-      'Page Speed monitoring (daily checks, basic metrics)',
+      'Monitor up to 2 websites',
+      'Uptime monitoring (10-min checks)',
       'Email alerts only',
       '7 days history',
-      'No SSL expiry monitoring',
+      'Email support (24-48 hours)',
+      'No SSL certificate monitoring',
       'No API monitoring',
     ]
   },
   PRO: {
     name: 'Pro',
     price: 29,
-    sites: 25,
-    uptimeChecks: '1 min intervals',
+    sites: 15,
+    uptimeChecks: '3 min intervals',
     features: [
-      'Monitor up to 25 websites',
-      'Uptime monitoring (1-min checks)',
-      'Page Speed monitoring (hourly checks)',
-      'SSL expiry monitoring (all sites, alerts before expiry)',
-      'API monitoring (up to 5 endpoints)',
-      'Alerts via Email + Slack + Discord + Webhooks',
-      '90 days history',
-      'Priority email support'
+      'Monitor up to 15 websites',
+      'Uptime monitoring (3-min checks)',
+      'SSL certificate monitoring',
+      'API monitoring (up to 3 endpoints)',
+      'Email + Slack + Discord alerts',
+      '60 days history',
+      'Priority email support (within 4 hours)'
     ]
   }
 }

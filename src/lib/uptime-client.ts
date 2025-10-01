@@ -1,15 +1,7 @@
-import { createBrowserClient } from '@supabase/ssr'
-import { Database } from './supabase'
+import { supabase } from './supabase'
+import type { Database } from './supabase'
 
 type UptimeLog = Database['public']['Tables']['uptime_logs']['Row']
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createBrowserClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey
-)
 
 export async function getSiteUptimeStats(siteId: string, days = 30): Promise<{ uptime: number; total: number; up: number }> {
   try {
@@ -74,16 +66,24 @@ export async function getSiteLatestPageSpeed(siteId: string): Promise<{ score: n
       .eq('site_id', siteId)
       .eq('status', 'up') // Only successful checks have valid response times
       .not('response_time', 'is', null)
+      .lt('response_time', 1000) // Exclude timeout values (>= 1000ms are likely timeouts/errors)
+      .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
       .order('checked_at', { ascending: false })
-      .limit(10) // Last 10 successful checks
+      .limit(100) // Increased limit for better sample size
 
     if (error || !data || data.length === 0) {
       return { score: 0, loadTime: 0, lastChecked: null }
     }
 
-    // Calculate average response time from recent checks
+    // Calculate average response time from recent checks (excluding timeout values)
+    const validResponseTimes = data.filter(log => log.response_time && log.response_time < 1000)
+
+    if (validResponseTimes.length === 0) {
+      return { score: 0, loadTime: 0, lastChecked: data[0]?.checked_at || null }
+    }
+
     const avgResponseTime = Math.round(
-      data.reduce((sum, log) => sum + (log.response_time || 0), 0) / data.length
+      validResponseTimes.reduce((sum, log) => sum + (log.response_time || 0), 0) / validResponseTimes.length
     )
 
     return {
@@ -130,19 +130,70 @@ export async function getSiteLatestDeadLinks(siteId: string): Promise<{ totalLin
 // Get user monitoring frequency information
 export async function getUserMonitoringInfo(): Promise<{ plan: string; frequency_display: string; monitoring_frequency: string } | null> {
   try {
-    const { data, error } = await supabase
-      .from('user_monitoring_info')
-      .select('plan, frequency_display, monitoring_frequency')
-      .single()
-
-    if (error) {
-      console.error('Error fetching user monitoring info:', error)
+    // Check if supabase client is available
+    if (!supabase) {
+      console.error('Supabase client not available - check environment variables')
       return null
     }
 
-    return data
+    // Check authentication first
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    console.log('Auth debug - getUserMonitoringInfo:', {
+      hasAuthError: !!authError,
+      authErrorMessage: authError?.message,
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email
+    })
+
+    if (authError || !user) {
+      console.error('Authentication issue in getUserMonitoringInfo:', {
+        authError: authError?.message || 'No auth error',
+        hasUser: !!user,
+        userId: user?.id || 'No user ID',
+        userEmail: user?.email || 'No email'
+      })
+      return null
+    }
+
+    console.log('User authenticated successfully, attempting to fetch monitoring info...')
+
+    const { data, error } = await supabase
+      .rpc('get_current_user_monitoring_info')
+
+    console.log('Database query result:', { data, error })
+
+    if (error) {
+      console.error('Database error in getUserMonitoringInfo:')
+      console.error('Full error object:', error)
+      console.error('Error properties:', {
+        message: error.message || 'No message',
+        details: error.details || 'No details',
+        hint: error.hint || 'No hint',
+        code: error.code || 'No code',
+        errorType: typeof error,
+        errorKeys: Object.keys(error),
+        errorString: JSON.stringify(error)
+      })
+      return null
+    }
+
+    console.log('Successfully fetched monitoring info:', data)
+
+    // RPC functions return arrays, so get the first result
+    if (data && data.length > 0) {
+      return data[0]
+    }
+
+    // Return default if no data
+    console.warn('No user data found, returning default monitoring info')
+    return {
+      plan: 'free',
+      frequency_display: '5 minutes',
+      monitoring_frequency: '5 minutes'
+    }
   } catch (error) {
-    console.error('Error in getUserMonitoringInfo:', error)
+    console.error('Exception in getUserMonitoringInfo:', error instanceof Error ? error.message : 'Unknown error', error)
     return null
   }
 }
@@ -150,17 +201,33 @@ export async function getUserMonitoringInfo(): Promise<{ plan: string; frequency
 // Get next check time for a site
 export async function getNextCheckTime(siteId: string): Promise<string | null> {
   try {
+    // Check if supabase client is available
+    if (!supabase) {
+      console.error('Supabase client not available - check environment variables')
+      return null
+    }
+
     const { data, error } = await supabase
       .rpc('get_next_check_time', { site_uuid: siteId })
 
     if (error) {
-      console.error('Error fetching next check time:', error)
+      console.error('Error fetching next check time:')
+      console.error('Error object:', error)
+      console.error('Error details:', {
+        message: error.message || 'No message',
+        details: error.details || 'No details',
+        hint: error.hint || 'No hint',
+        code: error.code || 'No code',
+        siteId: siteId,
+        errorType: typeof error,
+        errorKeys: Object.keys(error)
+      })
       return null
     }
 
     return data
   } catch (error) {
-    console.error('Error in getNextCheckTime:', error)
+    console.error('Error in getNextCheckTime:', error instanceof Error ? error.message : 'Unknown error', { siteId, error })
     return null
   }
 }

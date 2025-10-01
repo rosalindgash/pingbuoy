@@ -16,38 +16,9 @@ function sendToAnalytics({ name, value, id }: { name: string; value: number; id:
     })
   }
 
-  // Also send to our own database for the Core Web Vitals dashboard via Edge Function
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceJwtSecret = process.env.NEXT_PUBLIC_SERVICE_JWT_SECRET
-
-  if (supabaseUrl && serviceJwtSecret) {
-    // Wrap in try-catch and use better error handling to prevent blocking other functionality
-    try {
-      fetch(`${supabaseUrl}/functions/v1/core-web-vitals`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serviceJwtSecret}`,
-        },
-        body: JSON.stringify({
-          metric: name,
-          value: value,
-          id: id,
-          url: window.location.href,
-          timestamp: Date.now(),
-        }),
-      }).catch(error => {
-        // Silently ignore core web vitals errors during development
-        // Use debug level to avoid console spam
-        console.debug('Core web vitals tracking temporarily unavailable:', error.message)
-      })
-    } catch (error) {
-      // Handle any synchronous errors
-      console.debug('Core web vitals tracking failed:', error)
-    }
-  } else {
-    console.warn('Core Web Vitals: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SERVICE_JWT_SECRET')
-  }
+  // Core Web Vitals now stored directly in database via direct monitoring
+  // No need for Edge Function calls since we moved to database-based monitoring
+  console.debug('Core Web Vitals tracked:', { name, value, id, url: window.location.href })
 }
 
 export default function GoogleAnalytics({ measurementId }: { measurementId: string }) {

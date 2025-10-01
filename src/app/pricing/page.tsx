@@ -118,7 +118,7 @@ export default function PricingPage() {
 
         <div className="mt-12 text-center">
           <h3 className="text-lg font-medium text-gray-900">
-            All plans include
+            Both plans include
           </h3>
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="text-center">
@@ -127,11 +127,11 @@ export default function PricingPage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">Fast</div>
-              <div className="text-sm text-gray-500">Performance checks</div>
+              <div className="text-sm text-gray-500">Reliable notifications</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">SSL</div>
-              <div className="text-sm text-gray-500">Certificate monitoring</div>
+              <div className="text-2xl font-bold text-blue-600">Public</div>
+              <div className="text-sm text-gray-500">Status pages</div>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import {
   validateNotificationSettings,
   validateNotificationUpdate,
@@ -56,7 +56,7 @@ async function authenticateUser(request: NextRequest): Promise<{ user: { id: str
     }
 
     const token = authHeader.substring(7)
-    const supabase = await createClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser(token)
 
     if (error || !user) {
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch notification settings
+    const supabase = await createServerSupabaseClient()
     const { data: settings, error: dbError } = await supabase
       .from('notification_settings')
       .select('*')
@@ -194,6 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert notification settings
+    const supabase = await createServerSupabaseClient()
     const { data: settings, error: dbError } = await supabase
       .from('notification_settings')
       .insert({
@@ -293,6 +295,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update notification settings
+    const supabase = await createServerSupabaseClient()
     const { data: settings, error: dbError } = await supabase
       .from('notification_settings')
       .update({
@@ -369,6 +372,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete notification settings (will trigger default creation via database trigger)
+    const supabase = await createServerSupabaseClient()
     const { error: dbError } = await supabase
       .from('notification_settings')
       .delete()

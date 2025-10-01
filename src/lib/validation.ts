@@ -101,6 +101,16 @@ export const userProfileSchema = z.object({
   deletion_scheduled_at: z.string().datetime().nullable()
 })
 
+// User profile update schema (partial - for API updates)
+export const userProfileUpdateSchema = z.object({
+  full_name: z.string()
+    .min(0, 'Name cannot be negative length')
+    .max(100, 'Name too long')
+    .trim()
+    .optional(),
+  email: emailSchema.optional()
+})
+
 // Contact form validation
 export const contactSchema = z.object({
   name: z.string()

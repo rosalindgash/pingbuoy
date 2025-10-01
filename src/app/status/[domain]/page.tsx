@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteHourlyUptimeData, getSiteLatestDeadLinks } from '@/lib/uptime-client'
-import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw, Link, AlertTriangle } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw, Link, AlertTriangle, Shield, ShieldX } from 'lucide-react'
 import Image from 'next/image'
 
 interface Site {
@@ -14,6 +14,8 @@ interface Site {
   status: 'up' | 'down' | 'unknown'
   last_checked: string | null
   user_id: string
+  ssl_status: boolean | null
+  ssl_last_checked: string | null
 }
 
 interface User {
@@ -117,7 +119,7 @@ export default function StatusPage() {
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
         .select(`
-          id, name, url, status, last_checked, user_id,
+          id, name, url, status, last_checked, user_id, ssl_status, ssl_last_checked,
           users(plan, email)
         `)
         .eq('is_active', true)
@@ -217,7 +219,9 @@ export default function StatusPage() {
         setSite(prev => prev ? {
           ...prev,
           status: result.site.status,
-          last_checked: result.site.last_checked
+          last_checked: result.site.last_checked,
+          ssl_status: result.result?.sslValid !== undefined ? result.result.sslValid : prev.ssl_status,
+          ssl_last_checked: result.result?.sslValid !== undefined ? result.site.last_checked : prev.ssl_last_checked
         } : null)
 
         // Refresh the full data after a brief delay
@@ -348,35 +352,59 @@ export default function StatusPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {uptimeStats ? `${uptimeStats.uptime}%` : 'N/A'}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {uptimeStats ? `${uptimeStats.up} of ${uptimeStats.total} checks` : 'No data available'}
-                </p>
               </div>
             </div>
           </div>
 
-          {/* Page Speed */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <Gauge className="w-8 h-8 text-gray-400" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Performance Score</p>
-                <p className="text-2xl font-bold text-gray-900">N/A</p>
+          {/* SSL Certificate Status */}
+          {site.url.startsWith('https://') && (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                {site.ssl_status === true ? (
+                  <Shield className="w-8 h-8 text-green-500" />
+                ) : site.ssl_status === false ? (
+                  <ShieldX className="w-8 h-8 text-red-500" />
+                ) : (
+                  <Shield className="w-8 h-8 text-gray-400" />
+                )}
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">SSL Certificate</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {site.ssl_status === true ? 'Valid' : site.ssl_status === false ? 'Invalid' : 'Unknown'}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Performance placeholder for HTTP sites */}
+          {!site.url.startsWith('https://') && (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <Gauge className="w-8 h-8 text-gray-400" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">SSL Certificate</p>
+                  <p className="text-2xl font-bold text-gray-900">N/A</p>
+                  <p className="text-xs text-gray-500">HTTP site - no SSL</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Response Time */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
-              <Clock className="w-8 h-8 text-orange-500" />
+              <Clock className={`w-8 h-8 ${
+                pageSpeedStats?.loadTime && pageSpeedStats.loadTime > 0
+                  ? pageSpeedStats.loadTime <= 300 ? 'text-green-500'    // Fast: <= 300ms
+                  : pageSpeedStats.loadTime <= 800 ? 'text-yellow-500'   // Medium: 301-800ms
+                  : 'text-red-500'                                       // Slow: > 800ms
+                  : 'text-gray-400'                                      // No data
+              }`} />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
                 <p className="text-2xl font-bold text-gray-900">
 				  {pageSpeedStats?.loadTime && pageSpeedStats.loadTime > 0 ? `${pageSpeedStats.loadTime}ms` : 'N/A'}
-				</p>
-				<p className="text-xs text-gray-500">
-				  {pageSpeedStats?.lastChecked ? `Avg response time` : 'No recent data'}
 				</p>
               </div>
             </div>
@@ -385,7 +413,7 @@ export default function StatusPage() {
           {/* Dead Links */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
-              <Link className={`w-8 h-8 ${deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+              <Link className={`w-8 h-8 ${deadLinksStats?.brokenLinks && deadLinksStats.brokenLinks > 0 ? 'text-red-500' : 'text-green-500'}`} />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Link Health</p>
                 <p className="text-2xl font-bold text-gray-900">

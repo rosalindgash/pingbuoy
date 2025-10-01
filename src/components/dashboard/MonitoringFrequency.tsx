@@ -35,9 +35,13 @@ export default function MonitoringFrequency({ userPlan, siteId }: MonitoringFreq
   const fetchMonitoringInfo = async () => {
     try {
       const info = await getUserMonitoringInfo()
-      setMonitoringInfo(info)
+      if (info) {
+        setMonitoringInfo(info)
+      } else {
+        console.warn('No monitoring info available - user may not be authenticated or have valid plan')
+      }
     } catch (error) {
-      console.error('Error fetching monitoring info:', error)
+      console.error('Error fetching monitoring info:', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
@@ -45,9 +49,13 @@ export default function MonitoringFrequency({ userPlan, siteId }: MonitoringFreq
     if (!siteId) return
     try {
       const nextTime = await getNextCheckTime(siteId)
-      setNextCheckTime(nextTime)
+      if (nextTime) {
+        setNextCheckTime(nextTime)
+      } else {
+        console.warn('No next check time available - site may not exist or user may not have access')
+      }
     } catch (error) {
-      console.error('Error fetching next check time:', error)
+      console.error('Error fetching next check time:', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 

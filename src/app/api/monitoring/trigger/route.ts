@@ -42,16 +42,25 @@ export async function POST(request: NextRequest) {
           response_time: result.responseTime,
           status_code: result.statusCode,
           error_message: result.error,
-          checked_at: new Date().toISOString()
+          checked_at: new Date().toISOString(),
+          ssl_valid: result.sslValid,
+          ssl_checked_at: result.sslValid !== null ? new Date().toISOString() : null
         })
 
-        // Update site status
+        // Update site status and SSL status
+        const updateData: any = {
+          status: result.status,
+          last_checked: new Date().toISOString()
+        }
+
+        if (result.sslValid !== null) {
+          updateData.ssl_status = result.sslValid
+          updateData.ssl_last_checked = new Date().toISOString()
+        }
+
         await supabase
           .from('sites')
-          .update({
-            status: result.status,
-            last_checked: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', site.id)
         break
 
@@ -118,6 +127,7 @@ export async function POST(request: NextRequest) {
 // Custom uptime checking function (same as cron job)
 async function checkWebsiteUptime(website: any) {
   const startTime = Date.now()
+  let sslValid: boolean | null = null
 
   try {
     const controller = new AbortController()
@@ -135,22 +145,34 @@ async function checkWebsiteUptime(website: any) {
     const responseTime = Date.now() - startTime
     const isUp = response.status < 400
 
+    // For HTTPS sites, successful response indicates working SSL
+    if (website.url.startsWith('https://')) {
+      sslValid = isUp
+    }
+
     return {
       type: 'uptime',
       status: isUp ? 'up' : 'down',
       responseTime,
-      statusCode: response.status
+      statusCode: response.status,
+      sslValid
     }
 
   } catch (error) {
     const responseTime = Date.now() - startTime
+
+    // For HTTPS sites, connection errors usually indicate SSL issues
+    if (website.url.startsWith('https://')) {
+      sslValid = false
+    }
 
     return {
       type: 'uptime',
       status: 'down',
       responseTime,
       statusCode: null,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      sslValid
     }
   }
 }

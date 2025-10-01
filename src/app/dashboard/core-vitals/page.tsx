@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Globe, TrendingUp, AlertTriangle, Activity, RefreshCw, Plus, Menu, X, Puzzle, Settings, LogOut } from 'lucide-react'
+import { Globe, Activity, RefreshCw, Plus, Menu, X, Puzzle, Settings, LogOut } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import MonitoringFrequency from '@/components/dashboard/MonitoringFrequency'
 
 interface CoreWebVitalsData {
   id: string
@@ -51,8 +50,6 @@ export default function CoreVitalsPage() {
   const getNavigation = () => {
     const baseNavigation = [
       { name: 'Dashboard', href: '/dashboard', icon: Globe },
-      { name: 'Uptime', href: '/dashboard/uptime', icon: TrendingUp },
-      { name: 'Dead Links', href: '/dashboard/dead-links', icon: AlertTriangle },
     ]
 
     // Add integrations for Pro users
@@ -140,6 +137,7 @@ export default function CoreVitalsPage() {
 
       // Check system health (this still uses direct Supabase for system checks)
       const healthCheck = await checkSystemHealth()
+      console.log('System health check result:', healthCheck)
       setSystemHealth(healthCheck)
 
     } catch (error) {
@@ -151,12 +149,15 @@ export default function CoreVitalsPage() {
     const now = new Date().toISOString()
 
     try {
+      console.log('Starting system health check...')
+
       // Test database responsiveness
       const { data, error } = await supabase
         .from('sites')
         .select('count')
         .limit(1)
 
+      console.log('Database test result:', { data, error: error?.message })
       const databaseResponsive = !error
 
       // Test API responsiveness (simplified)
@@ -164,21 +165,26 @@ export default function CoreVitalsPage() {
 
       // Check if monitoring is active (recent uptime logs)
       // Pro/Founder users should have logs within 2 minutes, Free users within 6 minutes
-      const { data: recentLogs } = await supabase
+      const { data: recentLogs, error: logsError } = await supabase
         .from('uptime_logs')
         .select('checked_at')
         .gte('checked_at', new Date(Date.now() - 6 * 60 * 1000).toISOString()) // Last 6 minutes (covers both tiers)
         .limit(1)
 
+      console.log('Monitoring check result:', { recentLogs, error: logsError?.message })
       const monitoringActive = (recentLogs && recentLogs.length > 0)
 
-      return {
+      const healthResult = {
         database_responsive: databaseResponsive,
         api_responsive: apiResponsive,
         monitoring_active: monitoringActive,
         last_check: now
       }
+
+      console.log('Final health result:', healthResult)
+      return healthResult
     } catch (error) {
+      console.error('System health check failed:', error)
       return {
         database_responsive: false,
         api_responsive: false,
@@ -353,11 +359,6 @@ export default function CoreVitalsPage() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">PingBuoy Core Web Vitals</h1>
                   <p className="text-sm text-gray-500">Internal performance monitoring dashboard</p>
-                  {profile && (
-                    <div className="mt-3">
-                      <MonitoringFrequency userPlan={profile.plan} />
-                    </div>
-                  )}
                 </div>
                 <button
                   onClick={handleRefresh}
@@ -431,29 +432,46 @@ export default function CoreVitalsPage() {
               )}
 
               {/* System Health */}
-              {systemHealth && (
-                <div className="bg-white rounded-lg shadow mb-8 p-6">
-                  <h2 className="text-lg font-medium text-gray-900 mb-4">System Health</h2>
+              <div className="bg-white rounded-lg shadow mb-8 p-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">System Health</h2>
+                {systemHealth ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-3 ${systemHealth.database_responsive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-sm">Database: {systemHealth.database_responsive ? 'Responsive' : 'Error'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-3 ${systemHealth.api_responsive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-sm">API: {systemHealth.api_responsive ? 'Responsive' : 'Error'}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-3 ${systemHealth.monitoring_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-sm">Monitoring: {systemHealth.monitoring_active ? 'Active' : 'Inactive'}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Last checked: {new Date(systemHealth.last_check).toLocaleString()}</p>
+                    {vitalsSummary && (
+                      <p className="text-xs text-gray-500 mt-1">Showing {vitalsSummary.total_records} records from last {vitalsSummary.time_range_hours} hours</p>
+                    )}
+                  </>
+                ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-3 ${systemHealth.database_responsive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-sm">Database: {systemHealth.database_responsive ? 'Responsive' : 'Error'}</span>
+                      <div className="w-3 h-3 rounded-full mr-3 bg-gray-400"></div>
+                      <span className="text-sm">Database: Checking...</span>
                     </div>
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-3 ${systemHealth.api_responsive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-sm">API: {systemHealth.api_responsive ? 'Responsive' : 'Error'}</span>
+                      <div className="w-3 h-3 rounded-full mr-3 bg-gray-400"></div>
+                      <span className="text-sm">API: Checking...</span>
                     </div>
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-3 ${systemHealth.monitoring_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-sm">Monitoring: {systemHealth.monitoring_active ? 'Active' : 'Inactive'}</span>
+                      <div className="w-3 h-3 rounded-full mr-3 bg-gray-400"></div>
+                      <span className="text-sm">Monitoring: Checking...</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Last checked: {new Date(systemHealth.last_check).toLocaleString()}</p>
-                  {vitalsSummary && (
-                    <p className="text-xs text-gray-500 mt-1">Showing {vitalsSummary.total_records} records from last {vitalsSummary.time_range_hours} hours</p>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Core Web Vitals Data */}
               <div className="bg-white rounded-lg shadow">

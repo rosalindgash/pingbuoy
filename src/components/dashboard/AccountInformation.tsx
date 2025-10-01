@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { User, Save } from 'lucide-react'
+import { User, Save, Lock, Eye, EyeOff } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface UserProfile {
   id: string
@@ -19,6 +20,14 @@ interface AccountInformationProps {
 export default function AccountInformation({ profile }: AccountInformationProps) {
   const [loading, setLoading] = useState(false)
   const [fullName, setFullName] = useState(profile.full_name || '')
+  const [email, setEmail] = useState(profile.email || '')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
   const [message, setMessage] = useState('')
 
   const handleSave = async () => {
@@ -26,12 +35,16 @@ export default function AccountInformation({ profile }: AccountInformationProps)
     setMessage('')
 
     try {
+      // Update profile info
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ full_name: fullName }),
+        body: JSON.stringify({
+          full_name: fullName,
+          email: email !== profile.email ? email : undefined
+        }),
       })
 
       const result = await response.json()
@@ -49,6 +62,47 @@ export default function AccountInformation({ profile }: AccountInformationProps)
     }
   }
 
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setMessage('Please fill in all password fields')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage('New passwords do not match')
+      return
+    }
+
+    if (newPassword.length < 8) {
+      setMessage('New password must be at least 8 characters long')
+      return
+    }
+
+    setPasswordLoading(true)
+    setMessage('')
+
+    try {
+      // Use Supabase's updateUser method for password change
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) {
+        setMessage('Error changing password: ' + error.message)
+      } else {
+        setMessage('Password changed successfully!')
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+        setTimeout(() => setMessage(''), 3000)
+      }
+    } catch (error) {
+      setMessage('An unexpected error occurred while changing password')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center space-x-3 mb-6">
@@ -57,6 +111,13 @@ export default function AccountInformation({ profile }: AccountInformationProps)
       </div>
       
       <div className="space-y-4">
+        {/* Instructional note */}
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p className="text-sm text-blue-700">
+            <strong>Note:</strong> To change your name or email, simply type in the new information and click "Save Changes".
+          </p>
+        </div>
+
         <div>
           <label htmlFor="full-name" className="block text-sm font-medium text-gray-700">
             Full Name
@@ -72,10 +133,17 @@ export default function AccountInformation({ profile }: AccountInformationProps)
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <div className="mt-1 text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-            {profile.email}
-          </div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter your email address"
+          />
         </div>
         
         <div>
@@ -117,6 +185,109 @@ export default function AccountInformation({ profile }: AccountInformationProps)
             <Save className="w-4 h-4 mr-2" />
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>
+        </div>
+
+        {/* Password Change Section */}
+        <div className="pt-6 border-t border-gray-200">
+          <div className="flex items-center space-x-3 mb-4">
+            <Lock className="w-5 h-5 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900">Change Password</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
+                Current Password
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  id="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter current password"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
+                New Password
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  id="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter new password (min 8 characters)"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+                Confirm New Password
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirm-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Confirm new password"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                onClick={handlePasswordChange}
+                disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                variant="outline"
+                className="flex items-center"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                {passwordLoading ? 'Changing...' : 'Change Password'}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -48,11 +48,11 @@ serve(withSecureCORS(async (req) => {
   }
 
   try {
-    // Validate Authorization header
-    const authHeader = req.headers.get('authorization')
-    const serviceJwtSecret = Deno.env.get('SERVICE_JWT_SECRET')
+    // Use API key authentication instead of JWT
+    const apiKey = req.headers.get('x-api-key') || req.headers.get('authorization')?.replace('Bearer ', '')
+    const expectedApiKey = Deno.env.get('SERVICE_JWT_SECRET')
 
-    if (!serviceJwtSecret) {
+    if (!expectedApiKey) {
       logger.error('SERVICE_JWT_SECRET not configured', {
         errorCode: ErrorCodes.MISSING_CONFIG
       })
@@ -66,20 +66,24 @@ serve(withSecureCORS(async (req) => {
       )
     }
 
-    if (!authHeader || authHeader !== `Bearer ${serviceJwtSecret}`) {
-      logger.error('Invalid authorization', {
+    if (!apiKey || apiKey !== expectedApiKey) {
+      logger.error('Invalid API key', {
         errorCode: ErrorCodes.UNAUTHORIZED,
-        hasAuthHeader: !!authHeader
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey?.length,
+        expectedLength: expectedApiKey?.length
       })
       logger.requestEnd(401, Date.now() - startTime)
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - Invalid API key' }),
         {
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         }
       )
     }
+
+    logger.info('API key authentication successful')
 
     // Parse request body
     const body: WebVitalMetric = await req.json()

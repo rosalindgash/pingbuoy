@@ -447,44 +447,6 @@ export default function IntegrationsPage() {
           )}
         </section>
 
-        {/* Pro Features Upsell */}
-        <section>
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm p-8 text-white">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <Shield className="h-10 w-10 text-white" />
-              </div>
-              <div className="ml-4 flex-1">
-                <h2 className="text-2xl font-bold mb-2">Unlock Advanced Integrations</h2>
-                <p className="text-blue-100 mb-6">
-                  Upgrade to Pro to access Slack, Discord, webhooks, and advanced API features. 
-                  Get more flexibility in how you receive and process monitoring alerts.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-300" />
-                    <span className="text-sm">Unlimited webhook integrations</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-300" />
-                    <span className="text-sm">Slack & Discord notifications</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-300" />
-                    <span className="text-sm">Advanced API access</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-300" />
-                    <span className="text-sm">Custom event filtering</span>
-                  </div>
-                </div>
-                <ReliableButton variant="outline-on-blue">
-                  Upgrade to Pro
-                </ReliableButton>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   )

@@ -74,12 +74,19 @@ export async function POST(
     const checkResult = await performUptimeCheck(site.url)
 
     // Update site in database
+    const updateData: any = {
+      status: checkResult.status,
+      last_checked: new Date().toISOString()
+    }
+
+    if (checkResult.sslValid !== null) {
+      updateData.ssl_status = checkResult.sslValid
+      updateData.ssl_last_checked = new Date().toISOString()
+    }
+
     const { error: updateError } = await supabase
       .from('sites')
-      .update({
-        status: checkResult.status,
-        last_checked: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', site.id)
 
     if (updateError) {
@@ -95,7 +102,9 @@ export async function POST(
         response_time: checkResult.responseTime,
         status_code: checkResult.statusCode,
         error_message: checkResult.error || null,
-        checked_at: new Date().toISOString()
+        checked_at: new Date().toISOString(),
+        ssl_valid: checkResult.sslValid,
+        ssl_checked_at: checkResult.sslValid !== null ? new Date().toISOString() : null
       })
 
     if (logError) {
@@ -125,6 +134,7 @@ export async function POST(
 
 async function performUptimeCheck(url: string) {
   const startTime = Date.now()
+  let sslValid: boolean | null = null
 
   try {
     const controller = new AbortController()
@@ -142,21 +152,33 @@ async function performUptimeCheck(url: string) {
     const responseTime = Date.now() - startTime
     const isUp = response.status >= 200 && response.status < 400
 
+    // For HTTPS sites, successful response indicates working SSL
+    if (url.startsWith('https://')) {
+      sslValid = isUp
+    }
+
     return {
       status: isUp ? 'up' : 'down',
       responseTime,
       statusCode: response.status,
-      error: null
+      error: null,
+      sslValid
     }
 
   } catch (error) {
     const responseTime = Date.now() - startTime
 
+    // For HTTPS sites, connection errors usually indicate SSL issues
+    if (url.startsWith('https://')) {
+      sslValid = false
+    }
+
     return {
       status: 'down' as const,
       responseTime,
       statusCode: null,
-      error: error instanceof Error ? error.message : 'Connection failed'
+      error: error instanceof Error ? error.message : 'Connection failed',
+      sslValid
     }
   }
 }

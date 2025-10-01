@@ -9,6 +9,22 @@ ALTER TABLE IF EXISTS status_maintenance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS status_services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS status_subscribers ENABLE ROW LEVEL SECURITY;
 
+-- Drop all existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Anyone can view visible status services" ON status_services;
+DROP POLICY IF EXISTS "Service role can manage status services" ON status_services;
+DROP POLICY IF EXISTS "Anyone can view status checks for visible services" ON status_checks;
+DROP POLICY IF EXISTS "Service role can manage status checks" ON status_checks;
+DROP POLICY IF EXISTS "Anyone can view public incidents" ON status_incidents;
+DROP POLICY IF EXISTS "Service role can manage incidents" ON status_incidents;
+DROP POLICY IF EXISTS "Anyone can view updates for public incidents" ON status_incident_updates;
+DROP POLICY IF EXISTS "Service role can manage incident updates" ON status_incident_updates;
+DROP POLICY IF EXISTS "Anyone can view public maintenance" ON status_maintenance;
+DROP POLICY IF EXISTS "Service role can manage maintenance" ON status_maintenance;
+DROP POLICY IF EXISTS "Anyone can subscribe to status updates" ON status_subscribers;
+DROP POLICY IF EXISTS "Users can update own subscription" ON status_subscribers;
+DROP POLICY IF EXISTS "Service role can manage subscribers" ON status_subscribers;
+DROP POLICY IF EXISTS "Users can view own subscription" ON status_subscribers;
+
 -- STATUS_SERVICES policies (PingBuoy's own services)
 -- Allow public read access (for public status page)
 CREATE POLICY "Anyone can view visible status services" ON status_services

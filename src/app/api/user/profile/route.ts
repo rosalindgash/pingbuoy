@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
-import { userProfileSchema, validateAndSanitize } from '@/lib/validation'
+import { userProfileUpdateSchema, validateAndSanitize } from '@/lib/validation'
 import { validateCSRF } from '@/lib/csrf-protection'
 import { randomBytes } from 'crypto'
 
@@ -23,27 +23,48 @@ export async function PUT(request: NextRequest) {
 
   try {
     const rawData = await request.json()
-    
+
     // Validate and sanitize input
-    const { full_name } = validateAndSanitize(userProfileSchema, rawData)
-    
+    const { full_name, email } = validateAndSanitize(userProfileUpdateSchema, rawData)
+
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Update user profile
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
-      .from('users')
-      .update({ full_name })
-      .eq('id', user.id)
+    // Prepare update object (only include fields that are provided)
+    const updateData: { full_name?: string; email?: string } = {}
+    if (full_name !== undefined) updateData.full_name = full_name
+    if (email !== undefined) updateData.email = email
 
-    if (updateError) {
-      console.error('Error updating user profile:', updateError)
-      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
+    // Update user profile in database if there are fields to update
+    if (Object.keys(updateData).length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase as any)
+        .from('users')
+        .update(updateData)
+        .eq('id', user.id)
+
+      if (updateError) {
+        console.error('Error updating user profile:', updateError)
+        return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
+      }
+    }
+
+    // If email is being updated, also update in Supabase Auth
+    if (email && email !== user.email) {
+      const { error: authUpdateError } = await supabase.auth.updateUser({
+        email: email
+      })
+
+      if (authUpdateError) {
+        console.error('Error updating auth email:', authUpdateError)
+        return NextResponse.json({
+          error: 'Profile updated but email change requires verification. Please check your email.'
+        }, { status: 200 })
+      }
     }
 
     return NextResponse.json({ success: true })

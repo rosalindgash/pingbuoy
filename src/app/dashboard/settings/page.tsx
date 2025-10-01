@@ -30,6 +30,29 @@ export default function SettingsPage() {
     recovery_notifications: true
   })
 
+  const loadNotificationSettings = async () => {
+    try {
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('notification_preferences')
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Error loading notification settings:', error)
+        return
+      }
+
+      if (data?.notification_preferences) {
+        setNotificationSettings(data.notification_preferences)
+      }
+    } catch (error) {
+      console.error('Unexpected error loading notification settings:', error)
+    }
+  }
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -41,9 +64,15 @@ export default function SettingsPage() {
       await fetchProfile(user.id)
       setLoading(false)
     }
-    
+
     checkUser()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      loadNotificationSettings()
+    }
+  }, [user])
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -65,9 +94,35 @@ export default function SettingsPage() {
       ...prev,
       [setting]: enabled
     }))
-    // In a real app, you'd save this to the database
   }
 
+  const saveNotificationSettings = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        alert('You must be logged in to save settings')
+        return
+      }
+
+      // Simple approach: Save to users table with notification preferences
+      const { error } = await supabase
+        .from('users')
+        .update({
+          notification_preferences: notificationSettings
+        })
+        .eq('id', user.id)
+
+      if (error) {
+        console.error('Error saving notification settings:', error)
+        alert('Failed to save notification settings')
+      } else {
+        alert('Notification settings saved successfully!')
+      }
+    } catch (error) {
+      console.error('Unexpected error saving notification settings:', error)
+      alert('An unexpected error occurred')
+    }
+  }
 
   if (loading) {
     return (
@@ -179,11 +234,8 @@ export default function SettingsPage() {
               </div>
 
               <div className="pt-4 border-t">
-                <button 
-                  onClick={() => {
-                    // Save notification settings
-                    alert('Notification settings saved!')
-                  }}
+                <button
+                  onClick={saveNotificationSettings}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                 >
                   Save Changes
