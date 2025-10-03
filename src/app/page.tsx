@@ -48,7 +48,7 @@ export default function HomePage() {
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
                     <Link href="/signup">
-                      <Button variant="cta" size="lg" className="w-full flex items-center justify-center px-8 py-3 text-base">
+                      <Button size="lg" className="bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316] w-full flex items-center justify-center px-8 py-3 text-base">
                         Get Started for Free
                         <ArrowRight className="ml-2 -mr-1 w-5 h-5" />
                       </Button>
@@ -56,7 +56,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-3 sm:mt-0 sm:ml-3">
                     <Link href="/pricing">
-                      <Button variant="outline" size="lg" className="w-full flex items-center justify-center px-8 py-3 text-base">
+                      <Button variant="outline" size="lg" className="border-2 border-[#F97316] text-[#F97316] bg-white hover:bg-[#F97316] hover:text-white w-full flex items-center justify-center px-8 py-3 text-base">
                         View Pricing
                       </Button>
                     </Link>
@@ -94,44 +94,44 @@ export default function HomePage() {
           </div>
 
           <div className="mt-10">
-            <div className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+              <div className="bg-white rounded-lg shadow-md p-6 text-center border border-gray-200 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white mx-auto mb-4">
                   <Zap className="w-6 h-6" />
                 </div>
-                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Uptime Monitoring</p>
-                <p className="mt-2 ml-16 text-base text-[#111827]/70">
-                  Monitor your websites with 5-minute checks on the free plan or 1-minute checks on Pro.
+                <h3 className="text-lg leading-6 font-medium text-[#111827] mb-2">Uptime Monitoring</h3>
+                <p className="text-base text-[#111827]/70">
+                  Keep your websites online and ensure they're always accessible to your visitors with reliable uptime monitoring.
                 </p>
               </div>
 
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+              <div className="bg-white rounded-lg shadow-md p-6 text-center border border-gray-200 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white mx-auto mb-4">
                   <BarChart3 className="w-6 h-6" />
                 </div>
-                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Page Speed Monitoring</p>
-                <p className="mt-2 ml-16 text-base text-[#111827]/70">
-                  Track Core Web Vitals and page performance with daily checks (free) or hourly monitoring (Pro).
+                <h3 className="text-lg leading-6 font-medium text-[#111827] mb-2">Page Speed Monitoring</h3>
+                <p className="text-base text-[#111827]/70">
+                  Track your website's performance and loading speed to provide the best user experience and improve search rankings.
                 </p>
               </div>
 
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+              <div className="bg-white rounded-lg shadow-md p-6 text-center border border-gray-200 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white mx-auto mb-4">
                   <Shield className="w-6 h-6" />
                 </div>
-                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">SSL & API Monitoring</p>
-                <p className="mt-2 ml-16 text-base text-[#111827]/70">
-                  SSL certificate expiry monitoring and API endpoint monitoring available on Pro plans.
+                <h3 className="text-lg leading-6 font-medium text-[#111827] mb-2">SSL & API Monitoring</h3>
+                <p className="text-base text-[#111827]/70">
+                  Keep your SSL certificates up to date and monitor critical endpoints like payments to ensure secure, uninterrupted service.
                 </p>
               </div>
 
-              <div className="relative">
-                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white">
+              <div className="bg-white rounded-lg shadow-md p-6 text-center border border-gray-200 hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#1E3A8A] text-white mx-auto mb-4">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
-                <p className="ml-16 text-lg leading-6 font-medium text-[#111827]">Smart Alerts & Reports</p>
-                <p className="mt-2 ml-16 text-base text-[#111827]/70">
-                  Email alerts for free users, plus Slack, webhooks, and optional email reports for Pro subscribers.
+                <h3 className="text-lg leading-6 font-medium text-[#111827] mb-2">Smart Alerts & Reports</h3>
+                <p className="text-base text-[#111827]/70">
+                  Get instant notifications via email, Slack, Discord, or webhooks when issues are detected, plus detailed reports to track your site's health.
                 </p>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function HomePage() {
             <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
               Why choose PingBuoy?
             </h2>
-            <p className="mt-3 text-xl text-white/70 sm:mt-4">
+            <p className="mt-3 text-xl text-[#F97316] sm:mt-4">
               Built for modern websites with the features you need to stay online
             </p>
           </div>
@@ -159,7 +159,7 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col mt-10 sm:mt-0">
               <dt className="order-2 mt-2 text-lg leading-6 font-medium text-white/70">
-                Monitoring Accuracy
+                Monitoring Accuracy Goal
               </dt>
               <dd className="order-1 text-5xl font-extrabold text-white">99.9%</dd>
             </div>
@@ -167,7 +167,7 @@ export default function HomePage() {
               <dt className="order-2 mt-2 text-lg leading-6 font-medium text-white/70">
                 Free Plan Sites
               </dt>
-              <dd className="order-1 text-5xl font-extrabold text-white">3</dd>
+              <dd className="order-1 text-5xl font-extrabold text-white">2</dd>
             </div>
           </dl>
         </div>
@@ -219,14 +219,14 @@ export default function HomePage() {
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
             <div className="inline-flex rounded-md shadow">
               <Link href="/signup">
-                <Button size="lg" className="px-8 py-3">
+                <Button size="lg" className="bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316] px-8 py-3">
                   Get Started Free
                 </Button>
               </Link>
             </div>
             <div className="ml-3 inline-flex rounded-md shadow">
               <Link href="/pricing">
-                <Button variant="outline" size="lg" className="px-8 py-3">
+                <Button variant="outline" size="lg" className="border-2 border-[#F97316] text-[#F97316] bg-white hover:bg-[#F97316] hover:text-white px-8 py-3">
                   View Pricing
                 </Button>
               </Link>

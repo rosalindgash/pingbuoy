@@ -41,6 +41,7 @@ export default function AccountInformation({ profile }: AccountInformationProps)
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           full_name: fullName,
           email: email !== profile.email ? email : undefined
@@ -50,8 +51,17 @@ export default function AccountInformation({ profile }: AccountInformationProps)
       const result = await response.json()
 
       if (response.ok) {
-        setMessage('Profile updated successfully!')
-        setTimeout(() => setMessage(''), 3000)
+        if (result.emailChangeRequested) {
+          // Email change requires confirmation - show message and log out
+          setMessage(result.message || 'Confirmation email sent! Check your email and click the confirmation link.')
+          setTimeout(async () => {
+            await supabase.auth.signOut()
+            window.location.href = '/login?message=Please check your email to confirm your new address, then sign in.'
+          }, 3000)
+        } else {
+          setMessage(result.message || 'Profile updated successfully!')
+          setTimeout(() => setMessage(''), 3000)
+        }
       } else {
         setMessage('Error: ' + (result.error || 'Failed to update profile'))
       }

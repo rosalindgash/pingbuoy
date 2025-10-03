@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase-server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { domain: string } }
+  { params }: { params: Promise<{ domain: string }> }
 ) {
   try {
     const supabase = await createServerSupabaseClient()
-    const { domain } = params
+    const { domain } = await params
 
     // Decode the domain parameter
     const decodedDomain = decodeURIComponent(domain)
@@ -73,6 +73,9 @@ export async function POST(
     // Perform uptime check
     const checkResult = await performUptimeCheck(site.url)
 
+    // Use service role client for database operations to bypass RLS
+    const serviceSupabase = createServiceRoleClient()
+
     // Update site in database
     const updateData: any = {
       status: checkResult.status,
@@ -84,7 +87,7 @@ export async function POST(
       updateData.ssl_last_checked = new Date().toISOString()
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await serviceSupabase
       .from('sites')
       .update(updateData)
       .eq('id', site.id)
@@ -94,7 +97,7 @@ export async function POST(
     }
 
     // Log the check
-    const { error: logError } = await supabase
+    const { error: logError } = await serviceSupabase
       .from('uptime_logs')
       .insert({
         site_id: site.id,

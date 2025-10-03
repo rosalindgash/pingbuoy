@@ -177,7 +177,7 @@ export default function ContactPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 bg-[#F97316] hover:bg-[#F97316]/90"
+                className="px-8 py-3 bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316]"
               >
                 {loading ? 'Sending...' : 'Send Message'}
               </Button>

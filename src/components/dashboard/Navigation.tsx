@@ -1,20 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { 
-  BarChart3, 
-  Settings, 
-  Menu, 
-  X, 
+import {
+  BarChart3,
+  Settings,
+  Menu,
+  X,
   LogOut,
   AlertTriangle,
-  Shield
+  Shield,
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { supabase } from '@/lib/supabase'
+import { createBrowserClient } from '@supabase/ssr'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -24,9 +25,30 @@ const navigation = [
   { name: 'Privacy', href: '/dashboard/privacy', icon: Shield },
 ]
 
+const founderOnlyNav = [
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+  { name: 'Incidents', href: '/admin/incidents', icon: AlertCircle },
+]
+
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isFounder, setIsFounder] = useState(false)
   const pathname = usePathname()
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  useEffect(() => {
+    const checkFounderStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      const founderEmail = process.env.NEXT_PUBLIC_FOUNDER_EMAIL
+      console.log('Founder check:', { userEmail: user?.email, founderEmail, matches: user?.email === founderEmail })
+      setIsFounder(user?.email === founderEmail)
+    }
+    checkFounderStatus()
+  }, [])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -62,6 +84,24 @@ export default function Navigation() {
                       isActive
                         ? 'border-[#1E3A8A] text-[#111827]'
                         : 'border-transparent text-[#111827]/60 hover:border-[#111827]/30 hover:text-[#111827]'
+                    } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                  >
+                    <Icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Link>
+                )
+              })}
+              {isFounder && founderOnlyNav.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`${
+                      isActive
+                        ? 'border-[#F97316] text-[#F97316]'
+                        : 'border-transparent text-[#F97316]/60 hover:border-[#F97316]/30 hover:text-[#F97316]'
                     } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                   >
                     <Icon className="w-4 h-4 mr-2" />
@@ -115,6 +155,25 @@ export default function Navigation() {
                     isActive
                       ? 'bg-[#1E3A8A]/10 border-[#1E3A8A] text-[#1E3A8A]'
                       : 'border-transparent text-[#111827]/60 hover:bg-[#F3F4F6] hover:border-[#111827]/30 hover:text-[#111827]'
+                  } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Icon className="w-4 h-4 mr-2 inline" />
+                  {item.name}
+                </Link>
+              )
+            })}
+            {isFounder && founderOnlyNav.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`${
+                    isActive
+                      ? 'bg-[#F97316]/10 border-[#F97316] text-[#F97316]'
+                      : 'border-transparent text-[#F97316]/60 hover:bg-[#F3F4F6] hover:border-[#F97316]/30 hover:text-[#F97316]'
                   } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
                   onClick={() => setMobileMenuOpen(false)}
                 >

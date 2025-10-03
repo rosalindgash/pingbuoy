@@ -96,7 +96,13 @@ export default function StatusPage() {
       // Create anon supabase client for public access
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
+        }
       )
 
       // Decode the domain parameter in case it's URL encoded
@@ -176,7 +182,13 @@ export default function StatusPage() {
       // Create anon supabase client for public access
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
+        }
       )
 
       const { data, error } = await supabase
@@ -523,7 +535,7 @@ export default function StatusPage() {
             </p>
           )}
           <p className="text-xs text-gray-400 mt-2">
-            Last updated: {formatLastChecked(site.last_checked)}
+            Last updated: {formatLastChecked(site.last_checked)} (CST)
           </p>
         </div>
       </div>

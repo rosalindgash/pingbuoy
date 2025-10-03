@@ -34,17 +34,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Prepare update object (only include fields that are provided)
-    const updateData: { full_name?: string; email?: string } = {}
-    if (full_name !== undefined) updateData.full_name = full_name
-    if (email !== undefined) updateData.email = email
+    const isEmailChange = email && email !== user.email
 
-    // Update user profile in database if there are fields to update
-    if (Object.keys(updateData).length > 0) {
+    // Update full name in database if provided
+    if (full_name !== undefined) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase as any)
         .from('users')
-        .update(updateData)
+        .update({ full_name })
         .eq('id', user.id)
 
       if (updateError) {
@@ -53,21 +50,26 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // If email is being updated, also update in Supabase Auth
-    if (email && email !== user.email) {
+    // If email is being updated, trigger confirmation flow
+    if (isEmailChange) {
       const { error: authUpdateError } = await supabase.auth.updateUser({
         email: email
       })
 
       if (authUpdateError) {
         console.error('Error updating auth email:', authUpdateError)
-        return NextResponse.json({
-          error: 'Profile updated but email change requires verification. Please check your email.'
-        }, { status: 200 })
+        return NextResponse.json({ error: 'Failed to update email' }, { status: 500 })
       }
+
+      // Return special response for email change requiring confirmation and logout
+      return NextResponse.json({
+        success: true,
+        emailChangeRequested: true,
+        message: 'Confirmation email sent! Please check your new email address and click the confirmation link. You will be logged out now.'
+      })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, message: 'Profile updated successfully' })
   } catch (error) {
     console.error('Profile update API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

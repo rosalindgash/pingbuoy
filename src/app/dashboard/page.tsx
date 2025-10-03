@@ -69,6 +69,14 @@ export default function DashboardPage() {
       baseNavigation.push({ name: 'Core Vitals', href: '/dashboard/core-vitals', icon: Activity })
     }
 
+    // Add Analytics and Incidents for founder email
+    const founderEmail = process.env.NEXT_PUBLIC_FOUNDER_EMAIL
+    console.log('Dashboard nav check:', { userEmail: user?.email, founderEmail, matches: user?.email === founderEmail })
+    if (user?.email === founderEmail) {
+      baseNavigation.push({ name: 'Analytics', href: '/admin/analytics', icon: TrendingUp })
+      baseNavigation.push({ name: 'Incidents', href: '/admin/incidents', icon: AlertTriangle })
+    }
+
     baseNavigation.push({ name: 'Settings', href: '/dashboard/settings', icon: Settings })
 
     return baseNavigation

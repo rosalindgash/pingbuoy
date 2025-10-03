@@ -64,7 +64,7 @@ export default function PricingPage() {
               </ul>
               <div className="mt-6">
                 <Link href="/signup">
-                  <Button variant="outline" className="w-full">
+                  <Button className="bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316] w-full">
                     Get Started for Free
                   </Button>
                 </Link>

@@ -45,7 +45,7 @@ export default function CheckoutButton({
     <Button
       onClick={handleCheckout}
       disabled={disabled || loading}
-      className="w-full"
+      className="bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316] w-full"
     >
       {loading ? 'Loading...' : `Upgrade to ${planName}`}
     </Button>

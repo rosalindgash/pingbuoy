@@ -17,6 +17,12 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+interface DailyUptime {
+  date: string
+  status: 'up' | 'down' | 'degraded' | 'no-data'
+  uptime: number | null
+}
+
 interface ServiceStatus {
   name: string
   description: string
@@ -24,6 +30,25 @@ interface ServiceStatus {
   uptime: number
   responseTime: number | null
   lastChecked?: string
+  dailyUptime?: DailyUptime[]
+}
+
+interface IncidentUpdate {
+  id: string
+  status: string
+  message: string
+  created_at: string
+}
+
+interface Incident {
+  id: string
+  title: string
+  description: string
+  status: 'investigating' | 'identified' | 'monitoring' | 'resolved'
+  impact: 'none' | 'minor' | 'major' | 'critical'
+  started_at: string
+  resolved_at: string | null
+  updates: IncidentUpdate[]
 }
 
 interface SystemMetrics {
@@ -36,6 +61,7 @@ interface SystemMetrics {
 interface StatusData {
   services: ServiceStatus[]
   metrics: SystemMetrics
+  incidents: Incident[]
   lastUpdated: string
   error?: string
 }
@@ -87,6 +113,7 @@ export default function StatusPage() {
           averageResponseTime: 0,
           systemUptime: 0
         },
+        incidents: [],
         lastUpdated: new Date().toISOString(),
         error: 'Unable to fetch current status'
       })
@@ -126,6 +153,33 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+function UptimeBar({ dailyUptime }: { dailyUptime: DailyUptime[] }) {
+  const getBarColor = (status: string) => {
+    switch (status) {
+      case 'up':
+        return 'bg-green-500'
+      case 'degraded':
+        return 'bg-yellow-500'
+      case 'down':
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-300'
+    }
+  }
+
+  return (
+    <div className="flex gap-[2px] h-8 items-end">
+      {dailyUptime.map((day, index) => (
+        <div
+          key={index}
+          className={`flex-1 rounded-sm ${getBarColor(day.status)} transition-all hover:opacity-80 cursor-pointer`}
+          title={`${day.date}: ${day.uptime !== null ? day.uptime + '%' : 'No data'}`}
+        />
+      ))}
+    </div>
+  )
+}
+
 function ServiceCard({ service }: { service: ServiceStatus }) {
   const formatTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString('en-US', {
@@ -144,7 +198,17 @@ function ServiceCard({ service }: { service: ServiceStatus }) {
         </div>
         <StatusBadge status={service.status} />
       </div>
-      
+
+      {service.dailyUptime && service.dailyUptime.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-gray-600">Last 30 days</p>
+            <p className="text-xs text-gray-600">Today</p>
+          </div>
+          <UptimeBar dailyUptime={service.dailyUptime} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
         <div>
           <p className="text-gray-600">Uptime (30d)</p>
@@ -161,6 +225,96 @@ function ServiceCard({ service }: { service: ServiceStatus }) {
             <p className="text-gray-600">Last Checked</p>
             <p className="text-lg font-semibold text-gray-900">{formatTime(service.lastChecked)}</p>
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function IncidentCard({ incident }: { incident: Incident }) {
+  const getStatusBadge = (status: string) => {
+    const config = {
+      investigating: { text: 'Investigating', className: 'bg-yellow-100 text-yellow-800' },
+      identified: { text: 'Identified', className: 'bg-orange-100 text-orange-800' },
+      monitoring: { text: 'Monitoring', className: 'bg-blue-100 text-blue-800' },
+      resolved: { text: 'Resolved', className: 'bg-green-100 text-green-800' }
+    }
+
+    const { text, className } = config[status as keyof typeof config] || config.investigating
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+        {text}
+      </span>
+    )
+  }
+
+  const getImpactBadge = (impact: string) => {
+    const config = {
+      none: { text: 'No Impact', className: 'bg-gray-100 text-gray-800' },
+      minor: { text: 'Minor', className: 'bg-blue-100 text-blue-800' },
+      major: { text: 'Major', className: 'bg-orange-100 text-orange-800' },
+      critical: { text: 'Critical', className: 'bg-red-100 text-red-800' }
+    }
+
+    const { text, className } = config[impact as keyof typeof config] || config.none
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+        {text}
+      </span>
+    )
+  }
+
+  const formatDateTime = (isoString: string) => {
+    return new Date(isoString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{incident.title}</h3>
+          <div className="flex gap-2 mb-3">
+            {getStatusBadge(incident.status)}
+            {getImpactBadge(incident.impact)}
+          </div>
+          <p className="text-sm text-gray-600">{incident.description}</p>
+        </div>
+      </div>
+
+      {incident.updates && incident.updates.length > 0 && (
+        <div className="mt-4 border-t pt-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Updates</h4>
+          <div className="space-y-3">
+            {incident.updates.map((update) => (
+              <div key={update.id} className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-2"></div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    {getStatusBadge(update.status)}
+                    <span className="text-xs text-gray-500">{formatDateTime(update.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-gray-600">{update.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-gray-500">
+        <span>Started: {formatDateTime(incident.started_at)}</span>
+        {incident.resolved_at && (
+          <span>Resolved: {formatDateTime(incident.resolved_at)}</span>
         )}
       </div>
     </div>
@@ -254,53 +408,13 @@ function ServiceCard({ service }: { service: ServiceStatus }) {
           </p>
           {statusData?.lastUpdated && (
             <p className="text-sm text-gray-500 mt-2">
-              Last updated: {new Date(statusData.lastUpdated).toLocaleString()}
+              Last updated: {new Date(statusData.lastUpdated).toLocaleString()} (CST)
             </p>
           )}
           {statusData?.error && (
             <p className="text-sm text-red-600 mt-2">{statusData.error}</p>
           )}
         </div>
-
-        {/* System Metrics */}
-        {statusData?.metrics && statusData.metrics.totalSitesMonitored > 0 && (
-          <section className="mb-12">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Performance Metrics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <Globe className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{statusData.metrics.totalSitesMonitored.toLocaleString()}</div>
-                <p className="text-gray-600">Sites Monitored</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <TrendingUp className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{statusData.metrics.checksPerformed24h.toLocaleString()}</div>
-                <p className="text-gray-600">Checks (24h)</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <Zap className="h-8 w-8 text-purple-600" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{statusData.metrics.averageResponseTime}ms</div>
-                <p className="text-gray-600">Avg Response Time</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <Shield className="h-8 w-8 text-indigo-600" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{statusData.metrics.systemUptime}%</div>
-                <p className="text-gray-600">System Uptime</p>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Services Status */}
         {statusData?.services && statusData.services.length > 0 && (
@@ -314,8 +428,27 @@ function ServiceCard({ service }: { service: ServiceStatus }) {
           </section>
         )}
 
+        {/* Past Incidents */}
+        {statusData?.incidents && statusData.incidents.length > 0 && (
+          <section className="mb-12">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Past Incidents</h2>
+            <div className="space-y-4">
+              {statusData.incidents.map((incident) => (
+                <IncidentCard key={incident.id} incident={incident} />
+              ))}
+            </div>
+          </section>
+        )}
 
-
+        {statusData?.incidents && statusData.incidents.length === 0 && (
+          <section className="mb-12">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Past Incidents</h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+              <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <p className="text-gray-600">No incidents reported in the last 30 days</p>
+            </div>
+          </section>
+        )}
 
         {/* Footer Links */}
         <div className="text-center pt-8 border-t border-gray-200">
