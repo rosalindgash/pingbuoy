@@ -51,8 +51,12 @@ export default function ReportsPage() {
   const [generating, setGenerating] = useState(false)
   const [reportData, setReportData] = useState<SiteReport[]>([])
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dateRangeDropdownOpen, setDateRangeDropdownOpen] = useState(false)
+  const [viewModeDropdownOpen, setViewModeDropdownOpen] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const dateRangeRef = useRef<HTMLDivElement>(null)
+  const viewModeRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     checkAuth()
@@ -62,6 +66,12 @@ export default function ReportsPage() {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false)
+      }
+      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target as Node)) {
+        setDateRangeDropdownOpen(false)
+      }
+      if (viewModeRef.current && !viewModeRef.current.contains(event.target as Node)) {
+        setViewModeDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -334,21 +344,39 @@ export default function ReportsPage() {
 
           {/* Date Range & View Mode */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
+            <div ref={dateRangeRef}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date Range
               </label>
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(Number(e.target.value) as 7 | 30 | 90)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {availableDateRanges.map(days => (
-                  <option key={days} value={days}>
-                    {days} days
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setDateRangeDropdownOpen(!dateRangeDropdownOpen)}
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <span className="text-sm text-gray-700">{dateRange} days</span>
+                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${dateRangeDropdownOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {dateRangeDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                    {availableDateRanges.map(days => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => {
+                          setDateRange(days)
+                          setDateRangeDropdownOpen(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+                          dateRange === days ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        } first:rounded-t-lg last:rounded-b-lg`}
+                      >
+                        {days} days
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {profile?.plan === 'free' && (
                 <p className="text-xs text-gray-500 mt-1">
                   Upgrade to Pro for 30 and 90-day reports
@@ -356,19 +384,39 @@ export default function ReportsPage() {
               )}
             </div>
 
-            <div>
+            <div ref={viewModeRef}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 View Mode
               </label>
-              <select
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'daily' | 'weekly' | 'monthly')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setViewModeDropdownOpen(!viewModeDropdownOpen)}
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <span className="text-sm text-gray-700 capitalize">{viewMode}</span>
+                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${viewModeDropdownOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {viewModeDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                    {(['daily', 'weekly', 'monthly'] as const).map(mode => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => {
+                          setViewMode(mode)
+                          setViewModeDropdownOpen(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 capitalize ${
+                          viewMode === mode ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        } first:rounded-t-lg last:rounded-b-lg`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
