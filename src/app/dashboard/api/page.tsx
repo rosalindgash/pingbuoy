@@ -182,11 +182,11 @@ export default function APIDocumentationPage() {
                 <a href="#monitoring" className="block text-sm text-gray-600 hover:text-gray-800">
                   Monitoring
                 </a>
-                <a href="#alerts" className="block text-sm text-gray-600 hover:text-gray-800">
-                  Alerts
-                </a>
                 <a href="#integrations" className="block text-sm text-gray-600 hover:text-gray-800">
                   Integrations
+                </a>
+                <a href="#api-keys" className="block text-sm text-gray-600 hover:text-gray-800">
+                  API Keys
                 </a>
                 <a href="#webhooks" className="block text-sm text-gray-600 hover:text-gray-800">
                   Webhooks
@@ -233,7 +233,7 @@ export default function APIDocumentationPage() {
                       <div>
                         <h4 className="text-sm font-medium text-blue-800">Base URL</h4>
                         <code className="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                          https://api.pingbuoy.com/v1
+                          https://pingbuoy.com/api
                         </code>
                       </div>
                     </div>
@@ -241,9 +241,9 @@ export default function APIDocumentationPage() {
 
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Example</h3>
                   <CodeExample
-                    title="Get your websites"
+                    title="Get your monitored sites"
                     code={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://api.pingbuoy.com/v1/websites`}
+  https://pingbuoy.com/api/sites`}
                   />
                 </div>
               </div>
@@ -335,77 +335,65 @@ X-RateLimit-Reset: 1641123456`}
 
                 <APIEndpoint
                   method="GET"
-                  path="/v1/websites"
-                  description="Retrieve all monitored websites"
+                  path="/api/sites"
+                  description="Retrieve all monitored sites"
                   parameters={[
-                    { name: 'page', type: 'integer', required: false, description: 'Page number (default: 1)' },
-                    { name: 'limit', type: 'integer', required: false, description: 'Items per page (max: 100)' },
-                    { name: 'status', type: 'string', required: false, description: 'Filter by status (up, down, paused)' }
+                    { name: 'status', type: 'string', required: false, description: 'Filter by status (up, down, unknown)' }
                   ]}
-                  response={`{
-  "websites": [
-    {
-      "id": "uuid",
-      "name": "My Website",
-      "url": "https://example.com",
-      "status": "up",
-      "uptime_percentage": 99.9,
-      "last_check": "2025-01-12T10:30:00Z",
-      "response_time": 245
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 5,
-    "pages": 1
+                  response={`[
+  {
+    "id": "uuid",
+    "name": "My Website",
+    "url": "https://example.com",
+    "status": "up",
+    "last_checked": "2025-01-15T10:30:00Z",
+    "created_at": "2025-01-01T00:00:00Z",
+    "user_id": "uuid",
+    "is_active": true
   }
-}`}
+]`}
                   example={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://api.pingbuoy.com/v1/websites"`}
+  "https://pingbuoy.com/api/sites"`}
                 />
 
                 <APIEndpoint
                   method="POST"
-                  path="/v1/websites"
-                  description="Add a new website to monitor"
+                  path="/api/sites"
+                  description="Add a new site to monitor"
                   parameters={[
-                    { name: 'name', type: 'string', required: true, description: 'Website display name' },
-                    { name: 'url', type: 'string', required: true, description: 'Website URL to monitor' },
-                    { name: 'check_interval', type: 'integer', required: false, description: 'Check interval in minutes (1-60)' },
-                    { name: 'timeout', type: 'integer', required: false, description: 'Request timeout in seconds (5-30)' }
+                    { name: 'name', type: 'string', required: true, description: 'Site display name (max 100 chars)' },
+                    { name: 'url', type: 'string', required: true, description: 'Site URL to monitor (must be valid URL)' }
                   ]}
                   response={`{
-  "website": {
-    "id": "uuid",
-    "name": "My Website",
-    "url": "https://example.com",
-    "status": "pending",
-    "check_interval": 5,
-    "timeout": 15,
-    "created_at": "2025-01-12T10:30:00Z"
-  }
+  "id": "uuid",
+  "name": "My Website",
+  "url": "https://example.com",
+  "status": "unknown",
+  "user_id": "uuid",
+  "is_active": true,
+  "created_at": "2025-01-15T10:30:00Z",
+  "last_checked": null
 }`}
                   example={`curl -X POST \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "My Website", "url": "https://example.com"}' \\
-  https://api.pingbuoy.com/v1/websites`}
+  https://pingbuoy.com/api/sites`}
                 />
 
                 <APIEndpoint
                   method="DELETE"
-                  path="/v1/websites/{id}"
-                  description="Remove a website from monitoring"
+                  path="/api/sites?id={id}"
+                  description="Remove a site from monitoring"
                   parameters={[
-                    { name: 'id', type: 'string', required: true, description: 'Website UUID' }
+                    { name: 'id', type: 'string', required: true, description: 'Site UUID (query parameter)' }
                   ]}
                   response={`{
-  "message": "Website removed successfully"
+  "success": true
 }`}
                   example={`curl -X DELETE \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://api.pingbuoy.com/v1/websites/uuid`}
+  "https://pingbuoy.com/api/sites?id=SITE_UUID"`}
                 />
               </div>
             </section>
@@ -419,60 +407,150 @@ X-RateLimit-Reset: 1641123456`}
                 </div>
 
                 <APIEndpoint
-                  method="GET"
-                  path="/v1/websites/{id}/uptime"
-                  description="Get uptime statistics for a website"
+                  method="POST"
+                  path="/api/monitoring/trigger"
+                  description="Manually trigger a monitoring check for a site"
                   parameters={[
-                    { name: 'id', type: 'string', required: true, description: 'Website UUID' },
-                    { name: 'period', type: 'string', required: false, description: '24h, 7d, 30d, 90d (default: 24h)' }
+                    { name: 'action', type: 'string', required: true, description: 'Check type: "uptime", "pagespeed", or "deadlinks"' },
+                    { name: 'siteId', type: 'string', required: true, description: 'Site UUID to check' }
                   ]}
                   response={`{
-  "website_id": "uuid",
-  "period": "24h",
-  "uptime_percentage": 99.9,
-  "total_checks": 288,
-  "failed_checks": 1,
-  "average_response_time": 245,
-  "incidents": [
-    {
-      "id": "uuid",
-      "start_time": "2025-01-12T10:15:00Z",
-      "end_time": "2025-01-12T10:20:00Z",
-      "duration": 300,
-      "reason": "HTTP 503"
-    }
-  ]
+  "success": true,
+  "site": {
+    "id": "uuid",
+    "name": "My Website",
+    "url": "https://example.com"
+  },
+  "result": {
+    "type": "uptime",
+    "status": "up",
+    "responseTime": 234,
+    "statusCode": 200,
+    "sslValid": true
+  }
 }`}
-                  example={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://api.pingbuoy.com/v1/websites/uuid/uptime?period=7d"`}
+                  example={`curl -X POST \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"action": "uptime", "siteId": "SITE_UUID"}' \\
+  https://pingbuoy.com/api/monitoring/trigger`}
                 />
 
                 <APIEndpoint
                   method="GET"
-                  path="/v1/websites/{id}/incidents"
-                  description="Get incident history for a website"
+                  path="/api/integrations"
+                  description="Get all your integrations (Slack, Discord, Webhooks)"
+                  parameters={[]}
+                  response={`[
+  {
+    "id": "uuid",
+    "name": "Slack Alerts",
+    "type": "slack",
+    "status": "active",
+    "config": {
+      "events": ["downtime", "recovery"]
+    },
+    "lastTest": "2025-01-15T10:30:00Z",
+    "lastTestStatus": "success",
+    "totalNotifications": 42
+  }
+]`}
+                  example={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://pingbuoy.com/api/integrations"`}
+                />
+
+                <APIEndpoint
+                  method="POST"
+                  path="/api/integrations"
+                  description="Create a new integration"
                   parameters={[
-                    { name: 'id', type: 'string', required: true, description: 'Website UUID' },
-                    { name: 'limit', type: 'integer', required: false, description: 'Number of incidents to return (max: 100)' },
-                    { name: 'status', type: 'string', required: false, description: 'Filter by status (open, resolved)' }
+                    { name: 'name', type: 'string', required: true, description: 'Integration name' },
+                    { name: 'integration_type', type: 'string', required: true, description: 'Type: slack, discord, or webhook' },
+                    { name: 'webhook_url', type: 'string', required: true, description: 'Webhook URL for the integration' },
+                    { name: 'events', type: 'array', required: false, description: 'Events to monitor (default: downtime, recovery)' }
                   ]}
                   response={`{
-  "incidents": [
-    {
-      "id": "uuid",
-      "website_id": "uuid",
-      "status": "resolved",
-      "start_time": "2025-01-12T10:15:00Z",
-      "end_time": "2025-01-12T10:20:00Z",
-      "duration": 300,
-      "error_type": "HTTP_ERROR",
-      "status_code": 503,
-      "error_message": "Service Unavailable"
+  "success": true,
+  "integration": {
+    "id": "uuid",
+    "name": "My Slack Integration",
+    "type": "slack",
+    "status": "active",
+    "config": {
+      "events": ["downtime", "recovery", "ssl_expiry"]
     }
-  ]
+  }
 }`}
+                  example={`curl -X POST \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Slack Alerts",
+    "integration_type": "slack",
+    "webhook_url": "https://hooks.slack.com/services/...",
+    "events": ["downtime", "recovery"]
+  }' \\
+  https://pingbuoy.com/api/integrations`}
+                />
+              </div>
+            </section>
+
+            {/* API Keys */}
+            <section id="api-keys">
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3">
+                  <Key className="h-6 w-6 text-blue-600" />
+                  <h2 className="text-2xl font-bold text-gray-900">API Keys</h2>
+                </div>
+
+                <APIEndpoint
+                  method="GET"
+                  path="/api/keys"
+                  description="Get all your API keys"
+                  parameters={[]}
+                  response={`[
+  {
+    "id": "uuid",
+    "name": "Production API Key",
+    "prefix": "pb_12345",
+    "permissions": ["read", "write"],
+    "status": "active",
+    "totalRequests": 1234,
+    "lastUsed": "2025-01-15T10:30:00Z",
+    "createdAt": "2025-01-01T00:00:00Z"
+  }
+]`}
                   example={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://api.pingbuoy.com/v1/websites/uuid/incidents"`}
+  "https://pingbuoy.com/api/keys"`}
+                />
+
+                <APIEndpoint
+                  method="POST"
+                  path="/api/keys"
+                  description="Generate a new API key"
+                  parameters={[
+                    { name: 'name', type: 'string', required: true, description: 'API key name' },
+                    { name: 'permissions', type: 'array', required: true, description: 'Array of permissions: ["read"] or ["read", "write"]' }
+                  ]}
+                  response={`{
+  "success": true,
+  "key": "pb_live_1234567890abcdef...",
+  "apiKey": {
+    "id": "uuid",
+    "name": "My API Key",
+    "prefix": "pb_12345",
+    "permissions": ["read", "write"],
+    "status": "active"
+  }
+}`}
+                  example={`curl -X POST \\
+  -H "Authorization: Bearer YOUR_EXISTING_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Production Key",
+    "permissions": ["read", "write"]
+  }' \\
+  https://pingbuoy.com/api/keys`}
                 />
               </div>
             </section>

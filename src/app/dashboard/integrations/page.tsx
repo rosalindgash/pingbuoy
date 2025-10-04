@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { Suspense } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import {
   Puzzle,
   Plus,
@@ -18,17 +18,38 @@ import {
   Clock,
   ExternalLink,
   Zap,
-  Shield,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ReliableButton } from '@/components/ui/reliable-button'
 import Link from 'next/link'
+import { IntegrationModal } from '@/components/integrations/IntegrationModal'
+import { ApiKeyModal } from '@/components/integrations/ApiKeyModal'
 
-// Mock data - in production, this would come from API
-const mockIntegrations = []
+// Integration type definition
+interface Integration {
+  id: string
+  name: string
+  type: string
+  status: string
+  config: {
+    events: string[]
+  }
+  lastTest: string | null
+  lastTestStatus: string | null
+  totalNotifications: number
+}
 
-const mockApiKeys = []
+interface ApiKey {
+  id: string
+  name: string
+  prefix: string
+  permissions: string[]
+  status: string
+  totalRequests: number
+  lastUsed: string | null
+  createdAt: string
+}
 
 // Loading components
 function IntegrationsLoading() {
@@ -56,7 +77,15 @@ function IntegrationsLoading() {
 }
 
 // Integration card component
-function IntegrationCard({ integration }: { integration: typeof mockIntegrations[0] }) {
+function IntegrationCard({
+  integration,
+  onDelete
+}: {
+  integration: Integration
+  onDelete: (id: string) => Promise<void>
+}) {
+  const [deleting, setDeleting] = useState(false)
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'slack': return <Slack className="h-6 w-6 text-green-600" />
@@ -86,12 +115,23 @@ function IntegrationCard({ integration }: { integration: typeof mockIntegrations
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never'
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      month: 'short', 
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete "${integration.name}"?`)) return
+
+    setDeleting(true)
+    try {
+      await onDelete(integration.id)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -133,12 +173,16 @@ function IntegrationCard({ integration }: { integration: typeof mockIntegrations
         </div>
       </div>
 
-      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between">
-        <Button size="sm" variant="outline">
-          Test
-        </Button>
-        <Button size="sm" variant="outline">
-          Configure
+      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-red-600 hover:text-red-700"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {deleting ? 'Deleting...' : 'Delete'}
         </Button>
       </div>
     </div>
@@ -146,15 +190,34 @@ function IntegrationCard({ integration }: { integration: typeof mockIntegrations
 }
 
 // API Key card component
-function ApiKeyCard({ apiKey }: { apiKey: typeof mockApiKeys[0] }) {
+function ApiKeyCard({
+  apiKey,
+  onRevoke
+}: {
+  apiKey: ApiKey
+  onRevoke: (id: string) => Promise<void>
+}) {
+  const [revoking, setRevoking] = useState(false)
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never'
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      month: 'short', 
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const handleRevoke = async () => {
+    if (!confirm(`Are you sure you want to revoke "${apiKey.name}"? This action cannot be undone.`)) return
+
+    setRevoking(true)
+    try {
+      await onRevoke(apiKey.id)
+    } finally {
+      setRevoking(false)
+    }
   }
 
   return (
@@ -170,7 +233,11 @@ function ApiKeyCard({ apiKey }: { apiKey: typeof mockApiKeys[0] }) {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <CheckCircle className="h-4 w-4 text-green-500" />
+          {apiKey.status === 'active' ? (
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          ) : (
+            <XCircle className="h-4 w-4 text-gray-400" />
+          )}
           <span className="text-sm font-medium text-gray-700 capitalize">{apiKey.status}</span>
         </div>
       </div>
@@ -180,7 +247,7 @@ function ApiKeyCard({ apiKey }: { apiKey: typeof mockApiKeys[0] }) {
           <span className="text-gray-600">Permissions:</span>
           <div className="flex space-x-1">
             {apiKey.permissions.map((permission) => (
-              <span 
+              <span
                 key={permission}
                 className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
               >
@@ -199,21 +266,146 @@ function ApiKeyCard({ apiKey }: { apiKey: typeof mockApiKeys[0] }) {
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between">
-        <Button size="sm" variant="outline">
-          Regenerate
-        </Button>
-        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-          Revoke
-        </Button>
-      </div>
+      {apiKey.status === 'active' && (
+        <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-red-600 hover:text-red-700"
+            onClick={handleRevoke}
+            disabled={revoking}
+          >
+            {revoking ? 'Revoking...' : 'Revoke'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
 
 export default function IntegrationsPage() {
+  const [integrations, setIntegrations] = useState<Integration[]>([])
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false)
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false)
+  const [selectedIntegrationType, setSelectedIntegrationType] = useState<'slack' | 'webhook' | 'discord' | null>(null)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      const [integrationsRes, apiKeysRes] = await Promise.all([
+        fetch('/api/integrations'),
+        fetch('/api/keys')
+      ])
+
+      if (integrationsRes.ok) {
+        const data = await integrationsRes.json()
+        setIntegrations(data)
+      }
+
+      if (apiKeysRes.ok) {
+        const data = await apiKeysRes.json()
+        setApiKeys(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddIntegration = (type: 'slack' | 'webhook' | 'discord') => {
+    setSelectedIntegrationType(type)
+    setShowIntegrationModal(true)
+  }
+
+  const handleSaveIntegration = async (data: any) => {
+    const response = await fetch('/api/integrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create integration')
+    }
+
+    const result = await response.json()
+    setIntegrations(prev => [result.integration, ...prev])
+  }
+
+  const handleDeleteIntegration = async (id: string) => {
+    const response = await fetch(`/api/integrations?id=${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to delete integration')
+    }
+
+    setIntegrations(prev => prev.filter(i => i.id !== id))
+  }
+
+  const handleGenerateApiKey = async (data: any) => {
+    const response = await fetch('/api/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to generate API key')
+    }
+
+    const result = await response.json()
+    setApiKeys(prev => [result.apiKey, ...prev])
+    return { key: result.key }
+  }
+
+  const handleRevokeApiKey = async (id: string) => {
+    const response = await fetch(`/api/keys?id=${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to revoke API key')
+    }
+
+    setApiKeys(prev => prev.map(k => k.id === id ? { ...k, status: 'revoked' } : k))
+  }
+
+  const activeIntegrations = integrations.filter(i => i.status === 'active')
+  const totalNotifications = integrations.reduce((sum, i) => sum + i.totalNotifications, 0)
+  const activeApiKeys = apiKeys.filter(k => k.status === 'active')
+  const totalApiRequests = apiKeys.reduce((sum, k) => sum + k.totalRequests, 0)
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Modals */}
+      <IntegrationModal
+        isOpen={showIntegrationModal}
+        onClose={() => {
+          setShowIntegrationModal(false)
+          setSelectedIntegrationType(null)
+        }}
+        integrationType={selectedIntegrationType}
+        onSave={handleSaveIntegration}
+      />
+
+      <ApiKeyModal
+        isOpen={showApiKeyModal}
+        onClose={() => setShowApiKeyModal(false)}
+        onGenerate={handleGenerateApiKey}
+      />
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -240,10 +432,6 @@ export default function IntegrationsPage() {
                   <span>API Docs</span>
                 </Button>
               </Link>
-              <Button className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Add Integration</span>
-              </Button>
             </div>
           </div>
         </div>
@@ -259,7 +447,7 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Active Integrations</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-2xl font-bold text-gray-900">{activeIntegrations.length}</p>
               </div>
             </div>
           </div>
@@ -271,7 +459,7 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Notifications Sent</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-2xl font-bold text-gray-900">{totalNotifications}</p>
               </div>
             </div>
           </div>
@@ -283,7 +471,7 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">API Keys</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-2xl font-bold text-gray-900">{activeApiKeys.length}</p>
               </div>
             </div>
           </div>
@@ -295,7 +483,7 @@ export default function IntegrationsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">API Requests</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-2xl font-bold text-gray-900">{totalApiRequests}</p>
               </div>
             </div>
           </div>
@@ -305,16 +493,11 @@ export default function IntegrationsPage() {
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">Available Integrations</h2>
-            <Link href="/dashboard/integrations/browse">
-              <Button variant="outline" size="sm">
-                Browse All
-              </Button>
-            </Link>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Slack */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Slack className="h-6 w-6 text-green-600" />
@@ -329,13 +512,18 @@ export default function IntegrationsPage() {
               <p className="text-gray-600 text-sm mb-4">
                 Send monitoring alerts directly to your Slack channels with rich formatting and customizable notifications.
               </p>
-              <Button size="sm" variant="outline" className="w-full">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => handleAddIntegration('slack')}
+              >
                 Set Up Slack
               </Button>
             </div>
 
             {/* Webhooks */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Webhook className="h-6 w-6 text-purple-600" />
@@ -350,13 +538,18 @@ export default function IntegrationsPage() {
               <p className="text-gray-600 text-sm mb-4">
                 Send HTTP requests to any endpoint when incidents occur. Perfect for custom integrations and automation.
               </p>
-              <Button size="sm" variant="outline" className="w-full">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => handleAddIntegration('webhook')}
+              >
                 Configure Webhook
               </Button>
             </div>
 
             {/* Discord */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <MessageSquare className="h-6 w-6 text-indigo-600" />
@@ -371,7 +564,12 @@ export default function IntegrationsPage() {
               <p className="text-gray-600 text-sm mb-4">
                 Get notified in your Discord server when your websites experience downtime or recover from incidents.
               </p>
-              <Button size="sm" variant="outline" className="w-full">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => handleAddIntegration('discord')}
+              >
                 Connect Discord
               </Button>
             </div>
@@ -384,29 +582,29 @@ export default function IntegrationsPage() {
             <h2 className="text-xl font-semibold text-gray-900">Your Integrations</h2>
           </div>
 
-          <Suspense fallback={<IntegrationsLoading />}>
-            {mockIntegrations.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockIntegrations.map((integration) => (
-                  <IntegrationCard key={integration.id} integration={integration} />
-                ))}
+          {loading ? (
+            <IntegrationsLoading />
+          ) : integrations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {integrations.map((integration) => (
+                <IntegrationCard
+                  key={integration.id}
+                  integration={integration}
+                  onDelete={handleDeleteIntegration}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <div className="p-3 bg-gray-100 rounded-lg w-fit mx-auto mb-4">
+                <Puzzle className="h-8 w-8 text-gray-400" />
               </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                <div className="p-3 bg-gray-100 rounded-lg w-fit mx-auto mb-4">
-                  <Puzzle className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No integrations yet</h3>
-                <p className="text-gray-600 mb-6">
-                  Connect your favorite tools to receive notifications when your sites go down or recover.
-                </p>
-                <Button className="flex items-center space-x-2 mx-auto">
-                  <Plus className="h-4 w-4" />
-                  <span>Add Your First Integration</span>
-                </Button>
-              </div>
-            )}
-          </Suspense>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No integrations yet</h3>
+              <p className="text-gray-600 mb-6">
+                Connect your favorite tools to receive notifications when your sites go down or recover.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* API Keys Section */}
@@ -418,16 +616,25 @@ export default function IntegrationsPage() {
                 Manage API keys for programmatic access to PingBuoy
               </p>
             </div>
-            <Button className="flex items-center space-x-2">
+            <Button
+              className="flex items-center space-x-2"
+              onClick={() => setShowApiKeyModal(true)}
+            >
               <Plus className="h-4 w-4" />
               <span>Generate API Key</span>
             </Button>
           </div>
 
-          {mockApiKeys.length > 0 ? (
+          {loading ? (
+            <IntegrationsLoading />
+          ) : apiKeys.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockApiKeys.map((apiKey) => (
-                <ApiKeyCard key={apiKey.id} apiKey={apiKey} />
+              {apiKeys.map((apiKey) => (
+                <ApiKeyCard
+                  key={apiKey.id}
+                  apiKey={apiKey}
+                  onRevoke={handleRevokeApiKey}
+                />
               ))}
             </div>
           ) : (
@@ -439,7 +646,10 @@ export default function IntegrationsPage() {
               <p className="text-gray-600 mb-6">
                 Generate API keys to access PingBuoy data programmatically from your applications.
               </p>
-              <Button className="flex items-center space-x-2 mx-auto">
+              <Button
+                className="flex items-center space-x-2 mx-auto"
+                onClick={() => setShowApiKeyModal(true)}
+              >
                 <Plus className="h-4 w-4" />
                 <span>Generate Your First API Key</span>
               </Button>
