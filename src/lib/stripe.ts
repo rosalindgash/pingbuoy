@@ -42,7 +42,7 @@ export const PLANS = {
   },
   PRO: {
     name: 'Pro',
-    price: 29,
+    price: 59,
     sites: 15,
     uptimeChecks: '3 min intervals',
     features: [
@@ -50,7 +50,7 @@ export const PLANS = {
       'Uptime monitoring (3-min checks)',
       'SSL certificate monitoring',
       'API monitoring (up to 3 endpoints)',
-      'Email + Slack + Discord alerts',
+      'Email + Slack + Discord + Webhooks alerts',
       '60 days history',
       'Priority email support (within 4 hours)'
     ]

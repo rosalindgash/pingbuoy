@@ -1,5 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+// Zod schemas for validation
+const createIncidentSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().min(1).max(5000),
+  status: z.enum(['investigating', 'identified', 'monitoring', 'resolved']),
+  impact: z.enum(['none', 'minor', 'major', 'critical']),
+  is_public: z.boolean().optional(),
+  started_at: z.string().datetime().optional()
+})
+
+const updateIncidentSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().min(1).max(5000).optional(),
+  status: z.enum(['investigating', 'identified', 'monitoring', 'resolved']).optional(),
+  impact: z.enum(['none', 'minor', 'major', 'critical']).optional(),
+  is_public: z.boolean().optional(),
+  resolved_at: z.string().datetime().nullable().optional()
+})
+
+// Helper function to verify admin access
+async function verifyAdmin(user: any, supabase: any) {
+  const { data: userProfile, error } = await supabase
+    .from('users')
+    .select('email, plan')
+    .eq('id', user.id)
+    .single()
+
+  if (error || !userProfile) {
+    return false
+  }
+
+  // Check if user is founder (admin)
+  const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL
+  return userProfile.plan === 'founder' &&
+         FOUNDER_EMAIL &&
+         userProfile.email === FOUNDER_EMAIL
+}
 
 // GET - Fetch all incidents (including drafts)
 export async function GET(request: NextRequest) {
@@ -10,6 +50,15 @@ export async function GET(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify admin access
+    const isAdmin = await verifyAdmin(user, supabase)
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      )
     }
 
     const { data: incidents, error } = await supabase
@@ -68,15 +117,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { title, description, status, impact, is_public, started_at } = body
-
-    if (!title || !description || !status || !impact) {
+    // Verify admin access
+    const isAdmin = await verifyAdmin(user, supabase)
+    if (!isAdmin) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Validate input with Zod
+    const result = createIncidentSchema.safeParse(body)
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: result.error.issues },
         { status: 400 }
       )
     }
+
+    const { title, description, status, impact, is_public, started_at } = result.data
 
     const { data: incident, error } = await supabase
       .from('status_incidents')
@@ -115,12 +176,27 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { id, ...updates } = body
-
-    if (!id) {
-      return NextResponse.json({ error: 'Incident ID required' }, { status: 400 })
+    // Verify admin access
+    const isAdmin = await verifyAdmin(user, supabase)
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      )
     }
+
+    const body = await request.json()
+
+    // Validate input with Zod
+    const result = updateIncidentSchema.safeParse(body)
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: result.error.issues },
+        { status: 400 }
+      )
+    }
+
+    const { id, ...updates } = result.data
 
     const { data: incident, error } = await supabase
       .from('status_incidents')

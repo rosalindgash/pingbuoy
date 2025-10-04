@@ -22,10 +22,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is founder
-    const founderEmail = process.env.NEXT_PUBLIC_FOUNDER_EMAIL
-    if (user.email !== founderEmail) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Check if user is admin (founder) - SERVER-SIDE ONLY
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('email, plan')
+      .eq('id', user.id)
+      .single()
+
+    const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL
+    const isAdmin = userProfile?.plan === 'founder' &&
+                    FOUNDER_EMAIL &&
+                    userProfile.email === FOUNDER_EMAIL
+
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
     // Log analytics access

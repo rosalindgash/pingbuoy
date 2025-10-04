@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   DollarSign,
   Users,
@@ -14,7 +15,8 @@ import {
   Globe,
   BarChart3,
   Download,
-  Calendar
+  Calendar,
+  ArrowLeft
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -97,30 +99,46 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState('30') // days
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
   useEffect(() => {
     checkAccess()
   }, [])
 
   useEffect(() => {
-    if (autoRefresh) {
+    if (autoRefresh && isAdmin) {
       const interval = setInterval(() => {
         fetchAnalytics()
       }, 60000) // Refresh every minute
       return () => clearInterval(interval)
     }
-  }, [autoRefresh, dateRange])
+  }, [autoRefresh, dateRange, isAdmin])
 
   const checkAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    const founderEmail = process.env.NEXT_PUBLIC_FOUNDER_EMAIL
+    try {
+      // Check admin status via secure server-side API
+      const response = await fetch('/api/user/is-admin', {
+        credentials: 'include'
+      })
 
-    if (!user || user.email !== founderEmail) {
+      if (!response.ok) {
+        router.push('/dashboard')
+        return
+      }
+
+      const { isAdmin: adminStatus } = await response.json()
+
+      if (!adminStatus) {
+        router.push('/dashboard')
+        return
+      }
+
+      setIsAdmin(true)
+      fetchAnalytics()
+    } catch (err) {
+      console.error('Access check failed:', err)
       router.push('/dashboard')
-      return
     }
-
-    fetchAnalytics()
   }
 
   const fetchAnalytics = async () => {
@@ -245,6 +263,12 @@ export default function AnalyticsPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Link href="/dashboard">
+                <Button variant="outline" className="flex items-center space-x-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back to Dashboard</span>
+                </Button>
+              </Link>
               {/* Date Range Selector */}
               <select
                 value={dateRange}

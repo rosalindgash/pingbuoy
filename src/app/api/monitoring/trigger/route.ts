@@ -1,19 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { z } from 'zod'
+import { checkRateLimit } from '@/lib/upstash-rate-limit'
+
+// Zod schema for monitoring trigger
+const monitoringTriggerSchema = z.object({
+  action: z.enum(['uptime', 'pagespeed', 'deadlinks']),
+  siteId: z.string().uuid()
+})
 
 export async function POST(request: NextRequest) {
   try {
-    const { action, siteId } = await request.json()
+    const body = await request.json()
 
-    if (!action || !siteId) {
-      return NextResponse.json({ error: 'Action and site ID are required' }, { status: 400 })
+    // Validate input with Zod
+    const validationResult = monitoringTriggerSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validationResult.error.issues },
+        { status: 400 }
+      )
     }
+
+    const { action, siteId } = validationResult.data
 
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting: 10 manual monitoring triggers per hour
+    const rateLimitResponse = await checkRateLimit(user.id, 'monitoringTrigger', 'manual monitoring')
+    if (rateLimitResponse) {
+      return rateLimitResponse
     }
 
     // Verify user owns this site

@@ -5,6 +5,7 @@ import { Database } from '@/lib/supabase'
 import { siteSchema, validateAndSanitize } from '@/lib/validation'
 import { validateCSRF } from '@/lib/csrf-protection'
 import { randomBytes } from 'crypto'
+import { checkRateLimit } from '@/lib/upstash-rate-limit'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 
@@ -27,16 +28,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const rawData = await request.json()
-    
+
     // Validate and sanitize input
     const { name, url } = validateAndSanitize(siteSchema, rawData)
-    
+
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
       console.warn(`[${requestId}] Authentication failed for site creation`, { hasUser: !!user })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting: 10 site operations per hour
+    const rateLimitResponse = await checkRateLimit(user.id, 'siteOperations', 'site creation')
+    if (rateLimitResponse) {
+      return rateLimitResponse
     }
 
     console.info(`[${requestId}] Site creation requested`, {
@@ -140,6 +147,12 @@ export async function DELETE(request: NextRequest) {
     if (authError || !user) {
       console.warn(`[${requestId}] Authentication failed for site deletion`, { hasUser: !!user })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting: 10 site operations per hour
+    const rateLimitResponse = await checkRateLimit(user.id, 'siteOperations', 'site deletion')
+    if (rateLimitResponse) {
+      return rateLimitResponse
     }
 
     console.info(`[${requestId}] Site deletion requested`, {

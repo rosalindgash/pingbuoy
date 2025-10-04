@@ -43,7 +43,7 @@ export default function HomePage() {
                   Never let your site sink again.
                 </h1>
                 <p className="mt-3 text-base text-[#111827]/70 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  PingBuoy monitors your uptime and scans for broken links so you can stay afloat with peace of mind.
+                  Simple, affordable website monitoring for solopreneurs and small businesses. Get the insights you need without enterprise complexity or costs.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -86,10 +86,10 @@ export default function HomePage() {
           <div className="lg:text-center">
             <h2 className="text-base text-[#1E3A8A] font-semibold tracking-wide uppercase">Features</h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-[#111827] sm:text-4xl">
-              Everything you need to monitor your websites
+              Essential monitoring without the enterprise price tag
             </p>
             <p className="mt-4 max-w-2xl text-xl text-[#111827]/70 lg:mx-auto">
-              Comprehensive monitoring tools to ensure your websites are always running smoothly
+              Powerful tools designed for indie makers, freelancers, and growing teams who need reliable monitoring on a budget
             </p>
           </div>
 
@@ -147,7 +147,7 @@ export default function HomePage() {
               Why choose PingBuoy?
             </h2>
             <p className="mt-3 text-xl text-[#F97316] sm:mt-4">
-              Built for modern websites with the features you need to stay online
+              Built for solopreneurs and small businesses who need professional monitoring without the enterprise overhead
             </p>
           </div>
           <dl className="mt-10 text-center sm:max-w-3xl sm:mx-auto sm:grid sm:grid-cols-3 sm:gap-8">

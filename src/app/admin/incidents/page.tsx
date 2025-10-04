@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Plus, Eye, EyeOff, Edit, MessageSquare } from 'lucide-react'
+import { Plus, Eye, EyeOff, Edit, MessageSquare, ArrowLeft } from 'lucide-react'
 
 interface IncidentUpdate {
   id: string
@@ -136,13 +137,21 @@ export default function AdminIncidentsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Incident Management</h1>
             <p className="text-gray-600 mt-1">Manage status page incidents and updates</p>
           </div>
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316]"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Incident
-          </Button>
+          <div className="flex space-x-3">
+            <Link href="/dashboard">
+              <Button variant="outline" className="flex items-center space-x-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </Link>
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              className="bg-[#F97316] text-white hover:bg-white hover:text-[#F97316] border-2 border-[#F97316]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Incident
+            </Button>
+          </div>
         </div>
 
         {showCreateForm && (

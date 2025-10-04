@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase/server'
 
 // Interface for Core Web Vitals data
 interface CoreWebVitalsData {
@@ -16,7 +17,29 @@ interface CoreWebVitalsData {
 
 export async function GET(request: NextRequest) {
   try {
-    // Create server-side Supabase client with service role
+    // Authentication check
+    const authSupabase = await createClient()
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify user has founder plan
+    const { data: userProfile, error: profileError } = await authSupabase
+      .from('users')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !userProfile || userProfile.plan !== 'founder') {
+      return NextResponse.json(
+        { error: 'Forbidden - Founder plan required' },
+        { status: 403 }
+      )
+    }
+
+    // Create server-side Supabase client with service role for data access
     const supabase = createServiceRoleClient()
 
     // Get query parameters

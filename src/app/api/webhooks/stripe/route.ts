@@ -307,11 +307,14 @@ export async function POST(request: NextRequest) {
     console.error(`[${requestId}] Error processing webhook`, {
       eventId: event?.id,
       eventType: event?.type,
-      errorCode: 'WEBHOOK_PROCESSING_FAILED'
+      errorCode: 'WEBHOOK_PROCESSING_FAILED',
+      error: error instanceof Error ? error.message : 'Unknown error'
     })
+    // CRITICAL: Always return 200 to acknowledge receipt and prevent Stripe retry storms
+    // The webhook was received and signature verified - log the error but don't trigger retries
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
+      { received: true, processed: false },
+      { status: 200 }
     )
   }
 }

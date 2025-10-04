@@ -32,7 +32,7 @@ const founderOnlyNav = [
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isFounder, setIsFounder] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const pathname = usePathname()
 
   const supabase = createBrowserClient(
@@ -41,13 +41,22 @@ export default function Navigation() {
   )
 
   useEffect(() => {
-    const checkFounderStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      const founderEmail = process.env.NEXT_PUBLIC_FOUNDER_EMAIL
-      console.log('Founder check:', { userEmail: user?.email, founderEmail, matches: user?.email === founderEmail })
-      setIsFounder(user?.email === founderEmail)
+    const checkAdminStatus = async () => {
+      try {
+        const response = await fetch('/api/user/is-admin', {
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          const { isAdmin: adminStatus } = await response.json()
+          setIsAdmin(adminStatus)
+        }
+      } catch (err) {
+        console.error('Admin check failed:', err)
+        setIsAdmin(false)
+      }
     }
-    checkFounderStatus()
+    checkAdminStatus()
   }, [])
 
   const handleSignOut = async () => {
@@ -91,7 +100,7 @@ export default function Navigation() {
                   </Link>
                 )
               })}
-              {isFounder && founderOnlyNav.map((item) => {
+              {isAdmin && founderOnlyNav.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
                 return (
@@ -163,7 +172,7 @@ export default function Navigation() {
                 </Link>
               )
             })}
-            {isFounder && founderOnlyNav.map((item) => {
+            {isAdmin && founderOnlyNav.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
               return (

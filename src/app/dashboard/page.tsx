@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [siteForm, setSiteForm] = useState({ name: '', url: '' })
   const [checkingAll, setCheckingAll] = useState(false)
   const [checkingSites, setCheckingSites] = useState<Record<string, boolean>>({})
+  const [isAdmin, setIsAdmin] = useState(false)
   const pathname = usePathname()
 
   // Build navigation based on user plan
@@ -69,10 +70,8 @@ export default function DashboardPage() {
       baseNavigation.push({ name: 'Core Vitals', href: '/dashboard/core-vitals', icon: Activity })
     }
 
-    // Add Analytics and Incidents for founder email
-    const founderEmail = process.env.NEXT_PUBLIC_FOUNDER_EMAIL
-    console.log('Dashboard nav check:', { userEmail: user?.email, founderEmail, matches: user?.email === founderEmail })
-    if (user?.email === founderEmail) {
+    // Add Analytics and Incidents for admin users (checked server-side)
+    if (isAdmin) {
       baseNavigation.push({ name: 'Analytics', href: '/admin/analytics', icon: TrendingUp })
       baseNavigation.push({ name: 'Incidents', href: '/admin/incidents', icon: AlertTriangle })
     }
@@ -92,19 +91,39 @@ export default function DashboardPage() {
   const checkAuth = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
-      
+
       if (error || !user) {
         window.location.href = '/login'
         return
       }
 
       setUser(user)
-      await Promise.all([fetchProfile(user.id), fetchSites(user.id)])
+      await Promise.all([
+        fetchProfile(user.id),
+        fetchSites(user.id),
+        checkAdminStatus()
+      ])
     } catch (err) {
       console.error('Error:', err)
       window.location.href = '/login'
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/user/is-admin', {
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const { isAdmin: adminStatus } = await response.json()
+        setIsAdmin(adminStatus)
+      }
+    } catch (err) {
+      console.error('Admin check failed:', err)
+      setIsAdmin(false)
     }
   }
 
