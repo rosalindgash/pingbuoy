@@ -119,9 +119,9 @@ export default function BillingSection({ profile }: BillingSectionProps) {
                   <Star className="w-4 h-4 text-blue-600" />
                   <h5 className="text-sm font-medium text-gray-900">Pro Plan</h5>
                 </div>
-                <p className="text-xs text-gray-600 mb-3">25 sites, 1-min checks, advanced features</p>
+                <p className="text-xs text-gray-600 mb-3">15 sites, 3-min checks, SSL + API monitoring, alerts</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">$29/mo</span>
+                  <span className="text-lg font-bold text-gray-900">$59/mo</span>
                   <Button
                     onClick={() => handleUpgrade('pro')}
                     disabled={upgradeLoading === 'pro'}
@@ -223,8 +223,11 @@ export default function BillingSection({ profile }: BillingSectionProps) {
             </div>
 
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-700">
-                <strong>Secure:</strong> All billing management is handled through Stripe&apos;s secure customer portal. You&apos;ll be redirected to manage your payment information safely.
+              <p className="text-xs text-blue-700 mb-2">
+                <strong>Manage Your Subscription:</strong> Click "Manage Subscription" above to cancel, downgrade to Free, or update your billing details through Stripe&apos;s secure portal.
+              </p>
+              <p className="text-xs text-blue-600">
+                All changes are prorated. Cancellations take effect at the end of your billing period.
               </p>
             </div>
           </div>

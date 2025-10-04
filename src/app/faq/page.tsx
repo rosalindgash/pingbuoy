@@ -75,11 +75,19 @@ const faqCategories = [
       },
       {
         question: 'What are the benefits of upgrading to Pro?',
-        answer: 'Pro plan includes up to 25 websites, 1-minute monitoring intervals, SMS alerts, advanced reporting, API access, authentication monitoring, and priority support. Ideal for businesses and agencies.'
+        answer: 'Pro plan includes up to 15 websites, 3-minute monitoring intervals, SSL certificate monitoring, API monitoring (up to 3 endpoints), Email/Slack/Discord/Webhook alerts, 60-day history, and priority email support within 4 hours. Ideal for businesses and agencies.'
       },
       {
         question: 'Can I change or cancel my plan anytime?',
         answer: 'Yes, you can upgrade, downgrade, or cancel your plan at any time. Changes take effect immediately, and we provide prorated billing for upgrades. No long-term contracts or cancellation fees.'
+      },
+      {
+        question: 'How do I cancel or downgrade my subscription?',
+        answer: 'To cancel or downgrade, go to Settings in your dashboard and click the "Manage Subscription" button under Billing. You\'ll be redirected to Stripe\'s secure customer portal where you can cancel your subscription or downgrade to the Free plan. Cancellations take effect at the end of your current billing period, so you can continue using Pro features until then.'
+      },
+      {
+        question: 'Do you offer coupon codes or promotional discounts?',
+        answer: 'Yes! We occasionally offer promotional discounts and coupon codes. When upgrading to Pro, you can enter your promo code during checkout. Follow us on social media or subscribe to our newsletter to stay updated on special offers and discounts.'
       },
       {
         question: 'Do you offer discounts for annual payments?',
@@ -114,6 +122,10 @@ const faqCategories = [
       {
         question: 'Do you share data with third parties?',
         answer: 'We never sell or share your monitoring data with third parties. We may use aggregated, anonymized data for service improvement, but your specific website information remains completely private.'
+      },
+      {
+        question: 'How do I delete my account and data?',
+        answer: 'You can permanently delete your account from the Settings page in your dashboard. Look for the "Danger Zone" section and click "Delete Account". This will permanently remove all your data, including monitored websites, uptime history, and account information. This action cannot be undone, so please make sure to export any data you want to keep before deleting your account.'
       }
     ]
   },

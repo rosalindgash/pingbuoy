@@ -601,37 +601,37 @@ export default function DashboardPage() {
                 <div className="ml-4 flex-1">
                   <h3 className="text-xl font-bold mb-2">Upgrade to Pro Monitoring</h3>
                   <p className="text-blue-100 mb-4">
-                    Get 1-minute monitoring checks, instant alerts, and advanced integrations. Monitor up to 25 websites with Pro features.
+                    Get 3-minute monitoring checks, SSL certificate monitoring, API monitoring, and advanced integrations. Monitor up to 15 websites with Pro features.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                      <span className="text-sm">1-minute monitoring checks</span>
+                      <span className="text-sm">3-minute monitoring checks</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                      <span className="text-sm">Slack notifications</span>
+                      <span className="text-sm">SSL certificate monitoring</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                      <span className="text-sm">Discord alerts</span>
+                      <span className="text-sm">API monitoring (3 endpoints)</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                      <span className="text-sm">Custom webhooks</span>
+                      <span className="text-sm">Slack/Discord/Webhook alerts</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                      <span className="text-sm">25 websites</span>
+                      <span className="text-sm">15 websites</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                      <span className="text-sm">Real-time status updates</span>
+                      <span className="text-sm">60-day history</span>
                     </div>
                   </div>
                   <Link href="/pricing">
                     <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-                      Upgrade to Pro - $29/mo
+                      Upgrade to Pro - $59/mo
                     </button>
                   </Link>
                 </div>
