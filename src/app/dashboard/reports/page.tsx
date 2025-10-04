@@ -116,6 +116,12 @@ export default function ReportsPage() {
     setSites(data || [])
   }
 
+  // Validate UUID format
+  const isValidUUID = (uuid: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    return uuidRegex.test(uuid)
+  }
+
   const toggleSiteSelection = (siteId: string) => {
     setSelectedSiteIds(prev =>
       prev.includes(siteId)
@@ -139,8 +145,20 @@ export default function ReportsPage() {
     const reports: SiteReport[] = []
 
     for (const siteId of selectedSiteIds) {
+      // Validate UUID format
+      if (!isValidUUID(siteId)) {
+        console.error('Invalid site ID format:', siteId)
+        continue
+      }
+
       const site = sites.find(s => s.id === siteId)
       if (!site) continue
+
+      // Verify site belongs to current user (defense in depth)
+      if (site.user_id !== user?.id) {
+        console.error('Unauthorized site access attempt:', siteId)
+        continue
+      }
 
       // Fetch uptime logs for the selected date range
       const daysAgo = new Date()
