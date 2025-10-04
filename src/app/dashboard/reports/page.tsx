@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Download, FileText, Calendar, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Calendar, BarChart3, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getSiteUptimeStats } from '@/lib/uptime-client'
@@ -50,10 +50,22 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [reportData, setReportData] = useState<SiteReport[]>([])
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     checkAuth()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const checkAuth = async () => {
@@ -264,30 +276,59 @@ export default function ReportsPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h2>
 
           {/* Site Selection */}
-          <div className="mb-6">
+          <div className="mb-6" ref={dropdownRef}>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Sites
             </label>
-            <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4">
-              {sites.map(site => (
-                <label key={site.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedSiteIds.includes(site.id)}
-                    onChange={() => toggleSiteSelection(site.id)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{site.url}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex space-x-2 mt-2">
-              <Button variant="outline" size="sm" onClick={selectAllSites}>
-                Select All
-              </Button>
-              <Button variant="outline" size="sm" onClick={deselectAllSites}>
-                Deselect All
-              </Button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <span className="text-sm text-gray-700">
+                  {selectedSiteIds.length === 0
+                    ? 'Select sites...'
+                    : `${selectedSiteIds.length} site${selectedSiteIds.length > 1 ? 's' : ''} selected`}
+                </span>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${dropdownOpen ? 'transform rotate-180' : ''}`} />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  <div className="p-2 border-b border-gray-200 flex space-x-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); selectAllSites(); }}
+                      className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deselectAllSites(); }}
+                      className="text-xs px-2 py-1 bg-gray-50 text-gray-700 rounded hover:bg-gray-100"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    {sites.map(site => (
+                      <label
+                        key={site.id}
+                        className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSiteIds.includes(site.id)}
+                          onChange={() => toggleSiteSelection(site.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{site.url}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
