@@ -23,7 +23,7 @@ const faqCategories = [
     faqs: [
       {
         question: 'What is PingBuoy?',
-        answer: 'PingBuoy is a comprehensive website monitoring service, aimed at solopreneurs and small businesses, that tracks your website uptime, monitors SSL certificates, detects dead links, tests API endpoints, and sends instant alerts when issues are found. We help ensure your websites stay online and perform optimally for your users.'
+        answer: 'PingBuoy is a comprehensive website monitoring service that tracks your website uptime, monitors SSL certificates, detects dead links, tests API endpoints, and sends instant alerts when issues are found. We help ensure your websites stay online and perform optimally for your users.'
       },
       {
         question: 'How quickly can I get started?',
