@@ -12,7 +12,8 @@ import {
   LogOut,
   AlertTriangle,
   Shield,
-  AlertCircle
+  AlertCircle,
+  Zap
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createBrowserClient } from '@supabase/ssr'
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Uptime', href: '/dashboard/uptime', icon: BarChart3 },
   { name: 'Dead Links', href: '/dashboard/dead-links', icon: AlertTriangle },
+  { name: 'Integrations', href: '/dashboard/integrations', icon: Zap },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   { name: 'Privacy', href: '/dashboard/privacy', icon: Shield },
 ]
