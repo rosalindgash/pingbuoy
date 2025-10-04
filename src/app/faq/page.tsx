@@ -87,11 +87,7 @@ const faqCategories = [
       },
       {
         question: 'Do you offer coupon codes or promotional discounts?',
-        answer: 'Yes! We occasionally offer promotional discounts and coupon codes. When upgrading to Pro, you can enter your promo code during checkout. Follow us on social media or subscribe to our newsletter to stay updated on special offers and discounts.'
-      },
-      {
-        question: 'Do you offer discounts for annual payments?',
-        answer: 'Yes, annual Pro subscriptions receive a significant discount compared to monthly billing. You&apos;ll see the savings during checkout when selecting annual billing.'
+        answer: 'Yes! We occasionally offer promotional discounts and coupon codes. When upgrading to Pro, you can enter your promo code during checkout. Follow us on social media to stay updated on special offers and discounts.'
       },
       {
         question: 'Is there a free trial for the Pro plan?',
