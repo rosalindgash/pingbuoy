@@ -75,11 +75,11 @@ const faqCategories = [
       },
       {
         question: 'Can I change or cancel my plan anytime?',
-        answer: 'Yes, you can upgrade, downgrade, or cancel your plan at any time. Changes take effect immediately, and we provide prorated billing for upgrades. No long-term contracts or cancellation fees.'
+        answer: 'Yes, you can upgrade, downgrade, or cancel your plan at any time. Changes take effect immediately, and we provide prorated billing for downgrades. No long-term contracts or cancellation fees.'
       },
       {
         question: 'How do I cancel or downgrade my subscription?',
-        answer: 'To cancel or downgrade, go to Settings in your dashboard and click the "Manage Subscription" button under Billing. You will be redirected to Stripe secure customer portal where you can cancel your subscription or downgrade to the Free plan. Cancellations take effect at the end of your current billing period, so you can continue using Pro features until then.'
+        answer: 'To cancel or downgrade, go to Settings in your dashboard and click the "Manage Subscription" button under Billing. You will be redirected to the Stripe secure customer portal where you can cancel your subscription or downgrade to the Free plan. Cancellations take effect at the end of your current billing period, so you can continue using Pro features until then.'
       },
       {
         question: 'Do you offer coupon codes or promotional discounts?',
@@ -97,7 +97,7 @@ const faqCategories = [
     faqs: [
       {
         question: 'How do you protect my data?',
-        answer: 'We use enterprise-grade security including end-to-end encryption, secure data centers, regular security audits, and compliance with GDPR and SOC 2 standards. Your monitoring data and personal information are fully protected.'
+        answer: 'We use enterprise-grade security including end-to-end encryption, secure data centers, regular security audits, and compliance with GDPR standards. Your monitoring data and personal information are fully protected.'
       },
       {
         question: 'Do you store my website content?',
@@ -139,11 +139,12 @@ const faqCategories = [
       },
       {
         question: 'What if I need help with setup?',
-        answer: 'Our setup process is designed to be intuitive, but if you need assistance, our support team is happy to help. Pro subscribers receive priority setup assistance and can schedule onboarding calls if needed.'
+        answer: 'Our setup process is designed to be intuitive, but if you need assistance, our support team is happy to help. Pro subscribers receive priority setup assistance.'
       },
       {
         question: 'Do you have a status page?',
-        answer: 'Yes, you can check our system status and any ongoing incidents at our status page. We maintain 99.9% uptime for our monitoring service and provide transparent communication about any service issues.'
+        answer: 'Yes, you can check our system status and any ongoing incidents at our status page, which is linked at the top of the landing page and in the footer of all pages. We maintain 99.9% uptime for our monitoring service and provide transparent communication about any service issues.',
+        link: { text: 'system status', url: '/status' }
       }
     ]
   }
@@ -174,7 +175,17 @@ function FAQSection() {
                 </summary>
                 <div className="px-6 pb-6 pt-2">
                   <p className="text-gray-700 leading-relaxed">
-                    {faq.answer}
+                    {faq.link ? (
+                      <>
+                        {faq.answer.split(faq.link.text)[0]}
+                        <Link href={faq.link.url} className="text-blue-600 hover:text-blue-800 underline">
+                          {faq.link.text}
+                        </Link>
+                        {faq.answer.split(faq.link.text)[1]}
+                      </>
+                    ) : (
+                      faq.answer
+                    )}
                   </p>
                 </div>
               </details>
