@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Globe, TrendingUp, AlertTriangle, Settings, LogOut, Menu, X, Puzzle, Activity } from 'lucide-react'
+import { Plus, Globe, TrendingUp, AlertTriangle, Settings, LogOut, Menu, X, Puzzle, Activity, FileText } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -76,6 +76,7 @@ export default function DashboardPage() {
       baseNavigation.push({ name: 'Incidents', href: '/admin/incidents', icon: AlertTriangle })
     }
 
+    baseNavigation.push({ name: 'Reports', href: '/dashboard/reports', icon: FileText })
     baseNavigation.push({ name: 'Settings', href: '/dashboard/settings', icon: Settings })
 
     return baseNavigation
