@@ -23,15 +23,15 @@ const faqCategories = [
     faqs: [
       {
         question: 'What is PingBuoy?',
-        answer: 'PingBuoy is a comprehensive website monitoring service that tracks your website uptime, detects dead links, and sends instant alerts when issues are found. We help ensure your websites stay online and perform optimally for your users.'
+        answer: 'PingBuoy is a comprehensive website monitoring service, aimed at solopreneurs and small businesses, that tracks your website uptime, monitors SSL certificates, detects dead links, tests API endpoints, and sends instant alerts when issues are found. We help ensure your websites stay online and perform optimally for your users.'
       },
       {
         question: 'How quickly can I get started?',
-        answer: 'You can start monitoring your websites in under 2 minutes. Simply sign up, add your website URL, and we&apos;ll begin monitoring immediately. No complex setup or technical configuration required.'
+        answer: 'You can start monitoring your websites in under 2 minutes. Simply sign up, add your website URL, and we will begin monitoring immediately. No complex setup or technical configuration required.'
       },
       {
         question: 'Do I need to install anything on my website?',
-        answer: 'No installation required! PingBuoy monitors your websites externally by checking them from our global network of servers. There&apos;s no code to install or plugins to configure.'
+        answer: 'No installation required! PingBuoy monitors your websites externally by checking them from our global network of servers. There is no code to install or plugins to configure.'
       },
       {
         question: 'What types of websites can I monitor?',
@@ -45,7 +45,7 @@ const faqCategories = [
     faqs: [
       {
         question: 'How often do you check my website?',
-        answer: 'We check your websites every 5 minutes from multiple locations worldwide. This ensures rapid detection of any downtime or performance issues, typically within 5 minutes of occurrence.'
+        answer: 'Free plan users receive checks every 10 minutes, while Pro plan users receive checks every 3 minutes from multiple locations worldwide. This ensures rapid detection of any downtime or performance issues.'
       },
       {
         question: 'What is dead link detection?',
@@ -53,16 +53,12 @@ const faqCategories = [
       },
       {
         question: 'Where are your monitoring servers located?',
-        answer: 'We monitor from multiple global locations including North America, Europe, and Asia. This provides accurate monitoring regardless of your visitors&apos; geographic location and helps identify regional connectivity issues.'
+        answer: 'We monitor from multiple global locations including North America, Europe, and Asia. This provides accurate monitoring regardless of your visitors geographic location and helps identify regional connectivity issues.'
       },
       {
         question: 'What happens if my website goes down?',
         answer: 'When downtime is detected, we immediately send alerts via email and can integrate with other notification services. We also provide detailed incident reports and uptime statistics to help you understand and resolve issues quickly.'
       },
-      {
-        question: 'Can I monitor password-protected pages?',
-        answer: 'Yes, our Pro plan includes authentication monitoring. You can monitor pages that require login credentials or HTTP authentication. All credentials are stored securely and encrypted.'
-      }
     ]
   },
   {
@@ -70,8 +66,8 @@ const faqCategories = [
     icon: HelpCircle,
     faqs: [
       {
-        question: 'What&apos;s included in the free plan?',
-        answer: 'The free plan includes monitoring for up to 3 websites, 5-minute check intervals, email alerts, basic uptime reporting, and dead link detection. Perfect for personal websites or small projects.'
+        question: 'What is included in the free plan?',
+        answer: 'The free plan includes monitoring for up to 3 websites, 10-minute check intervals, email alerts, 7-day history, basic uptime reporting, and dead link detection. Perfect for personal websites or small projects.'
       },
       {
         question: 'What are the benefits of upgrading to Pro?',
@@ -83,7 +79,7 @@ const faqCategories = [
       },
       {
         question: 'How do I cancel or downgrade my subscription?',
-        answer: 'To cancel or downgrade, go to Settings in your dashboard and click the "Manage Subscription" button under Billing. You\'ll be redirected to Stripe\'s secure customer portal where you can cancel your subscription or downgrade to the Free plan. Cancellations take effect at the end of your current billing period, so you can continue using Pro features until then.'
+        answer: 'To cancel or downgrade, go to Settings in your dashboard and click the "Manage Subscription" button under Billing. You will be redirected to Stripe secure customer portal where you can cancel your subscription or downgrade to the Free plan. Cancellations take effect at the end of your current billing period, so you can continue using Pro features until then.'
       },
       {
         question: 'Do you offer coupon codes or promotional discounts?',
@@ -91,7 +87,7 @@ const faqCategories = [
       },
       {
         question: 'Is there a free trial for the Pro plan?',
-        answer: 'While we don&apos;t offer a separate trial, you can start with our free plan and upgrade to Pro at any time. This lets you test our monitoring capabilities before committing to a paid plan.'
+        answer: 'While we do not offer a separate trial, you can start with our free plan and upgrade to Pro at any time. This lets you test our monitoring capabilities before committing to a paid plan.'
       }
     ]
   },
@@ -135,7 +131,7 @@ const faqCategories = [
       },
       {
         question: 'Do you provide API access?',
-        answer: 'Yes, Pro plan subscribers get full API access to retrieve monitoring data, manage websites, and integrate PingBuoy with other tools and services. Complete API documentation is available in your dashboard.'
+        answer: 'Yes, Pro plan subscribers get API access to retrieve monitoring data, manage websites, and integrate PingBuoy with other tools and services. Pro users can make up to 10 API calls to PingBuoy endpoints. Complete API documentation is available in your dashboard.'
       },
       {
         question: 'Can I export my monitoring data?',
@@ -203,8 +199,8 @@ export default function FAQPage() {
               Frequently Asked Questions
             </h1>
             <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-              Find answers to common questions about PingBuoy website monitoring. 
-              Can't find what you're looking for? Feel free to contact our support team.
+              Find answers to common questions about PingBuoy website monitoring.
+              Cannot find what you are looking for? Feel free to contact our support team.
             </p>
           </div>
         </div>
@@ -224,7 +220,7 @@ export default function FAQPage() {
             Still have questions?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Our support team is here to help. Get in touch and we&apos;ll respond quickly.
+            Our support team is here to help. Get in touch and we will respond quickly.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contact">
