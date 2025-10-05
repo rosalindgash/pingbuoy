@@ -115,12 +115,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get unique site URLs for filtering
-    const { data: siteUrls } = await supabase
+    const { data: siteUrls } = await (supabase as any)
       .from('core_web_vitals')
       .select('site_url')
       .gte('checked_at', timeFilter)
 
-    const uniqueSiteUrls = [...new Set(siteUrls?.map(s => s.site_url) || [])]
+    const uniqueSiteUrls = [...new Set(siteUrls?.map((s: any) => s.site_url) || [])]
 
     return NextResponse.json({
       success: true,
