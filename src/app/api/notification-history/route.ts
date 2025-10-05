@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
 
 // POST: Create notification history entry (system use only)
 export async function POST(request: NextRequest) {
-  return withServiceAuth(request, 'notification_processor', async () => {
+  return withServiceAuth(request, 'notification_system', async () => {
     try {
       // Rate limiting for system service
       const clientIP = getClientIPFromRequest(request)
@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE: Delete old notification history (cleanup endpoint)
 export async function DELETE(request: NextRequest) {
-  return withServiceAuth(request, 'notification_processor', async () => {
+  return withServiceAuth(request, 'maintenance_worker', async () => {
     try {
       // Rate limiting
       const clientIP = getClientIPFromRequest(request)
