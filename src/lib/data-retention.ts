@@ -111,9 +111,9 @@ export class DataRetentionManager {
     return createClient()
   }
 
-  async enforceRetentionPolicies(): Promise<void> {
-    const results = []
-    
+  async enforceRetentionPolicies(): Promise<Array<{ table: string; success: boolean; recordsAffected?: number; error?: string }>> {
+    const results: Array<{ table: string; success: boolean; recordsAffected?: number; error?: string }> = []
+
     for (const policy of RETENTION_POLICIES) {
       try {
         const result = await this.enforcePolicy(policy)
@@ -130,7 +130,7 @@ export class DataRetentionManager {
 
     // Log results
     await this.logRetentionResults(results)
-    
+
     return results
   }
 

@@ -84,8 +84,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch updates for each incident
     const incidentsWithUpdates = await Promise.all(
-      (incidents || []).map(async (incident) => {
-        const { data: updates } = await supabase
+      (incidents || []).map(async (incident: any) => {
+        const { data: updates } = await (supabase as any)
           .from('status_incident_updates')
           .select('id, status, message, created_at')
           .eq('incident_id', incident.id)
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     const { title, description, status, impact, is_public, started_at } = result.data
 
-    const { data: incident, error } = await supabase
+    const { data: incident, error } = await (supabase as any)
       .from('status_incidents')
       .insert({
         title,
@@ -198,7 +198,7 @@ export async function PATCH(request: NextRequest) {
 
     const { id, ...updates } = result.data
 
-    const { data: incident, error } = await supabase
+    const { data: incident, error } = await (supabase as any)
       .from('status_incidents')
       .update(updates)
       .eq('id', id)

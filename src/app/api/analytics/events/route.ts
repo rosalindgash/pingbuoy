@@ -27,7 +27,7 @@ const analyticsEventSchema = z.object({
   category: z.string().min(1).max(100),
   label: z.string().max(500).optional(),
   value: z.number().min(0).max(1000000).optional(),
-  custom_parameters: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
+  custom_parameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
   timestamp: z.string().datetime(),
   session_id: z.string().max(100),
   page_url: z.string().url()
@@ -58,7 +58,7 @@ interface SanitizedEvent extends AnalyticsEvent {
 
 // Sanitize analytics data
 function sanitizeAnalyticsEvent(event: AnalyticsEvent): AnalyticsEvent {
-  const sanitized = {
+  const sanitized: AnalyticsEvent = {
     action: sanitizeString(event.action, 100),
     category: sanitizeString(event.category, 100),
     label: event.label ? sanitizeString(event.label, 500) : undefined,

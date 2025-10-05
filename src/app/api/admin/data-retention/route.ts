@@ -99,12 +99,12 @@ export async function POST(req: NextRequest) {
     const results = await dataRetentionManager.enforceRetentionPolicies()
 
     // Filter results if specific policies were requested
-    const filteredResults = policies 
-      ? results.filter(result => policies.includes(result.table))
+    const filteredResults = policies
+      ? results.filter((result: any) => policies.includes(result.table))
       : results
 
     const totalRecordsAffected = filteredResults.reduce(
-      (sum, result) => sum + (result.recordsAffected || 0), 
+      (sum: number, result: any) => sum + (result.recordsAffected || 0),
       0
     )
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       results: filteredResults,
       summary: {
         policiesExecuted: filteredResults.length,
-        successfulPolicies: filteredResults.filter(r => r.success).length,
+        successfulPolicies: filteredResults.filter((r: any) => r.success).length,
         totalRecordsAffected
       }
     })
@@ -186,7 +186,7 @@ export async function DELETE() {
       success: true,
       message: `Processed ${accountsToDelete.length} scheduled account deletions`,
       accountsProcessed: accountsToDelete.length,
-      deletedAccounts: accountsToDelete.map(account => ({
+      deletedAccounts: accountsToDelete.map((account: any) => ({
         email: account.email,
         scheduledFor: account.deletion_scheduled_at
       }))

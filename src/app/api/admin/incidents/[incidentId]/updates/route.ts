@@ -86,7 +86,7 @@ export async function POST(
 
     const { status, message } = result.data
 
-    const { data: update, error } = await supabase
+    const { data: update, error } = await (supabase as any)
       .from('status_incident_updates')
       .insert({
         incident_id: incidentId,
@@ -102,7 +102,7 @@ export async function POST(
     }
 
     // Update the incident's status to match the latest update
-    await supabase
+    await (supabase as any)
       .from('status_incidents')
       .update({
         status,
