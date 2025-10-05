@@ -35,11 +35,11 @@ async function authenticateUser(request: NextRequest): Promise<{ user: { id: str
     const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser(token)
 
-    if (error || !user) {
+    if (error || !user || !user.email) {
       return { user: null, error: 'Invalid or expired token' }
     }
 
-    return { user }
+    return { user: { id: user.id, email: user.email } }
   } catch {
     return { user: null, error: 'Authentication failed' }
   }
