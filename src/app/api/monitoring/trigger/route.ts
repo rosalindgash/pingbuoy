@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         result = await checkWebsiteUptime(site)
 
         // Log the check
-        await supabase.from('uptime_logs').insert({
+        await (supabase as any).from('uptime_logs').insert({
           site_id: site.id,
           status: result.status,
           response_time: result.responseTime,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           updateData.ssl_last_checked = new Date().toISOString()
         }
 
-        await supabase
+        await (supabase as any)
           .from('sites')
           .update(updateData)
           .eq('id', site.id)
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         result = await checkPageSpeed(site)
 
         // Log the speed test using the database constraint workaround
-        await supabase.from('uptime_logs').insert({
+        await (supabase as any).from('uptime_logs').insert({
           site_id: site.id,
           status: 'up', // Use 'up' to satisfy constraint
           response_time: result.loadTime, // Load time in ms
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         const scanResult = await scanForDeadLinks(site)
 
         // Log the scan
-        await supabase.from('uptime_logs').insert({
+        await (supabase as any).from('uptime_logs').insert({
           site_id: site.id,
           status: 'scan',
           response_time: scanResult.totalLinks,
