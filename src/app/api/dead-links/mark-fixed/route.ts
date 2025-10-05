@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the dead link belongs to a site owned by the user
-    const { data: deadLink, error: deadLinkError } = await supabase
+    const { data: deadLink, error: deadLinkError } = await (supabase as any)
       .from('dead_links')
       .select('site_id')
       .eq('id', deadLinkId)
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the site belongs to the user
-    const { data: site, error: siteError } = await supabase
+    const { data: site, error: siteError } = await (supabase as any)
       .from('sites')
       .select('user_id')
       .eq('id', deadLink.site_id)

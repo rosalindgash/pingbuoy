@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user's integrations
-    const { data: integrations, error } = await supabase
+    const { data: integrations, error } = await (supabase as any)
       .from('integrations')
       .select('*')
       .eq('user_id', user.id)
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedIntegrations = integrations?.map(integration => ({
+    const transformedIntegrations = integrations?.map((integration: any) => ({
       id: integration.id,
       name: integration.name,
       type: integration.integration_type,
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create integration
-    const { data: integration, error } = await supabase
+    const { data: integration, error } = await (supabase as any)
       .from('integrations')
       .insert(integrationData)
       .select()
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       const testStatus = testResponse.ok ? 'success' : 'failed'
 
       // Update integration with test result
-      await supabase
+      await (supabase as any)
         .from('integrations')
         .update({
           last_test_at: new Date().toISOString(),
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
         .eq('id', integration.id)
 
       // Log the test
-      await supabase
+      await (supabase as any)
         .from('integration_logs')
         .insert({
           integration_id: integration.id,
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       console.error('Integration test failed:', testError)
 
       // Update integration status to error
-      await supabase
+      await (supabase as any)
         .from('integrations')
         .update({
           status: 'error',

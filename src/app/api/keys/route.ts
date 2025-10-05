@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user's API keys (without exposing actual keys)
-    const { data: apiKeys, error } = await supabase
+    const { data: apiKeys, error } = await (supabase as any)
       .from('api_keys')
       .select('id, name, key_prefix, permissions, status, total_requests, last_used_at, created_at')
       .eq('user_id', user.id)
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedKeys = apiKeys?.map(key => ({
+    const transformedKeys = apiKeys?.map((key: any) => ({
       id: key.id,
       name: key.name,
       prefix: key.key_prefix,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Check existing API key count
-    const { data: existingKeys } = await supabase
+    const { data: existingKeys } = await (supabase as any)
       .from('api_keys')
       .select('id')
       .eq('user_id', user.id)
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     const keyPrefix = apiKey.substring(0, 8)
 
     // Store API key
-    const { data: createdKey, error } = await supabase
+    const { data: createdKey, error } = await (supabase as any)
       .from('api_keys')
       .insert({
         user_id: user.id,
@@ -236,7 +236,7 @@ export async function DELETE(request: NextRequest) {
     })
 
     // Revoke API key (set status to revoked instead of deleting)
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('api_keys')
       .update({ status: 'revoked' })
       .eq('id', keyId)

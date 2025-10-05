@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabaseClient()
 
     // Get websites that need page speed testing
-    const { data: websites } = await supabase
+    const { data: websites } = await (supabase as any)
       .from('sites')
       .select(`
         id, name, url, user_id,
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
       // Save speed test result using uptime_logs table with speed status
       // Format error_message with SPEED_TEST prefix for status page compatibility
-      await supabase.from('uptime_logs').insert({
+      await (supabase as any).from('uptime_logs').insert({
         site_id: website.id,
         status: 'speed',
         response_time: speedResult.loadTime,

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabaseClient()
 
     // Get websites to check based on their plan intervals
-    const { data: websites } = await supabase
+    const { data: websites } = await (supabase as any)
       .from('sites')
       .select(`
         id, name, url, user_id,
@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
       const result = await checkWebsiteUptime(website)
 
       // Save result
-      await supabase.from('uptime_logs').insert(result)
+      await (supabase as any).from('uptime_logs').insert(result)
 
       // Update site status
-      await supabase
+      await (supabase as any)
         .from('sites')
         .update({
           status: result.status,

@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         if (updateError) {
           apiLogger.warn('Failed to update customer ID', { requestId, userId: user.id, errorCode: updateError.code })
           // Check if another request already updated it
-          const { data: refreshedProfile } = await supabase
+          const { data: refreshedProfile } = await (supabase as any)
             .from('users')
             .select('stripe_customer_id')
             .eq('id', user.id)
@@ -120,6 +120,12 @@ export async function POST(request: NextRequest) {
         apiLogger.error('Failed to create Stripe customer', null, { requestId, userId: user.id, errorCode: 'STRIPE_CUSTOMER_CREATE_FAILED' })
         return NextResponse.json({ error: 'Unable to process subscription' }, { status: 500 })
       }
+    }
+
+    // Ensure we have a customer ID
+    if (!customerId) {
+      apiLogger.error('No customer ID available after customer creation', null, { requestId, userId: user.id })
+      return NextResponse.json({ error: 'Unable to process subscription' }, { status: 500 })
     }
 
     // Create checkout session (with idempotency)

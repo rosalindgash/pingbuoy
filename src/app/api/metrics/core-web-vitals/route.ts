@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user has founder plan
-    const { data: userProfile, error: profileError } = await authSupabase
+    const { data: userProfile, error: profileError } = await (authSupabase as any)
       .from('users')
       .select('plan')
       .eq('id', user.id)
@@ -101,11 +101,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (summaryData && summaryData.length > 0) {
-      const validLcp = summaryData.filter(d => d.lcp !== null).map(d => d.lcp!)
-      const validFid = summaryData.filter(d => d.fid !== null).map(d => d.fid!)
-      const validCls = summaryData.filter(d => d.cls !== null).map(d => d.cls!)
-      const validFcp = summaryData.filter(d => d.fcp !== null).map(d => d.fcp!)
-      const validTtfb = summaryData.filter(d => d.ttfb !== null).map(d => d.ttfb!)
+      const validLcp = summaryData.filter((d: any) => d.lcp !== null).map((d: any) => d.lcp!)
+      const validFid = summaryData.filter((d: any) => d.fid !== null).map((d: any) => d.fid!)
+      const validCls = summaryData.filter((d: any) => d.cls !== null).map((d: any) => d.cls!)
+      const validFcp = summaryData.filter((d: any) => d.fcp !== null).map((d: any) => d.fcp!)
+      const validTtfb = summaryData.filter((d: any) => d.ttfb !== null).map((d: any) => d.ttfb!)
 
       summary.avg_lcp = validLcp.length > 0 ? Math.round(validLcp.reduce((a, b) => a + b, 0) / validLcp.length) : 0
       summary.avg_fid = validFid.length > 0 ? Math.round(validFid.reduce((a, b) => a + b, 0) / validFid.length) : 0
