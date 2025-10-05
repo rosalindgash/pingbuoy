@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         // Continue as unauthenticated user
-        apiLogger.warn('Analytics: Failed to authenticate user', error)
+        apiLogger.warn('Analytics: Failed to authenticate user', { error })
       }
     }
 
