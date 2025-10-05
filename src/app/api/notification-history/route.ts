@@ -12,8 +12,8 @@ import {
 
 // Query parameters schema
 const querySchema = z.object({
-  page: z.string().transform(val => parseInt(val)).default('1'),
-  limit: z.string().transform(val => Math.min(parseInt(val), 100)).default('20'),
+  page: z.string().default('1').transform(val => parseInt(val)),
+  limit: z.string().default('20').transform(val => Math.min(parseInt(val), 100)),
   notification_type: z.enum(['email', 'sms', 'webhook', 'slack', 'discord']).optional(),
   alert_type: z.enum(['downtime', 'recovery', 'maintenance', 'report']).optional(),
   status: z.enum(['sent', 'failed', 'queued', 'delivered']).optional(),
@@ -234,6 +234,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert history record
+    const supabase = await createClient()
     const { data: history, error: dbError } = await supabase
       .from('notification_history')
       .insert(historyData)
