@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         success: true,
         dryRun: true,
         message: 'Dry run completed - no data was actually deleted',
-        report: report.dataCategories.filter(category => 
+        report: report.dataCategories.filter((category: any) =>
           !policies || policies.includes(category.table)
         )
       })
