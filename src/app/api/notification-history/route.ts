@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
 
     // Insert history record
     const supabase = await createClient()
-    const { data: history, error: dbError } = await supabase
+    const { data: history, error: dbError } = await (supabase as any)
       .from('notification_history')
       .insert(historyData)
       .select()
