@@ -177,19 +177,19 @@ export async function POST(request: NextRequest) {
     const validation = validateNotificationSettings(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.errors },
+        { error: 'Validation failed', details: validation.issues },
         { status: 400 }
       )
     }
 
     // Get user's plan (mock for now - would come from subscription system)
     const userPlan = 'free' // TODO: Fetch from user subscription
-    
+
     // Check Pro feature access
     const proValidation = validateProFeatureAccess(validation.data!, userPlan)
     if (!proValidation.success) {
       return NextResponse.json(
-        { error: 'Pro features not available', details: proValidation.errors },
+        { error: 'Pro features not available', details: proValidation.issues },
         { status: 403 }
       )
     }
@@ -277,19 +277,19 @@ export async function PATCH(request: NextRequest) {
     const validation = validateNotificationUpdate(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.errors },
+        { error: 'Validation failed', details: validation.issues },
         { status: 400 }
       )
     }
 
     // Get user's plan
     const userPlan = 'free' // TODO: Fetch from user subscription
-    
+
     // Check Pro feature access
     const proValidation = validateProFeatureAccess(validation.data!, userPlan)
     if (!proValidation.success) {
       return NextResponse.json(
-        { error: 'Pro features not available', details: proValidation.errors },
+        { error: 'Pro features not available', details: proValidation.issues },
         { status: 403 }
       )
     }

@@ -1,6 +1,11 @@
 const nextConfig = {
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+  eslint: {
+    // ESLint runs separately via `npm run lint` which only scans src/ folder
+    // Build-time linting disabled to avoid false positives from security plugin
+    ignoreDuringBuilds: true,
+    dirs: ['src']
+  },
+  typescript: { ignoreBuildErrors: false },
   poweredByHeader: false,
 
   async headers() {

@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
 
     // Process relevant events
     let processed = false
-    let eventDate = new Date(event.created * 1000)
+    const eventDate = new Date(event.created * 1000)
 
     switch (event.type) {
       case 'customer.subscription.created':

@@ -270,10 +270,10 @@ export async function GET(request: NextRequest) {
 
     events?.forEach(event => {
       // Count by category
-      aggregated.categories[event.category] = (aggregated.categories[event.category] || 0) + 1 // eslint-disable-line security/detect-object-injection
+      aggregated.categories[event.category] = (aggregated.categories[event.category] || 0) + 1  
 
       // Count by action
-      aggregated.actions[event.action] = (aggregated.actions[event.action] || 0) + 1 // eslint-disable-line security/detect-object-injection
+      aggregated.actions[event.action] = (aggregated.actions[event.action] || 0) + 1  
 
       // Count top pages from custom parameters
       if (event.custom_parameters?.page_url) {

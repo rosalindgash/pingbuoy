@@ -21,15 +21,15 @@ export async function GET() {
       )
     }
 
-    // Check if user is admin
-    const supabase = createClient()
+    // Check if user has admin or owner role
+    const supabase = await createClient()
     const { data: user } = await supabase
       .from('users')
       .select('role')
       .eq('email', session.user.email)
       .single()
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -63,15 +63,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if user is admin
-    const supabase = createClient()
+    // Check if user has admin or owner role
+    const supabase = await createClient()
     const { data: user } = await supabase
       .from('users')
       .select('role')
       .eq('email', session.user.email)
       .single()
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid request parameters', details: error.errors },
+        { error: 'Invalid request parameters', details: error.issues },
         { status: 400 }
       )
     }
@@ -148,15 +148,15 @@ export async function DELETE() {
       )
     }
 
-    // Check if user is admin
-    const supabase = createClient()
+    // Check if user has admin or owner role
+    const supabase = await createClient()
     const { data: user } = await supabase
       .from('users')
       .select('role')
       .eq('email', session.user.email)
       .single()
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }

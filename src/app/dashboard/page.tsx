@@ -560,9 +560,15 @@ export default function DashboardPage() {
 
                           {/* Right: Actions */}
                           <div className="flex items-center space-x-2 flex-shrink-0">
+                            <Link
+                              href={`/dashboard/sites/${site.id}`}
+                              className="text-blue-600 hover:text-blue-800 text-sm px-3 py-1 rounded hover:bg-blue-50 border border-blue-600 font-medium"
+                            >
+                              View Details
+                            </Link>
                             <button
                               onClick={() => handleEditSite(site)}
-                              className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 rounded hover:bg-blue-50"
+                              className="text-gray-600 hover:text-gray-800 text-sm px-2 py-1 rounded hover:bg-gray-50"
                             >
                               Edit
                             </button>

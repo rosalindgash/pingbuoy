@@ -22,20 +22,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is admin (founder) - SERVER-SIDE ONLY
-    const { data: userProfile } = await supabase
+    // Check if user is owner - SERVER-SIDE ONLY
+    // Only owner can view business analytics (MRR, ARR, etc.)
+    const { data: userProfile, error: profileError } = await supabase
       .from('users')
       .select('email, plan')
       .eq('id', user.id)
       .single()
 
+    if (profileError || !userProfile) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL
-    const isAdmin = userProfile?.plan === 'founder' &&
+    const isOwner = userProfile.plan === 'founder' &&
                     FOUNDER_EMAIL &&
                     userProfile.email === FOUNDER_EMAIL
 
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+    if (!isOwner) {
+      return NextResponse.json({ error: 'Forbidden - Owner access required' }, { status: 403 })
     }
 
     // Log analytics access

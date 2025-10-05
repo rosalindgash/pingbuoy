@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import AccountInformation from '@/components/dashboard/AccountInformation'
 import BillingSection from '@/components/dashboard/BillingSection'
 import MFASettings from '@/components/auth/MFASettings'
+import PrivacyDataSection from '@/components/dashboard/PrivacyDataSection'
 import { Bell, ArrowLeft, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -253,32 +254,9 @@ export default function SettingsPage() {
             <MFASettings />
           </div>
 
-        </div>
+          {/* Privacy & Data Section */}
+          <PrivacyDataSection />
 
-
-        {/* Danger Zone */}
-        <div className="mt-8">
-          <div className="bg-white rounded-lg border border-red-200 p-6">
-            <h2 className="text-lg font-medium text-red-600 mb-4">Danger Zone</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Delete Account</p>
-                  <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
-                </div>
-                <button 
-                  onClick={() => {
-                    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                      alert('Account deletion would be implemented here')
-                    }
-                  }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                >
-                  Delete Account
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -101,9 +101,22 @@ export async function markDeadLinkFixed(deadLinkId: string, userId: string): Pro
   }
 }
 
+// Sanitize CSV cells to prevent formula injection
+function sanitizeCSVCell(cell: string): string {
+  const cellStr = String(cell)
+  const dangerousChars = ['=', '+', '-', '@', '\t', '\r']
+
+  // Prefix dangerous characters with single quote to prevent formula execution
+  if (dangerousChars.some(char => cellStr.startsWith(char))) {
+    return `'${cellStr}`
+  }
+
+  return cellStr
+}
+
 export async function exportDeadLinksCSV(siteId: string, userId: string): Promise<string> {
   const supabase = await createServerSupabaseClient()
-  
+
   // Verify user owns this site
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: site } = await (supabase as any)
@@ -112,35 +125,35 @@ export async function exportDeadLinksCSV(siteId: string, userId: string): Promis
     .eq('id', siteId)
     .eq('user_id', userId)
     .single()
-    
+
   if (!site) {
     throw new Error('Site not found or access denied')
   }
-  
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: deadLinks, error } = await (supabase as any)
     .from('dead_links')
     .select('*')
     .eq('site_id', siteId)
     .order('found_at', { ascending: false })
-    
+
   if (error) {
     throw new Error('Failed to fetch dead links: ' + error.message)
   }
-  
+
   // Convert to CSV
   const headers = ['URL', 'Source URL', 'Status Code', 'Found At', 'Fixed']
   const rows = deadLinks.map((link: DeadLink) => [
-    link.url,
-    link.source_url,
-    link.status_code.toString(),
-    new Date(link.found_at).toLocaleString(),
-    link.fixed ? 'Yes' : 'No'
+    sanitizeCSVCell(link.url),
+    sanitizeCSVCell(link.source_url),
+    sanitizeCSVCell(link.status_code.toString()),
+    sanitizeCSVCell(new Date(link.found_at).toLocaleString()),
+    sanitizeCSVCell(link.fixed ? 'Yes' : 'No')
   ])
-  
+
   const csv = [headers, ...rows]
     .map(row => row.map((cell: string) => `"${cell.replace(/"/g, '""')}"`).join(','))
     .join('\n')
-    
+
   return csv
 }

@@ -384,8 +384,8 @@ export class SSRFDefense {
         const ipParts = ip.split('.').map(Number)
         const rangeParts = rangeIP.split('.').map(Number)
 
-        let ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3]
-        let rangeInt = (rangeParts[0] << 24) + (rangeParts[1] << 16) + (rangeParts[2] << 8) + rangeParts[3]
+        const ipInt = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3]
+        const rangeInt = (rangeParts[0] << 24) + (rangeParts[1] << 16) + (rangeParts[2] << 8) + rangeParts[3]
 
         const mask = ~(Math.pow(2, 32 - prefix) - 1)
         return (ipInt & mask) === (rangeInt & mask)
@@ -465,6 +465,7 @@ let _performanceSSRFDefense: SSRFDefense | null = null
 export const monitoringSSRFDefense = (): SSRFDefense => {
   if (!_monitoringSSRFDefense) {
     // Import here to avoid circular dependency
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ssrfConfigs } = require('./ssrf-config')
     _monitoringSSRFDefense = new SSRFDefense(ssrfConfigs.monitoring)
   }
@@ -476,6 +477,7 @@ export const monitoringSSRFDefense = (): SSRFDefense => {
  */
 export const strictSSRFDefense = (): SSRFDefense => {
   if (!_strictSSRFDefense) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ssrfConfigs } = require('./ssrf-config')
     _strictSSRFDefense = new SSRFDefense(ssrfConfigs.strict)
   }
@@ -487,6 +489,7 @@ export const strictSSRFDefense = (): SSRFDefense => {
  */
 export const performanceSSRFDefense = (): SSRFDefense => {
   if (!_performanceSSRFDefense) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ssrfConfigs } = require('./ssrf-config')
     _performanceSSRFDefense = new SSRFDefense(ssrfConfigs.performance)
   }

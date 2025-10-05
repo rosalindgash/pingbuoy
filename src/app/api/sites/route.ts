@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
 
     const siteCount = existingSites?.length || 0
-    const maxSites = userProfile?.plan === 'free' ? 3 : userProfile?.plan === 'pro' ? 25 : userProfile?.plan === 'founder' ? 999 : 999
+    const maxSites = userProfile?.plan === 'free' ? 2 : userProfile?.plan === 'pro' ? 15 : userProfile?.plan === 'founder' ? 999 : 999
 
     if (siteCount >= maxSites) {
       console.warn(`[${requestId}] Site limit reached`, {
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     console.error(`[${requestId}] Error creating site`, {
       errorCode: 'SITE_CREATE_FAILED'
     })
-    
+
     // Handle validation errors specifically
     if (error instanceof Error && error.message.includes('Invalid')) {
       return NextResponse.json(
@@ -98,7 +98,30 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
+    // Handle database-level plan limit enforcement
+    if (error instanceof Error && error.message.includes('Site limit exceeded')) {
+      // Extract plan and limit from error message
+      const planMatch = error.message.match(/(\w+) plan \(limit: (\d+)/)
+      if (planMatch) {
+        const [, plan, limit] = planMatch
+        console.warn(`[${requestId}] Database enforced site limit`, {
+          userId: user?.id,
+          plan,
+          limit
+        })
+        return NextResponse.json(
+          { error: `You've reached your ${plan} plan limit of ${limit} websites. Please upgrade to add more.` },
+          { status: 403 }
+        )
+      }
+      // Fallback if parsing fails
+      return NextResponse.json(
+        { error: 'You have reached your plan limit. Please upgrade to add more sites.' },
+        { status: 403 }
+      )
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

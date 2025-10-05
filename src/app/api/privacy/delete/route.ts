@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
     const headersList = headers()
     const forwarded = headersList.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : headersList.get('x-real-ip') || 'unknown'
-    
-    const supabase = createClient()
+
+    const supabase = await createClient()
     const body = await req.json()
     
     // Check if this is a confirmation request
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid request parameters', details: error.errors },
+        { error: 'Invalid request parameters', details: error.issues },
         { status: 400 }
       )
     }

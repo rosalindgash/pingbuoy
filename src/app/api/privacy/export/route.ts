@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
     const forwarded = headersList.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : headersList.get('x-real-ip') || 'unknown'
     const rateLimitKey = createHash('sha256').update(`export:${session.user.email}:${ip}`).digest('hex')
-    
-    const supabase = createClient()
-    
+
+    const supabase = await createClient()
+
     // Check rate limit (1 export per hour per user)
     const { data: recentExports } = await supabase
       .from('privacy_requests')
@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid request parameters', details: error.errors },
+        { error: 'Invalid request parameters', details: error.issues },
         { status: 400 }
       )
     }
@@ -271,17 +271,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Sanitize CSV cells to prevent formula injection
+function sanitizeCSVCell(cell: string): string {
+  const cellStr = String(cell)
+  const dangerousChars = ['=', '+', '-', '@', '\t', '\r']
+
+  // Prefix dangerous characters with single quote to prevent formula execution
+  if (dangerousChars.some(char => cellStr.startsWith(char))) {
+    return `'${cellStr}`
+  }
+
+  return cellStr
+}
+
 function convertToCSV(data: Record<string, unknown>): string {
   const rows: string[] = []
-  
+
   // Header
   rows.push('Category,Field,Value,Date')
-  
+
   // Flatten data structure for CSV
   function flattenObject(obj: Record<string, unknown>, category: string, prefix = '') {
     for (const [key, value] of Object.entries(obj)) {
       const fieldName = prefix ? `${prefix}.${key}` : key
-      
+
       if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
         flattenObject(value, category, fieldName)
       } else if (Array.isArray(value)) {
@@ -289,16 +302,19 @@ function convertToCSV(data: Record<string, unknown>): string {
           if (typeof item === 'object') {
             flattenObject(item, category, `${fieldName}[${index}]`)
           } else {
-            rows.push(`${category},"${fieldName}[${index}]","${String(item).replace(/"/g, '""')}",""`)
+            const sanitizedValue = sanitizeCSVCell(String(item))
+            rows.push(`${sanitizeCSVCell(category)},"${sanitizeCSVCell(fieldName)}[${index}]","${sanitizedValue.replace(/"/g, '""')}",""`)
           }
         })
       } else {
         const dateValue = key.includes('_at') || key.includes('Date') ? String(value) : ''
-        rows.push(`${category},"${fieldName}","${String(value || '').replace(/"/g, '""')}","${dateValue}"`)
+        const sanitizedValue = sanitizeCSVCell(String(value || ''))
+        const sanitizedDate = sanitizeCSVCell(dateValue)
+        rows.push(`${sanitizeCSVCell(category)},"${sanitizeCSVCell(fieldName)}","${sanitizedValue.replace(/"/g, '""')}","${sanitizedDate.replace(/"/g, '""')}"`)
       }
     }
   }
-  
+
   // Process each data category
   for (const [category, categoryData] of Object.entries(data.data)) {
     if (Array.isArray(categoryData)) {
@@ -309,7 +325,7 @@ function convertToCSV(data: Record<string, unknown>): string {
       flattenObject(categoryData, category)
     }
   }
-  
+
   return rows.join('\n')
 }
 

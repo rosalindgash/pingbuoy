@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Globe, Clock, CheckCircle, AlertCircle, TrendingUp, Activity } from 'lucide-react'
+import { Globe, Clock, CheckCircle, AlertCircle, TrendingUp, Activity, Eye } from 'lucide-react'
+import Link from 'next/link'
 
 interface Site {
   id: string
@@ -202,8 +203,8 @@ export default function BasicMonitor({ site }: BasicMonitorProps) {
           </div>
         </div>
 
-        {/* Quick Info */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        {/* Quick Info and View Details Link */}
+        <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
           <div className="bg-blue-50 p-4 rounded-lg">
             <h5 className="text-sm font-medium text-blue-800 mb-2">Website Status</h5>
             <p className="text-sm text-blue-700">
@@ -215,6 +216,14 @@ export default function BasicMonitor({ site }: BasicMonitorProps) {
               }
             </p>
           </div>
+
+          <Link
+            href={`/dashboard/sites/${site.id}`}
+            className="block w-full text-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2"
+          >
+            <Eye className="h-4 w-4" />
+            <span>View Full Status & Broken Links</span>
+          </Link>
         </div>
       </div>
     </div>

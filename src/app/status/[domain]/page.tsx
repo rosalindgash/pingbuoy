@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { getSiteUptimeStats, getSiteLatestPageSpeed, getSiteHourlyUptimeData, getSiteLatestDeadLinks } from '@/lib/uptime-client'
-import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw, Link, AlertTriangle, Shield, ShieldX } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Gauge, Activity, Globe, RefreshCw, Link, Shield, ShieldX } from 'lucide-react'
 import Image from 'next/image'
 
 interface Site {
@@ -67,7 +67,6 @@ export default function StatusPage() {
   const [uptimeStats, setUptimeStats] = useState<UptimeStats | null>(null)
   const [pageSpeedStats, setPageSpeedStats] = useState<PageSpeedStats | null>(null)
   const [deadLinksStats, setDeadLinksStats] = useState<DeadLinksStats | null>(null)
-  const [deadLinks, setDeadLinks] = useState<DeadLink[]>([])
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -164,10 +163,7 @@ export default function StatusPage() {
       setDeadLinksStats(deadLinksData)
       setHourlyData(hourlyDataResult)
 
-      // Fetch dead links list if there are any broken links
-      if (deadLinksData.brokenLinks > 0) {
-        await fetchDeadLinksList(matchingSite.id)
-      }
+      // Note: Dead links list is NOT shown on public status page for privacy
 
     } catch (err) {
       console.error('Error fetching site data:', err)
@@ -177,38 +173,6 @@ export default function StatusPage() {
     }
   }
 
-  const fetchDeadLinksList = async (siteId: string) => {
-    try {
-      // Create anon supabase client for public access
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false
-          }
-        }
-      )
-
-      const { data, error } = await supabase
-        .from('dead_links')
-        .select('id, url, status_code, error, found_on_page, last_checked')
-        .eq('site_id', siteId)
-        .eq('fixed', false) // Column is 'fixed', not 'is_fixed'
-        .order('last_checked', { ascending: false })
-        .limit(50) // Limit to recent 50 dead links
-
-      if (error) {
-        console.error('Error fetching dead links:', error)
-        return
-      }
-
-      setDeadLinks(data || [])
-    } catch (error) {
-      console.error('Error in fetchDeadLinksList:', error)
-    }
-  }
 
   const handleRefresh = async () => {
     if (!site || refreshing) return
@@ -457,67 +421,7 @@ export default function StatusPage() {
           </div>
         </div>
 
-        {/* Dead Links List */}
-        {deadLinks.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <div className="flex items-center mb-4">
-              <AlertTriangle className="w-6 h-6 text-red-500 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Broken Links Found</h2>
-            </div>
-
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-red-700">
-                <strong>Found {deadLinks.length} broken link{deadLinks.length > 1 ? 's' : ''}</strong> that need attention.
-                Fixing these links will improve your website's user experience and SEO.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {deadLinks.map((link) => (
-                <div key={link.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        <XCircle className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
-                        <span className="text-sm font-medium text-gray-900 break-all">
-                          {link.url}
-                        </span>
-                      </div>
-
-                      <div className="text-xs text-gray-600 space-y-1">
-                        <div>
-                          <strong>Status:</strong> {link.status_code ? `HTTP ${link.status_code}` : 'Connection failed'}
-                        </div>
-                        {link.error && (
-                          <div>
-                            <strong>Error:</strong> {link.error}
-                          </div>
-                        )}
-                        <div>
-                          <strong>Found on:</strong>
-                          <span className="ml-1 break-all">{link.found_on_page}</span>
-                        </div>
-                        <div>
-                          <strong>Last checked:</strong> {formatLastChecked(link.last_checked)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="text-sm font-medium text-blue-900 mb-2">How to fix broken links:</h3>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Update the URL if the page has moved</li>
-                <li>• Remove the link if the content is no longer relevant</li>
-                <li>• Replace with an alternative working link</li>
-                <li>• Contact the destination website if it's temporarily down</li>
-              </ul>
-            </div>
-          </div>
-        )}
+        {/* Broken links are NOT shown on public status page - they're private to site owners */}
 
         {/* Footer */}
         <div className="text-center py-8">

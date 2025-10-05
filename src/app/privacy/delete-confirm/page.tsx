@@ -140,15 +140,15 @@ export default function DeleteConfirmationPage() {
             </Alert>
             
             <div className="space-y-2">
-              <Button 
-                onClick={() => router.push('/dashboard/privacy')} 
+              <Button
+                onClick={() => router.push('/dashboard/settings')}
                 className="w-full"
               >
-                Go to Privacy Settings
+                Go to Settings
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/dashboard')} 
+              <Button
+                variant="outline"
+                onClick={() => router.push('/dashboard')}
                 className="w-full"
               >
                 Back to Dashboard
@@ -230,7 +230,7 @@ export default function DeleteConfirmationPage() {
           <div className="flex space-x-3">
             <Button
               variant="outline"
-              onClick={() => router.push('/dashboard/privacy')}
+              onClick={() => router.push('/dashboard/settings')}
               className="flex-1"
             >
               Cancel

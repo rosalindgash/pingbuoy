@@ -5,6 +5,12 @@ import Stripe from 'stripe'
 import { randomBytes } from 'crypto'
 import { getRateLimiter } from '@/lib/redis-rate-limit'
 import { apiLogger } from '@/lib/secure-logger'
+import {
+  notifyPaymentSuccess,
+  notifyPaymentFailed,
+  notifyNewSubscription,
+  notifySubscriptionCancellation
+} from '@/lib/slack-notifications'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 const WEBHOOK_TTL_SECONDS = 15 * 60 // 15 minutes TTL for webhook deduplication
@@ -148,13 +154,26 @@ export async function POST(request: NextRequest) {
               planType: plan
             })
 
-            // TODO: Send payment receipt email (implement with proper email service)
-            // Note: Amount should not be logged - use structured logging without PII
-            if (session.amount_total) {
-              console.info(`[${requestId}] Receipt email should be sent`, {
-                eventId: event.id,
-                userId: userId,
-                planType: plan
+            // Send Slack notifications
+            const { data: user } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', userId)
+              .single() as { data: { email: string } | null }
+
+            if (user?.email) {
+              // Notify payment success
+              await notifyPaymentSuccess({
+                customerEmail: user.email,
+                plan: plan,
+                amount: session.amount_total || undefined
+              })
+
+              // Notify new subscription
+              await notifyNewSubscription({
+                email: user.email,
+                plan: plan,
+                source: 'checkout'
               })
             }
           }
@@ -230,6 +249,22 @@ export async function POST(request: NextRequest) {
               planType: plan,
               subscriptionStatus: subscription.status
             })
+
+            // Send Slack notification for cancellations
+            if (subscription.status !== 'active') {
+              const { data: userEmail } = await supabase
+                .from('users')
+                .select('email')
+                .eq('id', user.id)
+                .single() as { data: { email: string } | null }
+
+              if (userEmail?.email) {
+                await notifySubscriptionCancellation({
+                  email: userEmail.email,
+                  plan: plan
+                })
+              }
+            }
           }
         } catch (dbError) {
           console.error(`[${requestId}] Database error during subscription processing`, {
@@ -273,11 +308,18 @@ export async function POST(request: NextRequest) {
             break
           }
 
-          // TODO: Send payment failed notification (implement with proper email service)
-          console.info(`[${requestId}] Payment failure notification should be sent`, {
-            eventId: event.id,
-            userId: user.id
-          })
+          // Send Slack notification for payment failure
+          const { data: userEmail } = await supabase
+            .from('users')
+            .select('email')
+            .eq('id', user.id)
+            .single() as { data: { email: string } | null }
+
+          if (userEmail?.email) {
+            await notifyPaymentFailed({
+              customerEmail: userEmail.email
+            })
+          }
 
         } catch (dbError) {
           console.error(`[${requestId}] Database error during payment failure processing`, {

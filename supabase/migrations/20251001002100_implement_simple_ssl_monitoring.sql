@@ -11,7 +11,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     site_record RECORD;
-    http_response http_response;
+    http_response RECORD;
     start_time TIMESTAMP;
     end_time TIMESTAMP;
     site_status TEXT;

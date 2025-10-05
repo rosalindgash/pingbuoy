@@ -6,7 +6,7 @@
     "dev": "next dev -p 4000",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint": "eslint src middleware.ts --ext .ts,.tsx",
     "lint:security": "eslint . --ext .ts,.tsx,.js,.jsx --config .eslintrc.security.json",
     "security-check": "node scripts/security-check.js",
     "test:redis": "node scripts/test-redis.js",

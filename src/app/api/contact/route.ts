@@ -10,6 +10,7 @@ import {
 } from '@/lib/redis-rate-limit'
 import { validateCSRF } from '@/lib/csrf-protection'
 import { randomBytes } from 'crypto'
+import { notifyContactFormSubmission } from '@/lib/slack-notifications'
 
 export async function POST(request: NextRequest) {
   const requestId = randomBytes(8).toString('hex')
@@ -117,6 +118,16 @@ Submitted at: ${new Date().toISOString()}
       })
 
       console.log(`[${requestId}] Contact form email sent successfully:`, info.messageId)
+
+      // Send Slack notification
+      await notifyContactFormSubmission({
+        name,
+        email,
+        subject,
+        message,
+        plan
+      })
+
       return NextResponse.json({ success: true }, {
         headers: getRateLimitHeaders(rateLimitResult)
       })

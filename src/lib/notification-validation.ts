@@ -226,7 +226,7 @@ export class NotificationValidator {
       return { success: true, data: validated }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+        const errors = error.issues.map(err => `${err.path.join('.')}: ${err.message}`)
         return { success: false, errors }
       }
       return { success: false, errors: ['Invalid notification settings data'] }
@@ -246,7 +246,7 @@ export class NotificationValidator {
       return { success: true, data: validated }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+        const errors = error.issues.map(err => `${err.path.join('.')}: ${err.message}`)
         return { success: false, errors }
       }
       return { success: false, errors: ['Invalid notification settings update'] }
@@ -266,7 +266,7 @@ export class NotificationValidator {
       return { success: true, data: validated }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+        const errors = error.issues.map(err => `${err.path.join('.')}: ${err.message}`)
         return { success: false, errors }
       }
       return { success: false, errors: ['Invalid notification history data'] }

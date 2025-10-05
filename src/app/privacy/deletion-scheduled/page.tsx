@@ -84,12 +84,12 @@ export default function DeletionScheduledPage() {
           daysUntilDeletion: data.daysUntilDeletion
         })
       } else {
-        // If no pending deletion, redirect to privacy page
-        router.push('/dashboard/privacy')
+        // If no pending deletion, redirect to settings page
+        router.push('/dashboard/settings')
       }
     } catch (error) {
       console.error('Failed to fetch deletion info:', error)
-      router.push('/dashboard/privacy')
+      router.push('/dashboard/settings')
     } finally {
       setLoading(false)
     }
