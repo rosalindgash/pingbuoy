@@ -49,16 +49,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 })
     }
 
+    // Type assertion to help TypeScript understand site is defined
+    const verifiedSite = site as NonNullable<typeof site>
+
     let result
 
     switch (action) {
       case 'uptime':
         // Manual uptime check using the same logic as cron job
-        result = await checkWebsiteUptime(site)
+        result = await checkWebsiteUptime(verifiedSite)
 
         // Log the check
         await (supabase as any).from('uptime_logs').insert({
-          site_id: site.id,
+          site_id: verifiedSite.id,
           status: result.status,
           response_time: result.responseTime,
           status_code: result.statusCode,
@@ -82,16 +85,16 @@ export async function POST(request: NextRequest) {
         await (supabase as any)
           .from('sites')
           .update(updateData)
-          .eq('id', site.id)
+          .eq('id', verifiedSite.id)
         break
 
       case 'pagespeed':
         // Manual page speed test using simple timing
-        result = await checkPageSpeed(site)
+        result = await checkPageSpeed(verifiedSite)
 
         // Log the speed test using the database constraint workaround
         await (supabase as any).from('uptime_logs').insert({
-          site_id: site.id,
+          site_id: verifiedSite.id,
           status: 'up', // Use 'up' to satisfy constraint
           response_time: result.loadTime, // Load time in ms
           status_code: 200, // Valid HTTP status code
@@ -102,11 +105,11 @@ export async function POST(request: NextRequest) {
 
       case 'deadlinks':
         // Manual dead link scan using the same logic as cron job
-        const scanResult = await scanForDeadLinks(site)
+        const scanResult = await scanForDeadLinks(verifiedSite)
 
         // Log the scan
         await (supabase as any).from('uptime_logs').insert({
-          site_id: site.id,
+          site_id: verifiedSite.id,
           status: 'scan',
           response_time: scanResult.totalLinks,
           status_code: scanResult.brokenLinks.length,
@@ -129,9 +132,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       site: {
-        id: site.id,
-        name: site.name,
-        url: site.url
+        id: verifiedSite.id,
+        name: verifiedSite.name,
+        url: verifiedSite.url
       },
       result
     })
