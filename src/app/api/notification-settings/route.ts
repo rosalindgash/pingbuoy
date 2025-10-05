@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Remove sensitive data before returning
-    const { webhook_secret, ...safeSettings } = settings
+    const { webhook_secret, ...safeSettings } = settings as any
     
     return NextResponse.json({ 
       settings: {
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove sensitive data before returning
-    const { webhook_secret, ...safeSettings } = settings
+    const { webhook_secret, ...safeSettings } = settings as any
     
     return NextResponse.json({
       settings: {
