@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 })
     }
 
-    // Type assertion to help TypeScript understand site is defined
-    const verifiedSite = site as NonNullable<typeof site>
+    // Explicit type assertion to fix TypeScript inference issue
+    const verifiedSite = site as any
 
     let result
 
