@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         apiLogger.info('Stripe customer created', { requestId, userId: user.id, customerId })
 
         // Update user profile with customer ID (with race condition protection)
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('users')
           .update({ stripe_customer_id: customerId })
           .eq('id', user.id)
