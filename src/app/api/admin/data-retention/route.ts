@@ -27,7 +27,7 @@ export async function GET() {
       .from('users')
       .select('role')
       .eq('email', session.user.email)
-      .single()
+      .single() as { data: { role: string } | null; error: any }
 
     if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
       return NextResponse.json(
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       .from('users')
       .select('role')
       .eq('email', session.user.email)
-      .single()
+      .single() as { data: { role: string } | null; error: any }
 
     if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
       return NextResponse.json(
@@ -154,7 +154,7 @@ export async function DELETE() {
       .from('users')
       .select('role')
       .eq('email', session.user.email)
-      .single()
+      .single() as { data: { role: string } | null; error: any }
 
     if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
       return NextResponse.json(
