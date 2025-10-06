@@ -29,7 +29,7 @@ export default function BetaPromoBadge() {
   }
 
   return (
-    <div className="mt-4 p-2.5 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg inline-block">
+    <div className="p-2.5 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg inline-block">
       <div className="flex items-start gap-2">
         <Sparkles className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
         <div>
