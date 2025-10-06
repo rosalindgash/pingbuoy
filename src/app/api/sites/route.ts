@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
       if (planMatch) {
         const [, plan, limit] = planMatch
         console.warn(`[${requestId}] Database enforced site limit`, {
-          userId: user?.id,
           plan,
           limit
         })
