@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const [editingSite, setEditingSite] = useState<Site | null>(null)
   const [addSiteLoading, setAddSiteLoading] = useState(false)
   const [editSiteLoading, setEditSiteLoading] = useState(false)
-  const [siteForm, setSiteForm] = useState({ name: '', url: '' })
+  const [siteForm, setSiteForm] = useState({ name: '', url: '', type: 'website' as 'website' | 'api_endpoint' })
   const [checkingAll, setCheckingAll] = useState(false)
   const [checkingSites, setCheckingSites] = useState<Record<string, boolean>>({})
   const [isAdmin, setIsAdmin] = useState(false)
@@ -205,6 +205,7 @@ export default function DashboardPage() {
           user_id: user.id,
           name: siteForm.name.trim(),
           url: url,
+          type: siteForm.type,
           status: 'unknown',
           is_active: true,
           public_status: true  // Default to public for status page access
@@ -215,7 +216,7 @@ export default function DashboardPage() {
 
       if (data) {
         setSites(prev => [data[0], ...prev])
-        setSiteForm({ name: '', url: '' })
+        setSiteForm({ name: '', url: '', type: 'website' })
         setShowAddSite(false)
         // Fetch all stats for the new site
         fetchUptimeStats(data[0].id)
@@ -250,7 +251,7 @@ export default function DashboardPage() {
 
   const handleEditSite = (site: any) => {
     setEditingSite(site)
-    setSiteForm({ name: site.name, url: site.url })
+    setSiteForm({ name: site.name, url: site.url, type: site.type || 'website' })
     setShowEditSite(true)
   }
 
@@ -277,12 +278,12 @@ export default function DashboardPage() {
 
       if (error) throw error
 
-      setSites(prev => prev.map(site => 
-        site.id === editingSite.id 
+      setSites(prev => prev.map(site =>
+        site.id === editingSite.id
           ? { ...site, name: siteForm.name.trim(), url: url }
           : site
       ))
-      setSiteForm({ name: '', url: '' })
+      setSiteForm({ name: '', url: '', type: 'website' })
       setShowEditSite(false)
       setEditingSite(null)
     } catch (error) {
@@ -658,31 +659,60 @@ export default function DashboardPage() {
       {showAddSite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Website</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Site</h3>
             <form onSubmit={handleAddSite}>
               <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Type
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="type"
+                      value="website"
+                      checked={siteForm.type === 'website'}
+                      onChange={(e) => setSiteForm(prev => ({ ...prev, type: e.target.value as 'website' | 'api_endpoint' }))}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Website</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="type"
+                      value="api_endpoint"
+                      checked={siteForm.type === 'api_endpoint'}
+                      onChange={(e) => setSiteForm(prev => ({ ...prev, type: e.target.value as 'website' | 'api_endpoint' }))}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">API Endpoint</span>
+                  </label>
+                </div>
+              </div>
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website Name
+                  {siteForm.type === 'website' ? 'Website Name' : 'Endpoint Name'}
                 </label>
                 <input
                   type="text"
                   value={siteForm.name}
                   onChange={(e) => setSiteForm(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="My Website"
+                  placeholder={siteForm.type === 'website' ? 'My Website' : 'Checkout API'}
                   required
                 />
               </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website URL
+                  {siteForm.type === 'website' ? 'Website URL' : 'Endpoint URL'}
                 </label>
                 <input
                   type="url"
                   value={siteForm.url}
                   onChange={(e) => setSiteForm(prev => ({ ...prev, url: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://example.com"
+                  placeholder={siteForm.type === 'website' ? 'https://example.com' : 'https://api.example.com/checkout'}
                   required
                 />
               </div>
@@ -699,7 +729,7 @@ export default function DashboardPage() {
                   disabled={addSiteLoading}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {addSiteLoading ? 'Adding...' : 'Add Website'}
+                  {addSiteLoading ? 'Adding...' : siteForm.type === 'website' ? 'Add Website' : 'Add API Endpoint'}
                 </button>
               </div>
             </form>
@@ -745,7 +775,7 @@ export default function DashboardPage() {
                   onClick={() => {
                     setShowEditSite(false)
                     setEditingSite(null)
-                    setSiteForm({ name: '', url: '' })
+                    setSiteForm({ name: '', url: '', type: 'website' })
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                 >
