@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
         .eq('user_email', session.user.email)
 
       // Remove sensitive tokens/secrets from settings
-      userData.integrations = (integrations || []).map(integration => ({
+      userData.integrations = (integrations || []).map((integration: any) => ({
         ...integration,
         settings: integration.settings ? {
           ...integration.settings,
