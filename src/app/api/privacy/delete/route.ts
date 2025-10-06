@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
     // Create deletion request
-    const { data: deleteRequest, error: insertError } = await supabase
+    const { data: deleteRequest, error: insertError } = await (supabase as any)
       .from('privacy_requests')
       .insert({
         user_email: session.user.email,
