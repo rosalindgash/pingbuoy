@@ -108,18 +108,19 @@ export async function POST(req: NextRequest) {
 
     // Send confirmation email
     try {
-      await sendEmail({
-        to: session.user.email,
+      await sendEmail(session.user.email, {
         subject: '🚨 Confirm Account Deletion - PingBuoy',
-        template: 'account-deletion-confirmation',
-        data: {
-          userName: session.user.name || session.user.email,
-          confirmationUrl: `${process.env.NEXTAUTH_URL}/privacy/delete-confirm?token=${confirmationToken}`,
-          expiresAt: expiresAt.toLocaleString(),
-          reason: reason,
-          deleteData: deleteData,
-          retainLegalBasis: retainLegalBasis
-        }
+        html: `
+          <h1>Confirm Account Deletion</h1>
+          <p>Hi ${session.user.name || session.user.email},</p>
+          <p>You requested to delete your PingBuoy account. Please confirm this action by clicking the link below:</p>
+          <p><a href="${process.env.NEXTAUTH_URL}/privacy/delete-confirm?token=${confirmationToken}">Confirm Account Deletion</a></p>
+          <p><strong>This link expires at:</strong> ${expiresAt.toLocaleString()}</p>
+          <p><strong>Reason:</strong> ${reason}</p>
+          <p><strong>Delete all data:</strong> ${deleteData ? 'Yes' : 'No'}</p>
+          <p><strong>Retain legal basis:</strong> ${retainLegalBasis ? 'Yes' : 'No'}</p>
+        `,
+        text: `Confirm Account Deletion\n\nHi ${session.user.name || session.user.email},\n\nYou requested to delete your PingBuoy account. Please confirm by visiting:\n${process.env.NEXTAUTH_URL}/privacy/delete-confirm?token=${confirmationToken}\n\nExpires: ${expiresAt.toLocaleString()}\nReason: ${reason}`
       })
     } catch (emailError) {
       console.error('Failed to send deletion confirmation email:', emailError)
@@ -244,16 +245,19 @@ async function handleDeleteConfirmation(
 
   // Send confirmation email
   try {
-    await sendEmail({
-      to: userEmail,
+    await sendEmail(userEmail, {
       subject: '✅ Account Deletion Confirmed - PingBuoy',
-      template: 'account-deletion-scheduled',
-      data: {
-        userName: userEmail,
-        deletionDate: deletionDate.toLocaleString(),
-        cancelUrl: `${process.env.NEXTAUTH_URL}/privacy/cancel-deletion?token=${token}`,
-        gracePeriodDays: 7
-      }
+      html: `
+        <h1>Account Deletion Confirmed</h1>
+        <p>Hi ${userEmail},</p>
+        <p>Your account deletion has been confirmed and scheduled.</p>
+        <p><strong>Deletion Date:</strong> ${deletionDate.toLocaleString()}</p>
+        <p><strong>Grace Period:</strong> 7 days</p>
+        <p>You can cancel this deletion within the grace period by clicking:</p>
+        <p><a href="${process.env.NEXTAUTH_URL}/privacy/cancel-deletion?token=${token}">Cancel Account Deletion</a></p>
+        <p>After the grace period expires, this action cannot be undone.</p>
+      `,
+      text: `Account Deletion Confirmed\n\nHi ${userEmail},\n\nYour account deletion has been confirmed and scheduled.\n\nDeletion Date: ${deletionDate.toLocaleString()}\nGrace Period: 7 days\n\nCancel deletion: ${process.env.NEXTAUTH_URL}/privacy/cancel-deletion?token=${token}\n\nAfter the grace period expires, this action cannot be undone.`
     })
   } catch (emailError) {
     console.error('Failed to send deletion scheduled email:', emailError)
@@ -430,14 +434,16 @@ export async function DELETE(req: NextRequest) {
 
     // Send cancellation confirmation email
     try {
-      await sendEmail({
-        to: session.user.email,
+      await sendEmail(session.user.email, {
         subject: '🛡️ Account Deletion Cancelled - PingBuoy',
-        template: 'account-deletion-cancelled',
-        data: {
-          userName: session.user.name || session.user.email,
-          cancelledAt: new Date().toLocaleString()
-        }
+        html: `
+          <h1>Account Deletion Cancelled</h1>
+          <p>Hi ${session.user.name || session.user.email},</p>
+          <p>Your account deletion has been successfully cancelled.</p>
+          <p><strong>Cancelled at:</strong> ${new Date().toLocaleString()}</p>
+          <p>Your account remains active and all your data is safe.</p>
+        `,
+        text: `Account Deletion Cancelled\n\nHi ${session.user.name || session.user.email},\n\nYour account deletion has been successfully cancelled.\n\nCancelled at: ${new Date().toLocaleString()}\n\nYour account remains active and all your data is safe.`
       })
     } catch (emailError) {
       console.error('Failed to send cancellation email:', emailError)
