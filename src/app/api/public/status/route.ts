@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
           name: site.name,
           status: site.status,
           uptime: site.uptime,
-          responseTime: site.responseTime,
+          responseTime: site.responseTime || 0,
           lastChecked: site.lastChecked
         })
       })
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
 async function checkSystemHealth() {
   try {
     // Test database connectivity
-    const { data: dbTest, error: dbError } = await supabase
+    const { data: dbTest, error: dbError } = await (supabase as any)
       .from('sites')
       .select('count')
       .limit(1)
@@ -110,7 +110,7 @@ async function checkSystemHealth() {
     const database_responsive = !dbError
 
     // Check if monitoring is active (recent uptime logs within 10 minutes)
-    const { data: recentLogs } = await supabase
+    const { data: recentLogs } = await (supabase as any)
       .from('uptime_logs')
       .select('checked_at')
       .gte('checked_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
@@ -138,19 +138,19 @@ async function checkSystemHealth() {
 async function getSystemMetrics() {
   try {
     // Get total number of sites being monitored
-    const { count: totalSites } = await supabase
+    const { count: totalSites } = await (supabase as any)
       .from('sites')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
 
     // Get checks performed in last 24 hours
-    const { count: checks24h } = await supabase
+    const { count: checks24h } = await (supabase as any)
       .from('uptime_logs')
       .select('*', { count: 'exact', head: true })
       .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
     // Get average response time from recent checks
-    const { data: avgResponseData } = await supabase
+    const { data: avgResponseData } = await (supabase as any)
       .from('uptime_logs')
       .select('response_time')
       .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
@@ -162,7 +162,7 @@ async function getSystemMetrics() {
       : 285
 
     // Calculate monitoring uptime (percentage of successful checks in last 24h)
-    const { data: uptimeData } = await supabase
+    const { data: uptimeData } = await (supabase as any)
       .from('uptime_logs')
       .select('status')
       .gte('checked_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
@@ -193,7 +193,7 @@ async function getPingBuoyUptimeStatus() {
   try {
     // Fetch PingBuoy's own monitored sites
     // Look for sites with pingbuoy.com but exclude staging
-    const { data: pingbuoySites, error: sitesError } = await supabase
+    const { data: pingbuoySites, error: sitesError } = await (supabase as any)
       .from('sites')
       .select('id, name, url, status, last_checked')
       .ilike('url', '%pingbuoy.com%')
@@ -210,7 +210,7 @@ async function getPingBuoyUptimeStatus() {
       // Get uptime percentage for last 30 days
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-      const { data: uptimeLogs } = await supabase
+      const { data: uptimeLogs } = await (supabase as any)
         .from('uptime_logs')
         .select('status, response_time, checked_at')
         .eq('site_id', site.id)
@@ -281,7 +281,7 @@ async function getRecentIncidents() {
     // Fetch public incidents from the last 30 days
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: incidents, error } = await supabase
+    const { data: incidents, error } = await (supabase as any)
       .from('status_incidents')
       .select(`
         id,
@@ -307,7 +307,7 @@ async function getRecentIncidents() {
     // Fetch updates for each incident
     const incidentsWithUpdates = await Promise.all(
       (incidents || []).map(async (incident) => {
-        const { data: updates } = await supabase
+        const { data: updates } = await (supabase as any)
           .from('status_incident_updates')
           .select('id, status, message, created_at')
           .eq('incident_id', incident.id)
