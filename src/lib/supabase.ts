@@ -57,6 +57,7 @@ export type Database = {
           user_id: string
           url: string
           name: string
+          type: 'website' | 'api_endpoint'
           is_active: boolean
           created_at: string
           last_checked: string | null
@@ -67,6 +68,7 @@ export type Database = {
           user_id: string
           url: string
           name: string
+          type?: 'website' | 'api_endpoint'
           is_active?: boolean
           created_at?: string
           last_checked?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           user_id?: string
           url?: string
           name?: string
+          type?: 'website' | 'api_endpoint'
           is_active?: boolean
           created_at?: string
           last_checked?: string | null
