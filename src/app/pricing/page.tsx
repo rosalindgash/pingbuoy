@@ -84,7 +84,7 @@ export default function PricingPage() {
               <h3 className="text-lg leading-6 font-medium text-[#111827]">
                 {PLANS.PRO.name}
               </h3>
-              <div className="mt-4 flex items-start justify-between gap-4">
+              <div className="mt-4 flex items-center justify-between gap-4">
                 <div>
                   <span className="text-4xl font-extrabold text-[#111827]">
                     ${PLANS.PRO.price}
