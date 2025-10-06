@@ -68,8 +68,8 @@ export async function startDeadLinkScan(siteId: string): Promise<any> {
     }
     
     // Create a new scan record
-    const { data: newScan, error: scanError } = await supabase
-      .from('scans')
+    const { data: newScan, error: scanError } = await (supabase
+      .from('scans') as any)
       .insert({
         site_id: siteId,
         status: 'running',
@@ -93,8 +93,8 @@ export async function startDeadLinkScan(siteId: string): Promise<any> {
 
 export async function markDeadLinkFixed(deadLinkId: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('dead_links')
+    const { error } = await (supabase
+      .from('dead_links') as any)
       .update({ fixed: true })
       .eq('id', deadLinkId)
     

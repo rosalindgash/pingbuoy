@@ -131,7 +131,7 @@ class SecureLogger {
   /**
    * Format log message with context
    */
-  private formatMessage(level: string, message: string, context?: LogContext): any {
+  public formatMessage(level: string, message: string, context?: LogContext): any {
     const timestamp = new Date().toISOString()
 
     const logEntry = {

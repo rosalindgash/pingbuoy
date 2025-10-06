@@ -77,7 +77,7 @@ export function generateMetadata({
     
     // Open Graph
     openGraph: {
-      type,
+      type: type === 'product' ? 'website' : type,
       siteName: seoConfig.siteName,
       title: fullTitle,
       description: fullDescription,

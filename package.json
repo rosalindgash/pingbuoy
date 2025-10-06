@@ -61,6 +61,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/dompurify": "^3.0.5",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^20.19.13",
     "@types/react": "^19",
     "@types/react-dom": "^19",

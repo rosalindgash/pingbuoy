@@ -312,21 +312,30 @@ export class DataRetentionManager {
     
     if (adminEmails.length === 0) return
 
-    const emailPromises = adminEmails.map(email =>
-      sendEmail({
-        to: email.trim(),
+    const emailPromises = adminEmails.map(email => {
+      const template = {
         subject: '📊 Data Retention Policy Executed - PingBuoy',
-        template: 'admin-data-retention-report',
-        data: {
-          executedAt: logEntry.executed_at,
-          totalPolicies: logEntry.total_policies,
-          successfulPolicies: logEntry.successful_policies,
-          totalRecordsAffected: logEntry.total_records_affected,
-          results: logEntry.results,
-          dashboardUrl: `${process.env.NEXTAUTH_URL}/admin/data-retention`
-        }
-      })
-    )
+        html: `
+          <h2>Data Retention Policy Executed</h2>
+          <p><strong>Executed At:</strong> ${logEntry.executed_at}</p>
+          <p><strong>Total Policies:</strong> ${logEntry.total_policies}</p>
+          <p><strong>Successful Policies:</strong> ${logEntry.successful_policies}</p>
+          <p><strong>Total Records Affected:</strong> ${logEntry.total_records_affected}</p>
+          <p><a href="${process.env.NEXTAUTH_URL}/admin/data-retention">View Dashboard</a></p>
+        `,
+        text: `
+          Data Retention Policy Executed
+
+          Executed At: ${logEntry.executed_at}
+          Total Policies: ${logEntry.total_policies}
+          Successful Policies: ${logEntry.successful_policies}
+          Total Records Affected: ${logEntry.total_records_affected}
+
+          View Dashboard: ${process.env.NEXTAUTH_URL}/admin/data-retention
+        `
+      }
+      return sendEmail(email.trim(), template)
+    })
 
     await Promise.allSettled(emailPromises)
   }
@@ -334,12 +343,12 @@ export class DataRetentionManager {
   async processScheduledDeletions(): Promise<void> {
     // Find accounts scheduled for deletion where grace period has expired
     const supabase = await this.getSupabase()
-    const { data: accountsToDelete, error } = await supabase
+    const { data: accountsToDelete, error } = await (supabase
       .from('users')
       .select('*')
       .not('deletion_scheduled_at', 'is', null)
       .lt('deletion_scheduled_at', new Date().toISOString())
-      .eq('account_status', 'deletion_pending')
+      .eq('account_status', 'deletion_pending') as any)
 
     if (error) {
       console.error('Failed to fetch accounts for deletion:', error)
@@ -360,8 +369,8 @@ export class DataRetentionManager {
         
         // Mark deletion as failed
         const supabaseForError = await this.getSupabase()
-        await supabaseForError
-          .from('privacy_requests')
+        await (supabaseForError
+          .from('privacy_requests') as any)
           .update({
             status: 'failed',
             error_message: error instanceof Error ? error.message : 'Unknown error'
@@ -409,8 +418,8 @@ export class DataRetentionManager {
       .eq('email', userEmail)
 
     // Mark privacy request as completed
-    await supabase
-      .from('privacy_requests')
+    await (supabase
+      .from('privacy_requests') as any)
       .update({
         status: 'completed',
         completed_at: new Date().toISOString()
@@ -436,24 +445,24 @@ export class DataRetentionManager {
     try {
       const supabase = await this.getSupabase()
       // Get last retention run
-      const { data: lastRun } = await supabase
+      const { data: lastRun } = await (supabase
         .from('job_logs')
         .select('executed_at, results')
         .eq('job_type', 'data_retention')
         .order('executed_at', { ascending: false })
         .limit(1)
-        .single()
+        .single() as any)
 
       if (lastRun) {
         report.lastRun = lastRun.executed_at
       }
 
       // Get upcoming account deletions
-      const { data: scheduledDeletions } = await supabase
+      const { data: scheduledDeletions } = await (supabase
         .from('users')
         .select('deletion_scheduled_at')
         .not('deletion_scheduled_at', 'is', null)
-        .eq('account_status', 'deletion_pending')
+        .eq('account_status', 'deletion_pending') as any)
 
       if (scheduledDeletions) {
         const now = new Date()
@@ -461,7 +470,7 @@ export class DataRetentionManager {
 
         report.upcomingDeletions.accounts = scheduledDeletions.length
         report.upcomingDeletions.gracePeriodExpiring = scheduledDeletions.filter(
-          account => new Date(account.deletion_scheduled_at) <= threeDaysFromNow
+          (account: any) => new Date(account.deletion_scheduled_at) <= threeDaysFromNow
         ).length
       }
 

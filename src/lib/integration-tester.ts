@@ -164,7 +164,7 @@ export class SecureIntegrationTester {
       alert: {
         status_code: 200,
         response_time: 250,
-        error_message: null
+        error_message: undefined
       },
       user: {
         id: 'test-user-id',

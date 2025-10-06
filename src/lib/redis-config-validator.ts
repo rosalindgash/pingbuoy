@@ -161,7 +161,7 @@ export class RedisConfigValidator {
       let memory: { used: string; peak: string } | undefined
 
       try {
-        const info = await redis.info() as any
+        const info = await (redis as any).info()
         if (typeof info === 'string') {
           const versionMatch = info.match(/redis_version:([^\r\n]+)/)
           if (versionMatch) {

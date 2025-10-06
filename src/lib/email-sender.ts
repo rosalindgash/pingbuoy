@@ -32,7 +32,7 @@ const emailSchema = z.object({
   html: z.string().optional(),
   text: z.string().min(1, 'Email content is required'),
   templateName: z.string().optional(),
-  templateData: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
+  templateData: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.date()])).optional()
 })
 
 export interface EmailRequest {

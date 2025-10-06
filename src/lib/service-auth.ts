@@ -57,6 +57,7 @@ interface ServiceJWTPayload {
   iat: number
   exp: number
   scope: string
+  [key: string]: any
 }
 
 class ServiceAuthenticator {
@@ -116,7 +117,7 @@ class ServiceAuthenticator {
 
       return payload as ServiceJWTPayload
     } catch (error) {
-      throw new Error(`Invalid service token: ${error.message}`)
+      throw new Error(`Invalid service token: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -167,7 +168,7 @@ class ServiceAuthenticator {
 
       return { valid: true, payload }
     } catch (error) {
-      return { valid: false, error: error.message }
+      return { valid: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   }
 
