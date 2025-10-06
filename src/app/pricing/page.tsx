@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
+import BetaPromoBadge from '@/components/BetaPromoBadge'
 
 export default function PricingPage() {
   return (
@@ -94,6 +95,8 @@ export default function PricingPage() {
               </p>
             </div>
             <div className="pt-6 pb-8 px-6">
+              <BetaPromoBadge />
+
               <h4 className="text-xs font-medium text-gray-900 tracking-wide uppercase">
                 What&apos;s included
               </h4>
