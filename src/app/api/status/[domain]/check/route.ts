@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase-server'
 
+type SiteData = {
+  id: string
+  name: string
+  url: string
+  status: string | null
+  user_id: string
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ domain: string }> }
@@ -29,7 +37,7 @@ export async function POST(
       .from('sites')
       .select('id, name, url, status, user_id')
       .eq('is_active', true)
-      .or(possibleUrls.map(url => `url.eq.${url}`).join(','))
+      .or(possibleUrls.map(url => `url.eq.${url}`).join(',')) as { data: SiteData[] | null, error: any }
 
     if (siteError || !sites || sites.length === 0) {
       return NextResponse.json({ error: 'Site not found or not public' }, { status: 404 })
