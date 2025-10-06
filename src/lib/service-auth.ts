@@ -6,6 +6,15 @@
 import { createClient } from '@supabase/supabase-js'
 import { SignJWT, jwtVerify } from 'jose'
 
+// Declare Deno global for Edge Functions
+declare global {
+  var Deno: {
+    env: {
+      get(key: string): string | undefined
+    }
+  } | undefined
+}
+
 // Service types with specific permissions
 export type ServiceType =
   | 'uptime_monitor'
@@ -181,8 +190,8 @@ class ServiceAuthenticator {
     operation: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE'
   ): boolean {
     const permissions = payload.permissions
-    return permissions.tables.includes(table) &&
-           permissions.operations.includes(operation)
+    return (permissions.tables as readonly string[]).includes(table) &&
+           (permissions.operations as readonly string[]).includes(operation)
   }
 }
 
@@ -223,6 +232,9 @@ export function createDenoServiceAuth() {
       serviceType: ServiceType,
       expirationMinutes: number = 60
     ): Promise<string> {
+      if (typeof Deno === 'undefined') {
+        throw new Error('This function is only available in Deno environments')
+      }
       const secretKey = Deno.env.get('SERVICE_JWT_SECRET')
       if (!secretKey) {
         throw new Error('SERVICE_JWT_SECRET environment variable is required')

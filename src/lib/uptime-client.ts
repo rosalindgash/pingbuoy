@@ -76,14 +76,14 @@ export async function getSiteLatestPageSpeed(siteId: string): Promise<{ score: n
     }
 
     // Calculate average response time from recent checks (excluding timeout values)
-    const validResponseTimes = data.filter(log => log.response_time && log.response_time < 1000)
+    const validResponseTimes = data.filter((log: any) => log.response_time && log.response_time < 1000)
 
     if (validResponseTimes.length === 0) {
       return { score: 0, loadTime: 0, lastChecked: data[0]?.checked_at || null }
     }
 
     const avgResponseTime = Math.round(
-      validResponseTimes.reduce((sum, log) => sum + (log.response_time || 0), 0) / validResponseTimes.length
+      validResponseTimes.reduce((sum: number, log: any) => sum + (log.response_time || 0), 0) / validResponseTimes.length
     )
 
     return {
@@ -272,7 +272,7 @@ export async function getSiteHourlyUptimeData(siteId: string, hours = 24): Promi
     }
     
     // Group logs by hour
-    const hourlyData = logs.reduce((acc, log) => {
+    const hourlyData = logs.reduce((acc: Record<number, { up: number, down: number, total: number }>, log: any) => {
       const logDate = new Date(log.checked_at)
       const hourFromNow = Math.floor((Date.now() - logDate.getTime()) / (60 * 60 * 1000))
       const hourIndex = Math.max(0, Math.min(hours - 1, hourFromNow))
@@ -282,7 +282,7 @@ export async function getSiteHourlyUptimeData(siteId: string, hours = 24): Promi
       }
       
       if (log.status === 'up' || log.status === 'down') {
-        acc[hourIndex][log.status]++
+        acc[hourIndex][log.status as 'up' | 'down']++
         acc[hourIndex].total++
       }
       

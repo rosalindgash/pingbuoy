@@ -35,27 +35,6 @@ export const createClient = async (): Promise<SupabaseClient<Database>> => {
             // This is expected behavior and can be safely ignored
             console.debug('Cookie set operation skipped in server component')
           }
-        },
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: Record<string, unknown>) {
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Cookie modifications are not allowed in server components during rendering
-            // This is expected behavior and can be safely ignored
-            console.debug('Cookie set operation skipped in server component:', name)
-          }
-        },
-        remove(name: string, options: Record<string, unknown>) {
-          try {
-            cookieStore.delete({ name, ...options })
-          } catch (error) {
-            // Cookie modifications are not allowed in server components during rendering
-            // This is expected behavior and can be safely ignored
-            console.debug('Cookie remove operation skipped in server component:', name)
-          }
         }
       }
     }
@@ -84,10 +63,7 @@ export const createServiceRoleClient = (): SupabaseClient<Database> => {
       // No cookies needed for service role
       cookies: {
         getAll() { return [] },
-        setAll() {},
-        get() { return undefined },
-        set() {},
-        remove() {}
+        setAll() {}
       }
     }
   )
