@@ -210,7 +210,7 @@ async function handleDeleteConfirmation(
   const deletionDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
   // Update deletion request
-  const { error: updateError } = await supabase
+  const { error: updateError } = await (supabase as any)
     .from('privacy_requests')
     .update({
       status: 'confirmed',
@@ -230,7 +230,7 @@ async function handleDeleteConfirmation(
   }
 
   // Mark user account for deletion
-  const { error: userUpdateError } = await supabase
+  const { error: userUpdateError } = await (supabase as any)
     .from('users')
     .update({
       deletion_scheduled_at: deletionDate.toISOString(),
@@ -406,7 +406,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Cancel the deletion
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('privacy_requests')
       .update({
         status: 'cancelled',
@@ -419,7 +419,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Restore user account status
-    const { error: userUpdateError } = await supabase
+    const { error: userUpdateError } = await (supabase as any)
       .from('users')
       .update({
         deletion_scheduled_at: null,
