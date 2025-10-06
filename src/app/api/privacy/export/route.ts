@@ -296,11 +296,11 @@ function convertToCSV(data: Record<string, unknown>): string {
       const fieldName = prefix ? `${prefix}.${key}` : key
 
       if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-        flattenObject(value, category, fieldName)
+        flattenObject(value as Record<string, unknown>, category, fieldName)
       } else if (Array.isArray(value)) {
         value.forEach((item, index) => {
           if (typeof item === 'object') {
-            flattenObject(item, category, `${fieldName}[${index}]`)
+            flattenObject(item as Record<string, unknown>, category, `${fieldName}[${index}]`)
           } else {
             const sanitizedValue = sanitizeCSVCell(String(item))
             rows.push(`${sanitizeCSVCell(category)},"${sanitizeCSVCell(fieldName)}[${index}]","${sanitizedValue.replace(/"/g, '""')}",""`)
