@@ -35,7 +35,7 @@ export async function POST(
     const checkedAt = new Date().toISOString()
 
     // Log the check in uptime_logs table with consistent structure
-    await supabase
+    await (supabase as any)
       .from('uptime_logs')
       .insert({
         site_id: siteId,
