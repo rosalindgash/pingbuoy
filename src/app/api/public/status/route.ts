@@ -206,7 +206,7 @@ async function getPingBuoyUptimeStatus() {
     }
 
     // Get uptime statistics for each PingBuoy site
-    const statusPromises = pingbuoySites.map(async (site) => {
+    const statusPromises = pingbuoySites.map(async (site: any) => {
       // Get uptime percentage for last 30 days
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -306,7 +306,7 @@ async function getRecentIncidents() {
 
     // Fetch updates for each incident
     const incidentsWithUpdates = await Promise.all(
-      (incidents || []).map(async (incident) => {
+      (incidents || []).map(async (incident: any) => {
         const { data: updates } = await (supabase as any)
           .from('status_incident_updates')
           .select('id, status, message, created_at')
