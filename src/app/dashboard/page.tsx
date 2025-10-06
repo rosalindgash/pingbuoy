@@ -489,7 +489,9 @@ export default function DashboardPage() {
           {/* Sites List */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">Your Websites ({sites.length})</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">
+                Your Sites ({sites.filter(s => s.type === 'website').length} {sites.filter(s => s.type === 'website').length === 1 ? 'website' : 'websites'}, {sites.filter(s => s.type === 'api_endpoint').length} API {sites.filter(s => s.type === 'api_endpoint').length === 1 ? 'endpoint' : 'endpoints'})
+              </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Click on a website's status page URL to view its detailed monitoring status and share it with others. Last Check times are displayed in UTC.
               </p>

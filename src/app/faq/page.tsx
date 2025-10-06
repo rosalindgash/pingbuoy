@@ -67,11 +67,11 @@ const faqCategories = [
     faqs: [
       {
         question: 'What is included in the free plan?',
-        answer: 'The free plan includes monitoring for up to 3 websites, 10-minute check intervals, email alerts, 7-day history, basic uptime reporting, and dead link detection. Perfect for personal websites or small projects.'
+        answer: 'The free plan includes monitoring for up to 2 websites, 1 API endpoint, 10-minute check intervals, email alerts, 7-day history, basic uptime reporting, and dead link detection. Ideal for solopreneurs getting started with website monitoring.'
       },
       {
         question: 'What are the benefits of upgrading to Pro?',
-        answer: 'Pro plan includes up to 15 websites, 3-minute monitoring intervals, SSL certificate monitoring, API monitoring (up to 3 endpoints), Email/Slack/Discord/Webhook alerts, 60-day history, and priority email support within 4 hours. Ideal for businesses and agencies.'
+        answer: 'Pro plan includes up to 15 websites, 3 API endpoints, 3-minute monitoring intervals, SSL certificate monitoring, Email/Slack/Discord/Webhook alerts, 60-days history, and priority email support. Ideal for growing businesses and agencies.'
       },
       {
         question: 'Can I change or cancel my plan anytime?',
@@ -127,7 +127,7 @@ const faqCategories = [
     faqs: [
       {
         question: 'What support options are available?',
-        answer: 'We provide email support for all users, with priority support for Pro subscribers. Our support team typically responds within 24 hours for free users and within 4 hours for Pro users during business hours.'
+        answer: 'We provide email support for all users, with priority support for Pro subscribers.'
       },
       {
         question: 'Do you provide API access?',

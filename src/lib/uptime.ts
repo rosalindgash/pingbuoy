@@ -30,7 +30,7 @@ export async function getUserSites(userId: string): Promise<(Site & { uptime_log
   return data
 }
 
-export async function addSite(userId: string, url: string, name: string): Promise<Site> {
+export async function addSite(userId: string, url: string, name: string, type: 'website' | 'api_endpoint' = 'website'): Promise<Site> {
   const supabase = await createServerSupabaseClient()
 
   // Validate URL format and security
@@ -38,7 +38,7 @@ export async function addSite(userId: string, url: string, name: string): Promis
   if (!validation.isValid) {
     throw new Error(`URL validation failed: ${validation.reason}`)
   }
-  
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('sites')
@@ -46,6 +46,7 @@ export async function addSite(userId: string, url: string, name: string): Promis
       user_id: userId,
       url: url.trim(),
       name: name.trim(),
+      type: type
     })
     .select()
     .single()

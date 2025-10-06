@@ -32,27 +32,27 @@ export const PLANS = {
     uptimeChecks: '10 min intervals',
     features: [
       'Monitor up to 2 websites',
+      '1 API endpoint',
       'Uptime monitoring (10-min checks)',
       'Email alerts only',
       '7 days history',
-      'Email support (24-48 hours)',
-      'No SSL certificate monitoring',
-      'No API monitoring',
+      'Email support',
+      'No SSL certificate monitoring'
     ]
   },
   PRO: {
     name: 'Pro',
-    price: 59,
+    price: 19,
     sites: 15,
     uptimeChecks: '3 min intervals',
     features: [
       'Monitor up to 15 websites',
+      '3 API endpoints',
       'Uptime monitoring (3-min checks)',
       'SSL certificate monitoring',
-      'API monitoring (up to 3 endpoints)',
       'Email + Slack + Discord + Webhooks alerts',
-      '60 days history',
-      'Priority email support (within 4 hours)'
+      '60-days history',
+      'Priority email support'
     ]
   }
 }

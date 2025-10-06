@@ -39,6 +39,13 @@ export default async function SitesList({ sites }: SitesListProps) {
                 <h3 className="text-lg font-medium text-[#111827]">
                   {site.name}
                 </h3>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  site.type === 'api_endpoint'
+                    ? 'bg-purple-100 text-purple-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {site.type === 'api_endpoint' ? 'API Endpoint' : 'Website'}
+                </span>
               </div>
               <a
                 href={site.url}

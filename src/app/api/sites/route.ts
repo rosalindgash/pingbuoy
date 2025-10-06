@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const rawData = await request.json()
 
     // Validate and sanitize input
-    const { name, url } = validateAndSanitize(siteSchema, rawData)
+    const { name, url, type } = validateAndSanitize(siteSchema, rawData)
 
     const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const site = await addSite(user.id, url, name)
+    const site = await addSite(user.id, url, name, type)
 
     console.info(`[${requestId}] Site created successfully`, {
       userId: user.id,

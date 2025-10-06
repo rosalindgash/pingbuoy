@@ -82,7 +82,8 @@ export const passwordSchema = z.string()
 // Site validation schema
 export const siteSchema = z.object({
   name: siteNameSchema,
-  url: urlSchema
+  url: urlSchema,
+  type: z.enum(['website', 'api_endpoint']).default('website')
 })
 
 // User profile validation schema
