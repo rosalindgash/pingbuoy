@@ -84,18 +84,20 @@ export default function PricingPage() {
               <h3 className="text-lg leading-6 font-medium text-[#111827]">
                 {PLANS.PRO.name}
               </h3>
-              <div className="mt-4">
-                <span className="text-4xl font-extrabold text-[#111827]">
-                  ${PLANS.PRO.price}
-                </span>
-                <span className="text-base font-medium text-[#111827]/60">/mo</span>
+              <div className="mt-4 flex items-center justify-between">
+                <div>
+                  <span className="text-4xl font-extrabold text-[#111827]">
+                    ${PLANS.PRO.price}
+                  </span>
+                  <span className="text-base font-medium text-[#111827]/60">/mo</span>
+                </div>
+                <BetaPromoBadge />
               </div>
               <p className="mt-4 text-sm text-[#111827]/70">
                 Advanced monitoring for small businesses, SaaS founders, and agencies with modest portfolios
               </p>
             </div>
             <div className="pt-6 pb-8 px-6">
-              <BetaPromoBadge />
 
               <h4 className="text-xs font-medium text-gray-900 tracking-wide uppercase">
                 What&apos;s included

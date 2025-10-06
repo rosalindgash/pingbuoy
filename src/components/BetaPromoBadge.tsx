@@ -39,22 +39,14 @@ export default function BetaPromoBadge() {
   }
 
   return (
-    <div className="mb-4 p-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-orange-900">
-            🎉 Beta Launch Special
-          </p>
-          <p className="text-xs text-orange-700 mt-1">
-            Use code <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">BETA50</span> for 50% off first month
-          </p>
-        </div>
-        <div className="ml-3 text-right">
-          <div className="text-xs text-orange-600 font-medium">
-            {remainingUses} left
-          </div>
-        </div>
-      </div>
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-full text-xs">
+      <span className="font-semibold text-orange-900">
+        🎉 BETA50
+      </span>
+      <span className="text-orange-700">50% off</span>
+      <span className="text-orange-600 font-medium">
+        {remainingUses} left
+      </span>
     </div>
   )
 }
