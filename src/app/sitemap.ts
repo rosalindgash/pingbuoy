@@ -75,7 +75,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ]
 
   // Dynamic pages (would be populated from database in production)
-  const dynamicPages = [
+  const dynamicPages: MetadataRoute.Sitemap = [
     // Blog posts (if we add a blog)
     // {
     //   url: `${baseUrl}/blog`,

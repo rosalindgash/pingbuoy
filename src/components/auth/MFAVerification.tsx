@@ -42,7 +42,7 @@ export default function MFAVerification({ onSuccess, onBack }: MFAVerificationPr
         return
       }
 
-      const totpFactor = factors?.totp?.find(f => f.status === 'verified')
+      const totpFactor = factors?.totp?.find((f: any) => f.status === 'verified')
 
       if (!totpFactor) {
         setMessage('MFA not properly configured. Please contact support.')

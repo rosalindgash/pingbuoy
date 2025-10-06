@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Webhook, 
-  CheckCircle, 
-  AlertTriangle, 
-  Settings, 
-  Test, 
+import {
+  Webhook,
+  CheckCircle,
+  AlertTriangle,
+  Settings,
+  TestTube,
   Trash2,
   ExternalLink,
   Copy,
@@ -681,7 +681,7 @@ export function WebhookIntegration({
           variant="outline"
           className="flex items-center space-x-2"
         >
-          <Test className="h-4 w-4" />
+          <TestTube className="h-4 w-4" />
           <span>{testing ? 'Testing...' : 'Test Integration'}</span>
         </Button>
 

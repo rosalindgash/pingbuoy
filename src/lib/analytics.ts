@@ -85,7 +85,7 @@ export class SecureAnalytics {
   private async loadGoogleAnalytics(): Promise<void> {
     return new Promise((resolve, reject) => {
       // Check if already loaded
-      if (window.gtag) {
+      if (typeof window.gtag !== 'undefined') {
         resolve()
         return
       }
@@ -102,7 +102,7 @@ export class SecureAnalytics {
       // Initialize gtag function
       window.dataLayer = window.dataLayer || []
       window.gtag = function(...args: any[]) {
-        window.dataLayer.push(args)
+        window.dataLayer!.push(args)
       }
     })
   }

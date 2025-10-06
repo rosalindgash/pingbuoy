@@ -330,8 +330,8 @@ export class CloudSecurityValidator {
     const functionFiles = []
     try {
       const functions = fs.readdirSync(functionsDir, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('_'))
-        .map(dirent => dirent.name)
+        .filter((dirent: any) => dirent.isDirectory() && !dirent.name.startsWith('_'))
+        .map((dirent: any) => dirent.name)
 
       for (const functionName of functions) {
         const indexPath = path.join(functionsDir, functionName, 'index.ts')
@@ -381,7 +381,7 @@ export class CloudSecurityValidator {
         }
 
       } catch (error) {
-        console.warn(`Unable to validate CORS in function ${name}:`, error.message)
+        console.warn(`Unable to validate CORS in function ${name}:`, error instanceof Error ? error.message : error)
       }
     }
 

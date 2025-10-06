@@ -178,22 +178,22 @@ export class DataRetentionManager {
   private async archiveRecords(policy: RetentionPolicy, cutoffDate: Date) {
     // First, copy records to archive table
     const supabase = await this.getSupabase()
-    const { data: recordsToArchive, error: selectError } = await supabase
+    let query = supabase
       .from(policy.table)
       .select('*')
       .lt(policy.dateColumn, cutoffDate.toISOString())
-      .apply(query => {
-        if (policy.conditions) {
-          for (const [key, value] of Object.entries(policy.conditions)) {
-            if (Array.isArray(value)) {
-              query = query.in(key, value)
-            } else {
-              query = query.eq(key, value)
-            }
-          }
+
+    if (policy.conditions) {
+      for (const [key, value] of Object.entries(policy.conditions)) {
+        if (Array.isArray(value)) {
+          query = query.in(key, value as any[])
+        } else {
+          query = query.eq(key, value)
         }
-        return query
-      })
+      }
+    }
+
+    const { data: recordsToArchive, error: selectError } = await query
 
     if (selectError) throw selectError
     if (!recordsToArchive || recordsToArchive.length === 0) {
@@ -206,15 +206,15 @@ export class DataRetentionManager {
     }
 
     // Add archive metadata
-    const archiveRecords = recordsToArchive.map(record => ({
+    const archiveRecords = recordsToArchive.map((record: any) => ({
       ...record,
       archived_at: new Date().toISOString(),
       original_table: policy.table
     }))
 
     // Insert into archive table
-    const { error: archiveError } = await supabase
-      .from(policy.archiveTable!)
+    const { error: archiveError } = await (supabase
+      .from(policy.archiveTable!) as any)
       .insert(archiveRecords)
 
     if (archiveError) throw archiveError
@@ -266,14 +266,14 @@ export class DataRetentionManager {
       }
     }
 
-    const { data, error } = await deleteQuery.select('count', { count: 'exact' })
+    const { data, error } = await deleteQuery
 
     if (error) throw error
 
     return {
       table: policy.table,
       success: true,
-      recordsAffected: data?.length || 0,
+      recordsAffected: (data as any)?.length || 0,
       action: 'delete'
     }
   }
@@ -290,8 +290,8 @@ export class DataRetentionManager {
 
     try {
       const supabase = await this.getSupabase()
-      await supabase
-        .from('job_logs')
+      await (supabase
+        .from('job_logs') as any)
         .insert(logEntry)
     } catch (error) {
       console.error('Failed to log retention results:', error)

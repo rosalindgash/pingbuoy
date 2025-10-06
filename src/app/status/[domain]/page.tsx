@@ -148,7 +148,7 @@ export default function StatusPage() {
       }
 
       setSite(matchingSite)
-      setUser(matchingSite.users)
+      setUser(Array.isArray((matchingSite as any).users) ? (matchingSite as any).users[0] : (matchingSite as any).users)
 
       // Fetch monitoring data
       const [uptimeData, speedData, deadLinksData, hourlyDataResult] = await Promise.all([

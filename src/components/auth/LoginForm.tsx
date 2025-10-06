@@ -70,7 +70,7 @@ export default function LoginForm() {
           return
         }
 
-        const hasMFA = factors?.totp?.some(f => f.status === 'verified')
+        const hasMFA = factors?.totp?.some((f: any) => f.status === 'verified')
 
         if (hasMFA) {
           // SECURITY: For MFA users, we need to challenge immediately

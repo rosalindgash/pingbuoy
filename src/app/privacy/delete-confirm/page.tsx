@@ -216,7 +216,7 @@ export default function DeleteConfirmationPage() {
               <Checkbox
                 id="final-confirmation"
                 checked={finalConfirmation}
-                onCheckedChange={setFinalConfirmation}
+                onCheckedChange={(checked) => setFinalConfirmation(checked === true)}
               />
               <Label htmlFor="final-confirmation" className="text-sm leading-relaxed">
                 I understand that this action is permanent and will result in the deletion of my account 

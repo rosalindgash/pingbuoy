@@ -13,11 +13,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 interface UserProfile {
-  user_id: string
+  id: string
   email: string
+  full_name: string | null
   plan: 'free' | 'pro' | 'founder'
   created_at: string
-  stripe_customer_id?: string
+  stripe_customer_id: string | null
 }
 
 

@@ -3,6 +3,11 @@
 import { useEffect } from 'react'
 import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals'
 
+// Declare gtag global
+declare global {
+  function gtag(...args: any[]): void
+}
+
 // Function to send Core Web Vitals to Google Analytics and our database
 function sendToAnalytics({ name, value, id }: { name: string; value: number; id: string }) {
   // Send to Google Analytics
