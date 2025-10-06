@@ -174,7 +174,7 @@ async function handleDeleteConfirmation(
   }
 
   // Find and validate deletion request
-  const { data: deleteRequest } = await supabase
+  const { data: deleteRequest } = await (supabase as any)
     .from('privacy_requests')
     .select('*')
     .eq('user_email', userEmail)
@@ -286,7 +286,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient()
     
     // Check for active deletion requests
-    const { data: deletionRequest } = await supabase
+    const { data: deletionRequest } = await (supabase as any)
       .from('privacy_requests')
       .select('*')
       .eq('user_email', session.user.email)
@@ -371,7 +371,7 @@ export async function DELETE(req: NextRequest) {
     const supabase = await createClient()
 
     // Find and validate deletion request
-    const { data: deleteRequest } = await supabase
+    const { data: deleteRequest } = await (supabase as any)
       .from('privacy_requests')
       .select('*')
       .eq('user_email', session.user.email)
