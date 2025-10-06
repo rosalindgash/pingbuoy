@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const headersList = headers()
+    const headersList = await headers()
     const forwarded = headersList.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : headersList.get('x-real-ip') || 'unknown'
 
@@ -279,7 +279,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check for active deletion requests
     const { data: deletionRequest } = await supabase
@@ -364,7 +364,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Find and validate deletion request
     const { data: deleteRequest } = await supabase
