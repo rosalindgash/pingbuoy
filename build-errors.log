@@ -1,0 +1,26 @@
+
+> website-monitoring-app@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.2 (Turbopack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 223ms
+ ✓ Compiled successfully in 4.0s
+   Skipping linting
+   Checking validity of types ...
+Failed to compile.
+
+./src/app/dashboard/client-page.tsx:244:24
+Type error: Type 'Site[]' is not assignable to type '{ id: string; user_id: string; url: string; name: string; type: "website" | "api_endpoint"; is_active: boolean; created_at: string; last_checked: string | null; status: "unknown" | "up" | "down"; }[]'.
+  Property 'type' is missing in type 'Site' but required in type '{ id: string; user_id: string; url: string; name: string; type: "website" | "api_endpoint"; is_active: boolean; created_at: string; last_checked: string | null; status: "unknown" | "up" | "down"; }'.
+
+[0m [90m 242 |[39m             [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 243 |[39m           ) [33m:[39m (
+[31m[1m>[22m[39m[90m 244 |[39m             [33m<[39m[33mSitesList[39m sites[33m=[39m{sites} [33m/[39m[33m>[39m
+ [90m     |[39m                        [31m[1m^[22m[39m
+ [90m 245 |[39m           )}
+ [90m 246 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 247 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

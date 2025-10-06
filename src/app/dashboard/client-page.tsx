@@ -13,6 +13,7 @@ interface Site {
   id: string
   name: string
   url: string
+  type: 'website' | 'api_endpoint'
   status: 'up' | 'down' | 'unknown'
   user_id: string
   is_active: boolean
