@@ -16,7 +16,7 @@ export async function POST(
     const { siteId } = await params
 
     // Verify user owns this site
-    const { data: site, error: siteError } = await supabase
+    const { data: site, error: siteError } = await (supabase as any)
       .from('sites')
       .select('*')
       .eq('id', siteId)
@@ -31,7 +31,7 @@ export async function POST(
     const checkResult = await performUptimeCheck(site.url)
 
     // Update site in database
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('sites')
       .update({
         status: checkResult.status,
@@ -44,7 +44,7 @@ export async function POST(
     }
 
     // Log the check
-    const { error: logError } = await supabase
+    const { error: logError } = await (supabase as any)
       .from('uptime_logs')
       .insert({
         site_id: siteId,
