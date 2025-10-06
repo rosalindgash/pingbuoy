@@ -47,7 +47,7 @@ export async function POST(
       })
 
     // Update the site status in database
-    await supabase
+    await (supabase as any)
       .from('sites')
       .update({
         status: result.status,
