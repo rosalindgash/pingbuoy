@@ -316,13 +316,13 @@ function convertToCSV(data: Record<string, unknown>): string {
   }
 
   // Process each data category
-  for (const [category, categoryData] of Object.entries(data.data)) {
+  for (const [category, categoryData] of Object.entries(data.data as Record<string, unknown>)) {
     if (Array.isArray(categoryData)) {
       categoryData.forEach((item, index) => {
-        flattenObject(item, category, `record_${index}`)
+        flattenObject(item as Record<string, unknown>, category, `record_${index}`)
       })
     } else if (categoryData && typeof categoryData === 'object') {
-      flattenObject(categoryData, category)
+      flattenObject(categoryData as Record<string, unknown>, category)
     }
   }
 
