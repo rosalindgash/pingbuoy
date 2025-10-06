@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limiting check
-    const headersList = headers()
+    const headersList = await headers()
     const forwarded = headersList.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : headersList.get('x-real-ip') || 'unknown'
     const rateLimitKey = createHash('sha256').update(`export:${session.user.email}:${ip}`).digest('hex')
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient()
 
     // Check rate limit (1 export per hour per user)
-    const { data: recentExports } = await supabase
+    const { data: recentExports } = await (supabase as any)
       .from('privacy_requests')
       .select('created_at')
       .eq('user_email', session.user.email)
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     // Profile data
     if (!categories || categories.includes('profile')) {
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('users')
         .select(`
           email,
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     // Website monitors
     if (!categories || categories.includes('monitors')) {
-      const { data: monitors } = await supabase
+      const { data: monitors } = await (supabase as any)
         .from('website_monitors')
         .select(`
           url,
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
     // Alert history
     if (!categories || categories.includes('alerts')) {
-      const { data: alerts } = await supabase
+      const { data: alerts } = await (supabase as any)
         .from('alerts')
         .select(`
           alert_type,
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 
     // Integration settings
     if (!categories || categories.includes('integrations')) {
-      const { data: integrations } = await supabase
+      const { data: integrations } = await (supabase as any)
         .from('integrations')
         .select(`
           platform,
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     // Analytics data
     if (!categories || categories.includes('analytics')) {
-      const { data: analytics } = await supabase
+      const { data: analytics } = await (supabase as any)
         .from('user_analytics')
         .select(`
           event_type,
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     // Notification history
     if (!categories || categories.includes('notifications')) {
-      const { data: notifications } = await supabase
+      const { data: notifications } = await (supabase as any)
         .from('notifications')
         .select(`
           type,
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
 
     // Billing data (if exists)
     if (!categories || categories.includes('billing')) {
-      const { data: billing } = await supabase
+      const { data: billing } = await (supabase as any)
         .from('subscriptions')
         .select(`
           plan_name,
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Log the export request
-    await supabase
+    await (supabase as any)
       .from('privacy_requests')
       .insert({
         user_email: session.user.email,
@@ -340,10 +340,10 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check last export time
-    const { data: lastExport } = await supabase
+    const { data: lastExport } = await (supabase as any)
       .from('privacy_requests')
       .select('created_at')
       .eq('user_email', session.user.email)
