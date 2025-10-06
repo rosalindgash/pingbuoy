@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
     const validation = validateNotificationSettings(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.issues },
+        { error: 'Validation failed', details: validation.errors },
         { status: 400 }
       )
     }
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     const proValidation = validateProFeatureAccess(validation.data!, userPlan)
     if (!proValidation.success) {
       return NextResponse.json(
-        { error: 'Pro features not available', details: proValidation.issues },
+        { error: 'Pro features not available', details: proValidation.errors },
         { status: 403 }
       )
     }
@@ -277,7 +277,7 @@ export async function PATCH(request: NextRequest) {
     const validation = validateNotificationUpdate(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.issues },
+        { error: 'Validation failed', details: validation.errors },
         { status: 400 }
       )
     }
@@ -289,7 +289,7 @@ export async function PATCH(request: NextRequest) {
     const proValidation = validateProFeatureAccess(validation.data!, userPlan)
     if (!proValidation.success) {
       return NextResponse.json(
-        { error: 'Pro features not available', details: proValidation.issues },
+        { error: 'Pro features not available', details: proValidation.errors },
         { status: 403 }
       )
     }
@@ -315,7 +315,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Remove sensitive data before returning
-    const { webhook_secret, ...safeSettings } = settings
+    const { webhook_secret, ...safeSettings } = settings as any
     
     return NextResponse.json({
       settings: {
