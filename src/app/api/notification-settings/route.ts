@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
 
     // Insert notification settings
     const supabase = await createServerSupabaseClient()
-    const { data: settings, error: dbError } = await supabase
+    const { data: settings, error: dbError } = await (supabase as any)
       .from('notification_settings')
       .insert({
         user_id: user.id,
@@ -296,7 +296,7 @@ export async function PATCH(request: NextRequest) {
 
     // Update notification settings
     const supabase = await createServerSupabaseClient()
-    const { data: settings, error: dbError } = await supabase
+    const { data: settings, error: dbError } = await (supabase as any)
       .from('notification_settings')
       .update({
         ...validation.data,
