@@ -1,52 +1,62 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 
 export default function BetaPromoBadge() {
-  const [remainingUses, setRemainingUses] = useState<number | null>(null)
-  const [isVisible, setIsVisible] = useState(true)
+  const [spotsLeft, setSpotsLeft] = useState(50);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRemainingUses = async () => {
-      try {
-        const response = await fetch('/api/beta-count')
-        const data = await response.json()
+    // Fetch redemption count from your API
+    fetch('/api/beta-count')
+      .then(res => res.json())
+      .then(data => {
+        const remaining = 50 - (data.redeemed || 0);
+        setSpotsLeft(remaining);
+        setLoading(false);
+      })
+      .catch(() => {
+        // If API fails, show the promo anyway
+        setSpotsLeft(50);
+        setLoading(false);
+      });
+  }, []);
 
-        const redeemed = data.redeemed || 0
-        const remaining = 50 - redeemed
-
-        setRemainingUses(remaining)
-
-        // Hide badge if no uses remaining
-        if (remaining <= 0) {
-          setIsVisible(false)
-        }
-      } catch (err) {
-        console.error('Error fetching beta count:', err)
-        setRemainingUses(50)
-      }
-    }
-
-    fetchRemainingUses()
-
-    // Poll every 30 seconds to update the count
-    const interval = setInterval(fetchRemainingUses, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (!isVisible || remainingUses === null || remainingUses <= 0) {
-    return null
+  // Don't show if all spots are taken
+  if (spotsLeft <= 0 || loading) {
+    return null;
   }
 
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-full text-xs">
-      <span className="font-semibold text-orange-900">
-        🎉 BETA50
-      </span>
-      <span className="text-orange-700">50% off</span>
-      <span className="text-orange-600 font-medium">
-        {remainingUses} left
-      </span>
+    <div className="mt-4 p-2.5 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg inline-block">
+      <div className="flex items-start gap-2">
+        <Sparkles className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-xs font-bold text-yellow-900 uppercase tracking-wide">
+              🚀 Beta Launch
+            </span>
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-600 text-white">
+              {spotsLeft}/50 left
+            </span>
+          </div>
+          <p className="text-sm text-gray-700 font-semibold mb-1">
+            50% off for 6 months
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs font-mono font-bold text-gray-800">
+              BETA50
+            </code>
+            <span className="text-xs text-gray-600">at checkout</span>
+          </div>
+          {spotsLeft <= 10 && (
+            <p className="text-xs text-red-600 font-semibold mt-1.5">
+              ⚡ Only {spotsLeft} left!
+            </p>
+          )}
+        </div>
+      </div>
     </div>
-  )
+  );
 }
