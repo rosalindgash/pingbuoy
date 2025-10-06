@@ -187,17 +187,17 @@ export default function ReportsPage() {
       }
 
       // Calculate stats
-      const upChecks = logs.filter(l => l.status === 'up').length
-      const downChecks = logs.filter(l => l.status === 'down').length
+      const upChecks = logs.filter((l: any) => l.status === 'up').length
+      const downChecks = logs.filter((l: any) => l.status === 'down').length
       const totalChecks = logs.length
       const uptimePercent = totalChecks > 0 ? (upChecks / totalChecks) * 100 : 0
 
       const responseTimes = logs
-        .filter(l => l.response_time !== null && l.response_time > 0)
-        .map(l => l.response_time)
+        .filter((l: any) => l.response_time !== null && l.response_time > 0)
+        .map((l: any) => l.response_time)
 
       const avgResponseTime = responseTimes.length > 0
-        ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+        ? Math.round(responseTimes.reduce((a: number, b: number) => a + b, 0) / responseTimes.length)
         : 0
 
       const minResponseTime = responseTimes.length > 0 ? Math.min(...responseTimes) : 0
@@ -205,9 +205,9 @@ export default function ReportsPage() {
 
       // Get incidents (down status) - limit to first 25
       const incidents = logs
-        .filter(l => l.status === 'down')
+        .filter((l: any) => l.status === 'down')
         .slice(0, 25)
-        .map(l => ({
+        .map((l: any) => ({
           id: l.id,
           checked_at: l.checked_at,
           status: 'down' as const,
@@ -278,7 +278,7 @@ export default function ReportsPage() {
     )
   }
 
-  const availableDateRanges = profile?.plan === 'free' ? [7] : [7, 30, 90]
+  const availableDateRanges: (7 | 30 | 90)[] = profile?.plan === 'free' ? [7] : [7, 30, 90]
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

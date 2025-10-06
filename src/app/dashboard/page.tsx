@@ -230,6 +230,7 @@ export default function DashboardPage() {
 
   const handleDeleteSite = async (siteId: string) => {
     if (!confirm('Are you sure you want to delete this site?')) return
+    if (!user) return
 
     try {
       const { error } = await supabase
@@ -343,7 +344,9 @@ export default function DashboardPage() {
       await Promise.all(checkPromises)
 
       // Refresh all site data after comprehensive checks
-      await fetchSites(user?.id)
+      if (user?.id) {
+        await fetchSites(user.id)
+      }
 
       // Refresh all stats for all sites
       sites.forEach(site => {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase-server'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase'
 
 type SiteData = {
   id: string
@@ -69,7 +71,7 @@ export async function POST(
       .eq('site_id', site.id)
       .gte('checked_at', oneMinuteAgo.toISOString())
       .limit(1)
-      .single()
+      .single() as { data: { checked_at: string } | null }
 
     if (recentCheck) {
       return NextResponse.json({
@@ -82,22 +84,15 @@ export async function POST(
     const checkResult = await performUptimeCheck(site.url)
 
     // Use service role client for database operations to bypass RLS
-    const serviceSupabase = createServiceRoleClient()
+    const serviceSupabase: SupabaseClient<Database> = createServiceRoleClient()
 
     // Update site in database
-    const updateData: any = {
-      status: checkResult.status,
-      last_checked: new Date().toISOString()
-    }
-
-    if (checkResult.sslValid !== null) {
-      updateData.ssl_status = checkResult.sslValid
-      updateData.ssl_last_checked = new Date().toISOString()
-    }
-
-    const { error: updateError } = await serviceSupabase
-      .from('sites')
-      .update(updateData)
+    const { error: updateError } = await (serviceSupabase
+      .from('sites') as any)
+      .update({
+        status: checkResult.status as 'up' | 'down' | 'unknown',
+        last_checked: new Date().toISOString()
+      })
       .eq('id', site.id)
 
     if (updateError) {
@@ -105,17 +100,15 @@ export async function POST(
     }
 
     // Log the check
-    const { error: logError } = await serviceSupabase
-      .from('uptime_logs')
+    const { error: logError } = await (serviceSupabase
+      .from('uptime_logs') as any)
       .insert({
         site_id: site.id,
-        status: checkResult.status,
+        status: checkResult.status as 'up' | 'down',
         response_time: checkResult.responseTime,
         status_code: checkResult.statusCode,
-        error_message: checkResult.error || null,
         checked_at: new Date().toISOString(),
-        ssl_valid: checkResult.sslValid,
-        ssl_checked_at: checkResult.sslValid !== null ? new Date().toISOString() : null
+        ssl_valid: checkResult.sslValid
       })
 
     if (logError) {

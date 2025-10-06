@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       .from('users')
       .select('email, plan')
       .eq('id', user.id)
-      .single()
+      .single() as { data: { email: string, plan: string } | null, error: any }
 
     if (profileError || !userProfile) {
       return NextResponse.json({ isAdmin: false })

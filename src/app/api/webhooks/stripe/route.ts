@@ -15,6 +15,11 @@ import {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 const WEBHOOK_TTL_SECONDS = 15 * 60 // 15 minutes TTL for webhook deduplication
 
+// Declare global type for webhook cache
+declare global {
+  var _webhookCache: Record<string, number> | undefined
+}
+
 export async function POST(request: NextRequest) {
   const requestId = randomBytes(8).toString('hex')
 

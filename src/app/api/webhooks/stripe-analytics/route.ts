@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia'
+  apiVersion: '2025-08-27.basil'
 })
 
 const supabase = createClient(
@@ -134,8 +134,8 @@ async function processInvoiceEvent(
   invoice: Stripe.Invoice
 ) {
   const eventId = event.id
-  const customerId = invoice.customer as string
-  const subscriptionId = invoice.subscription as string
+  const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id
+  const subscriptionId = typeof (invoice as any).subscription === 'string' ? (invoice as any).subscription : (invoice as any).subscription?.id
 
   // Skip if no subscription (one-time invoices)
   if (!subscriptionId) {
@@ -152,13 +152,13 @@ async function processInvoiceEvent(
   } else if (event.type === 'charge.refunded') {
     eventType = 'refunded'
     // Get refund amount (only recurring items, exclude setup fees/taxes)
-    const recurringItems = invoice.lines.data.filter(
+    const recurringItems = (invoice.lines.data as any[]).filter(
       line => line.type === 'subscription' && line.proration === false
     )
     amountRecurringCents = recurringItems.reduce((sum, item) => sum + (item.amount || 0), 0)
-  } else if (invoice.paid && invoice.billing_reason === 'subscription_create') {
+  } else if ((invoice as any).paid && (invoice as any).billing_reason === 'subscription_create') {
     eventType = 'created'
-    amountRecurringCents = invoice.amount_paid
+    amountRecurringCents = (invoice as any).amount_paid
   }
 
   // Insert event
@@ -169,7 +169,7 @@ async function processInvoiceEvent(
       occurred_at_utc: new Date(event.created * 1000).toISOString(),
       customer_id: customerId,
       subscription_id: subscriptionId,
-      plan_id: invoice.lines.data[0]?.price?.id || null,
+      plan_id: (invoice.lines.data as any)[0]?.price?.id || null,
       currency: invoice.currency || 'usd',
       amount_recurring_cents: amountRecurringCents,
       amount_change_cents: 0,
@@ -251,9 +251,9 @@ export async function POST(request: NextRequest) {
       }
 
       case 'charge.refunded': {
-        const charge = event.data.object as Stripe.Charge
+        const charge = event.data.object as any
         if (charge.invoice) {
-          const invoice = await stripe.invoices.retrieve(charge.invoice as string)
+          const invoice = await stripe.invoices.retrieve(typeof charge.invoice === 'string' ? charge.invoice : charge.invoice.id)
           await processInvoiceEvent(event, invoice)
           processed = true
         }
