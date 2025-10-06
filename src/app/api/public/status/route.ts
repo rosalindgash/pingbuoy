@@ -158,7 +158,7 @@ async function getSystemMetrics() {
       .limit(1000)
 
     const avgResponseTime = avgResponseData && avgResponseData.length > 0
-      ? Math.round(avgResponseData.reduce((sum, log) => sum + (log.response_time || 0), 0) / avgResponseData.length)
+      ? Math.round(avgResponseData.reduce((sum: number, log: any) => sum + (log.response_time || 0), 0) / avgResponseData.length)
       : 285
 
     // Calculate monitoring uptime (percentage of successful checks in last 24h)
@@ -169,7 +169,7 @@ async function getSystemMetrics() {
       .limit(1000)
 
     const monitoringUptime = uptimeData && uptimeData.length > 0
-      ? Math.round((uptimeData.filter(log => log.status === 'up').length / uptimeData.length) * 100 * 10) / 10
+      ? Math.round((uptimeData.filter((log: any) => log.status === 'up').length / uptimeData.length) * 100 * 10) / 10
       : 99.8
 
     return {
@@ -229,19 +229,19 @@ async function getPingBuoyUptimeStatus() {
       }
 
       // Calculate uptime percentage
-      const upChecks = uptimeLogs.filter(log => log.status === 'up').length
+      const upChecks = uptimeLogs.filter((log: any) => log.status === 'up').length
       const uptimePercentage = Math.round((upChecks / uptimeLogs.length) * 1000) / 10
 
       // Get average response time from recent checks (last 24 hours)
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      const recentLogs = uptimeLogs.filter(log =>
+      const recentLogs = uptimeLogs.filter((log: any) =>
         log.checked_at >= twentyFourHoursAgo &&
         log.response_time !== null &&
         log.response_time < 1000 // Exclude timeout values
       )
 
       const avgResponseTime = recentLogs.length > 0
-        ? Math.round(recentLogs.reduce((sum, log) => sum + (log.response_time || 0), 0) / recentLogs.length)
+        ? Math.round(recentLogs.reduce((sum: number, log: any) => sum + (log.response_time || 0), 0) / recentLogs.length)
         : null
 
       // Determine current status based on recent checks and site status
@@ -341,14 +341,14 @@ function getDailyUptime(siteId: string, uptimeLogs: any[]) {
     const nextDate = new Date(date)
     nextDate.setDate(nextDate.getDate() + 1)
 
-    const dayLogs = uptimeLogs.filter(log => {
+    const dayLogs = uptimeLogs.filter((log: any) => {
       const logDate = new Date(log.checked_at)
       return logDate >= date && logDate < nextDate
     })
 
     let status: 'up' | 'down' | 'degraded' | 'no-data' = 'no-data'
     if (dayLogs.length > 0) {
-      const upCount = dayLogs.filter(log => log.status === 'up').length
+      const upCount = dayLogs.filter((log: any) => log.status === 'up').length
       const uptimePercent = (upCount / dayLogs.length) * 100
 
       if (uptimePercent === 100) {
@@ -365,7 +365,7 @@ function getDailyUptime(siteId: string, uptimeLogs: any[]) {
     dailyStats.push({
       date: date.toISOString().split('T')[0],
       status,
-      uptime: dayLogs.length > 0 ? Math.round((dayLogs.filter(log => log.status === 'up').length / dayLogs.length) * 100) : null
+      uptime: dayLogs.length > 0 ? Math.round((dayLogs.filter((log: any) => log.status === 'up').length / dayLogs.length) * 100) : null
     })
   }
 
