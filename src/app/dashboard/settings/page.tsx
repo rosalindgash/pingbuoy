@@ -157,14 +157,14 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-              <p className="text-gray-600">Manage your account and preferences</p>
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage your account and preferences</p>
             </div>
-            <Link href="/dashboard">
-              <Button variant="outline" className="flex items-center space-x-2">
+            <Link href="/dashboard" className="w-full sm:w-auto">
+              <Button variant="outline" className="flex items-center justify-center space-x-2 w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Dashboard</span>
               </Button>

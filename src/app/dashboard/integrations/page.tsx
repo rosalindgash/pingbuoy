@@ -409,25 +409,25 @@ export default function IntegrationsPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <Puzzle className="h-8 w-8 text-blue-600" />
+              <Puzzle className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
-                <p className="text-gray-600">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Integrations</h1>
+                <p className="text-sm sm:text-base text-gray-600">
                   Connect PingBuoy with your favorite tools and services
                 </p>
               </div>
             </div>
-            <div className="flex space-x-3">
-              <Link href="/dashboard">
-                <Button variant="outline" className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button variant="outline" className="flex items-center justify-center space-x-2 w-full sm:w-auto">
                   <ArrowLeft className="h-4 w-4" />
                   <span>Back to Dashboard</span>
                 </Button>
               </Link>
-              <Link href="/dashboard/api">
-                <Button variant="outline" className="flex items-center space-x-2">
+              <Link href="/dashboard/api" className="w-full sm:w-auto">
+                <Button variant="outline" className="flex items-center justify-center space-x-2 w-full sm:w-auto">
                   <ExternalLink className="h-4 w-4" />
                   <span>API Docs</span>
                 </Button>

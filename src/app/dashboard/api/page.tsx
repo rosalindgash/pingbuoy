@@ -138,20 +138,20 @@ export default function APIDocumentationPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Code className="h-8 w-8 text-blue-600" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                <Code className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">API Documentation</h1>
-                <p className="text-gray-600 mt-1">
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900">API Documentation</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
                   Complete API reference for PingBuoy monitoring service
                 </p>
               </div>
             </div>
-            <Link href="/dashboard">
-              <Button variant="outline" className="flex items-center space-x-2">
+            <Link href="/dashboard" className="w-full sm:w-auto">
+              <Button variant="outline" className="flex items-center justify-center space-x-2 w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Dashboard</span>
               </Button>

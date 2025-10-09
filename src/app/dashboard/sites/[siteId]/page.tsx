@@ -318,9 +318,13 @@ export default function SiteStatusPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border mb-8">
-          <div className="px-6 py-8">
-            <div className="flex items-center justify-end mb-4 space-x-3">
-              <Button variant="outline" onClick={() => router.push('/dashboard')}>
+          <div className="px-4 sm:px-6 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end mb-4 gap-2 sm:gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/dashboard')}
+                className="w-full sm:w-auto"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Button>
@@ -329,6 +333,7 @@ export default function SiteStatusPage() {
                 variant="outline"
                 onClick={handleRefresh}
                 disabled={refreshing}
+                className="w-full sm:w-auto"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? 'Checking...' : 'Check Now'}
@@ -338,7 +343,7 @@ export default function SiteStatusPage() {
                 href={`/status/${extractDomain(site.url)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 w-full sm:w-auto"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Public Status Page
