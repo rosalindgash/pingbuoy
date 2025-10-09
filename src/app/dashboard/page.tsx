@@ -405,6 +405,15 @@ export default function DashboardPage() {
               </Link>
             ))}
           </nav>
+          <div className="p-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
 
