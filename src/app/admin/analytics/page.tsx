@@ -255,16 +255,16 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Business Analytics</h1>
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Business Analytics</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Last updated: {new Date(data.lastUpdated).toLocaleString()} (CST)
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Link href="/dashboard">
-                <Button variant="outline" className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button variant="outline" className="flex items-center justify-center space-x-2 w-full sm:w-auto">
                   <ArrowLeft className="h-4 w-4" />
                   <span>Back to Dashboard</span>
                 </Button>
@@ -273,7 +273,7 @@ export default function AnalyticsPage() {
               <select
                 value={dateRange}
                 onChange={(e) => handleDateRangeChange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm w-full sm:w-auto"
               >
                 <option value="7">Last 7 days</option>
                 <option value="30">Last 30 days</option>
