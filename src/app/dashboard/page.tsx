@@ -476,17 +476,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-4 sm:p-6">
           <div className="mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-600">Monitor your websites and track their performance</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-sm sm:text-base text-gray-600">Monitor your websites and track their performance</p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center">
                 <button
                   onClick={() => setShowAddSite(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-blue-700 w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Website
