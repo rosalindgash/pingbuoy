@@ -345,6 +345,7 @@ X-RateLimit-Reset: 1641123456`}
     "id": "uuid",
     "name": "My Website",
     "url": "https://example.com",
+    "type": "website",
     "status": "up",
     "last_checked": "2025-01-15T10:30:00Z",
     "created_at": "2025-01-01T00:00:00Z",
@@ -362,12 +363,14 @@ X-RateLimit-Reset: 1641123456`}
                   description="Add a new site to monitor"
                   parameters={[
                     { name: 'name', type: 'string', required: true, description: 'Site display name (max 100 chars)' },
-                    { name: 'url', type: 'string', required: true, description: 'Site URL to monitor (must be valid URL)' }
+                    { name: 'url', type: 'string', required: true, description: 'Site URL to monitor (must be valid URL)' },
+                    { name: 'type', type: 'string', required: false, description: 'Site type: "website" or "api_endpoint" (default: "website")' }
                   ]}
                   response={`{
   "id": "uuid",
   "name": "My Website",
   "url": "https://example.com",
+  "type": "website",
   "status": "unknown",
   "user_id": "uuid",
   "is_active": true,
@@ -377,7 +380,7 @@ X-RateLimit-Reset: 1641123456`}
                   example={`curl -X POST \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"name": "My Website", "url": "https://example.com"}' \\
+  -d '{"name": "My Website", "url": "https://example.com", "type": "website"}' \\
   https://pingbuoy.com/api/sites`}
                 />
 
@@ -464,10 +467,10 @@ X-RateLimit-Reset: 1641123456`}
                   path="/api/integrations"
                   description="Create a new integration"
                   parameters={[
-                    { name: 'name', type: 'string', required: true, description: 'Integration name' },
+                    { name: 'name', type: 'string', required: true, description: 'Integration name (max 100 chars)' },
                     { name: 'integration_type', type: 'string', required: true, description: 'Type: slack, discord, or webhook' },
-                    { name: 'webhook_url', type: 'string', required: true, description: 'Webhook URL for the integration' },
-                    { name: 'events', type: 'array', required: false, description: 'Events to monitor (default: downtime, recovery)' }
+                    { name: 'webhook_url', type: 'string', required: true, description: 'Webhook URL (must be valid URL format)' },
+                    { name: 'events', type: 'array', required: false, description: 'Events to monitor (at least 1 required, default: ["downtime", "recovery"])' }
                   ]}
                   response={`{
   "success": true,
@@ -491,6 +494,21 @@ X-RateLimit-Reset: 1641123456`}
     "events": ["downtime", "recovery"]
   }' \\
   https://pingbuoy.com/api/integrations`}
+                />
+
+                <APIEndpoint
+                  method="DELETE"
+                  path="/api/integrations?id={id}"
+                  description="Delete an integration"
+                  parameters={[
+                    { name: 'id', type: 'string', required: true, description: 'Integration UUID (query parameter)' }
+                  ]}
+                  response={`{
+  "success": true
+}`}
+                  example={`curl -X DELETE \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://pingbuoy.com/api/integrations?id=INTEGRATION_UUID"`}
                 />
               </div>
             </section>
@@ -529,8 +547,8 @@ X-RateLimit-Reset: 1641123456`}
                   path="/api/keys"
                   description="Generate a new API key"
                   parameters={[
-                    { name: 'name', type: 'string', required: true, description: 'API key name' },
-                    { name: 'permissions', type: 'array', required: true, description: 'Array of permissions: ["read"] or ["read", "write"]' }
+                    { name: 'name', type: 'string', required: true, description: 'API key name (max 100 chars)' },
+                    { name: 'permissions', type: 'array', required: true, description: 'Array of permissions (at least 1 required): ["read"], ["read", "write"], or ["read", "write", "admin"]' }
                   ]}
                   response={`{
   "success": true,
@@ -551,6 +569,21 @@ X-RateLimit-Reset: 1641123456`}
     "permissions": ["read", "write"]
   }' \\
   https://pingbuoy.com/api/keys`}
+                />
+
+                <APIEndpoint
+                  method="DELETE"
+                  path="/api/keys?id={id}"
+                  description="Revoke an API key"
+                  parameters={[
+                    { name: 'id', type: 'string', required: true, description: 'API key UUID (query parameter)' }
+                  ]}
+                  response={`{
+  "success": true
+}`}
+                  example={`curl -X DELETE \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://pingbuoy.com/api/keys?id=KEY_UUID"`}
                 />
               </div>
             </section>

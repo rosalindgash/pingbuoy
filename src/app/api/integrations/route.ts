@@ -8,7 +8,7 @@ import { randomBytes } from 'crypto'
 // Zod schema for integration creation
 const createIntegrationSchema = z.object({
   name: z.string().min(1).max(100),
-  integration_type: z.enum(['slack', 'discord', 'webhook', 'zapier', 'microsoft_teams', 'custom']),
+  integration_type: z.enum(['slack', 'discord', 'webhook']),
   webhook_url: z.string().url(),
   events: z.array(z.string()).min(1).default(['downtime', 'recovery'])
 })

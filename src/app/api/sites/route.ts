@@ -9,6 +9,48 @@ import { checkRateLimit } from '@/lib/upstash-rate-limit'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get optional status filter from query params
+    const { searchParams } = new URL(request.url)
+    const statusFilter = searchParams.get('status')
+
+    // Build query
+    let query = supabase
+      .from('sites')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    // Apply status filter if provided
+    if (statusFilter && ['up', 'down', 'unknown'].includes(statusFilter)) {
+      query = query.eq('status', statusFilter)
+    }
+
+    const { data: sites, error } = await query
+
+    if (error) {
+      throw error
+    }
+
+    return NextResponse.json(sites || [])
+
+  } catch (error: unknown) {
+    console.error('Error fetching sites:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   const requestId = randomBytes(8).toString('hex')
 
