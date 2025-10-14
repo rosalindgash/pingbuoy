@@ -75,6 +75,26 @@ This document explains the fixes applied to resolve Supabase database linter war
 
 **Performance Impact**: Significant improvement for queries scanning multiple rows, especially for users with many sites/logs.
 
+### 5. Duplicate RLS Policies (WARNINGS - Fixed)
+**Issue**: 355 warnings for duplicate permissive policies on the same table/command/role combination.
+
+**Fix**: Migration `20251013000600_fix_duplicate_rls_policies.sql`
+- Consolidated 66 duplicate policies across 18 tables
+- Combined USING and WITH CHECK clauses with OR operators
+- One policy per table/command instead of multiple redundant ones
+
+**Tables Updated**: alerts, api_keys, dead_links, email_logs, facts_daily, integration_logs, integrations, notification_history, notification_settings, page_speed_logs, scans, sites, status_checks, status_incident_updates, status_subscribers, uptime_logs, users
+
+### 6. Duplicate Indexes (WARNINGS - Fixed)
+**Issue**: 10 warnings for duplicate indexes on the same columns.
+
+**Fix**: Migration `20251013000700_fix_duplicate_indexes.sql`
+- Dropped 10 duplicate indexes
+- Kept indexes with consistent 'idx_' prefix naming convention
+- Reduced index storage overhead
+
+**Tables Updated**: alerts, api_keys, dead_links, integrations, notification_history, notification_settings, scans, sites, uptime_logs
+
 ## Deployment
 
 Apply all migrations in order:
