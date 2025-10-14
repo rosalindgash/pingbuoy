@@ -1,6 +1,6 @@
 # Supabase Linter Fixes
 
-This document explains the fixes applied to resolve Supabase database linter warnings.
+This document explains the fixes applied to resolve Supabase database linter warnings and performance issues.
 
 ## Summary of Fixes
 
@@ -62,24 +62,38 @@ This document explains the fixes applied to resolve Supabase database linter war
 
 **Why Not Fixed in Migration**: This is a Supabase Auth configuration setting, not a database setting. It must be enabled through the Supabase dashboard UI or API.
 
+### 4. RLS Auth Function Performance (PERFORMANCE WARNINGS - Fixed)
+**Issue**: 391 performance warnings for RLS policies re-evaluating auth functions on every row.
+
+**Affected Tables**: All tables with RLS policies (users, sites, uptime_logs, alerts, dead_links, scans, integrations, core_web_vitals, notification_settings, email_logs, performance_monitoring, page_speed_logs, facts_daily, dim_products)
+
+**Fix**: Migration `20251013000400_fix_rls_auth_function_performance.sql`
+- Changed `auth.uid()` to `(SELECT auth.uid())` in all policies
+- Changed `auth.role()` to `(SELECT auth.role())` in all policies
+- Ensures functions are evaluated once per query, not once per row
+- Updated 115 RLS policies total
+
+**Performance Impact**: Significant improvement for queries scanning multiple rows, especially for users with many sites/logs.
+
 ## Deployment
 
 Apply all migrations in order:
 
 ```bash
-# Apply migrations to remote database
-supabase db push --remote
+# Apply migrations to linked remote database
+supabase db push --linked
 
 # Or apply locally first for testing
-supabase db push
+supabase db push --local
 ```
 
-## Security Benefits
+## Security & Performance Benefits
 
 1. **RLS Enforcement**: Views now properly enforce Row Level Security policies
 2. **Search Path Security**: Functions are protected from search path hijacking
 3. **Schema Isolation**: Extensions are isolated from public schema
 4. **Password Security**: When enabled, prevents use of compromised passwords
+5. **Query Performance**: Auth functions evaluated once per query instead of per row
 
 ## Testing
 
