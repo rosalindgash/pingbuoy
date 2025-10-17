@@ -35,7 +35,7 @@ export default function BetaPromoBadge() {
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-xs font-bold text-yellow-900 uppercase tracking-wide">
-              🚀 Beta Launch
+              🚀 Launch Sale
             </span>
             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-600 text-white">
               {spotsLeft}/50 left
